@@ -1,0 +1,20 @@
+[[bin]]
+bench = false
+name = "nu_plugin_explore"
+
+[dependencies.nu-plugin]
+path = ""
+version = "0.83.2"
+
+[dependencies.nu-protocol]
+features = ["plugin"]
+path = ""
+version = "0.83.2"
+
+[lib]
+bench = false
+
+[package]
+edition = "2021"
+name = "nu_plugin_explore"
+version = "0.83.2"
