@@ -2,6 +2,11 @@
 bench = false
 name = "nu_plugin_explore"
 
+[dependencies]
+anyhow = "1.0.73"
+crossterm = "0.27.0"
+ratatui = "0.22.0"
+
 [dependencies.nu-plugin]
 path = ""
 version = "0.83.2"
