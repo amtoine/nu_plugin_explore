@@ -3,12 +3,7 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{
-    prelude::{CrosstermBackend, Rect},
-    style::{Color, Style},
-    widgets::Paragraph,
-    Frame, Terminal,
-};
+use ratatui::{prelude::CrosstermBackend, Terminal};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
@@ -71,7 +66,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<console::Term>>) ->
 
 fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>, input: &Value) -> Result<()> {
     loop {
-        terminal.draw(|frame| render_app(frame, input))?;
+        terminal.draw(|frame| render::ui(frame, input))?;
         match console::Term::stderr().read_char()? {
             'q' => break,
             _ => {}
@@ -80,16 +75,27 @@ fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>, input: &Value) 
     Ok(())
 }
 
-fn render_app(frame: &mut Frame<CrosstermBackend<console::Term>>, input: &Value) {
-    frame.render_widget(Paragraph::new(format!("{:#?}", input)), frame.size());
-    render_status_bar(frame, "Status: OK");
-}
+mod render {
+    use ratatui::{
+        prelude::{CrosstermBackend, Rect},
+        style::{Color, Style},
+        widgets::Paragraph,
+        Frame,
+    };
 
-fn render_status_bar(frame: &mut Frame<CrosstermBackend<console::Term>>, status: &str) {
-    frame.render_widget(
-        Paragraph::new(status)
-            .style(Style::default().bg(Color::White))
-            .style(Style::default().fg(Color::Black)),
-        Rect::new(0, frame.size().height - 1, frame.size().width, 1),
-    );
+    use nu_protocol::Value;
+
+    pub(super) fn ui(frame: &mut Frame<CrosstermBackend<console::Term>>, input: &Value) {
+        frame.render_widget(Paragraph::new(format!("{:#?}", input)), frame.size());
+        status_bar(frame, "Status: OK");
+    }
+
+    fn status_bar(frame: &mut Frame<CrosstermBackend<console::Term>>, status: &str) {
+        frame.render_widget(
+            Paragraph::new(status)
+                .style(Style::default().bg(Color::White))
+                .style(Style::default().fg(Color::Black)),
+            Rect::new(0, frame.size().height - 1, frame.size().width, 1),
+        );
+    }
 }
