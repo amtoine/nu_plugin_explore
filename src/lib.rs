@@ -95,9 +95,7 @@ mod render {
 
     fn status_bar(frame: &mut Frame<CrosstermBackend<console::Term>>, status: &str) {
         frame.render_widget(
-            Paragraph::new(status)
-                .style(Style::default().bg(Color::White))
-                .style(Style::default().fg(Color::Black)),
+            Paragraph::new(status).style(Style::default().fg(Color::Black).bg(Color::White)),
             Rect::new(0, frame.size().height - 1, frame.size().width, 1),
         );
     }
