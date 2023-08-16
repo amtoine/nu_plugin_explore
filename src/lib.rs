@@ -92,7 +92,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>, input: &Value) 
 
 mod render {
     use ratatui::{
-        prelude::{CrosstermBackend, Rect},
+        prelude::{Alignment, CrosstermBackend, Rect},
         style::{Color, Style},
         widgets::Paragraph,
         Frame,
@@ -121,13 +121,25 @@ mod render {
     }
 
     fn status_bar(frame: &mut Frame<CrosstermBackend<console::Term>>, status: &State) {
+        let rect_bottom_bar = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
+
         let status = match status {
             State::Normal => "NORMAL",
             State::Insert => "INSERT",
         };
+
         frame.render_widget(
-            Paragraph::new(status).style(Style::default().fg(Color::Black).bg(Color::White)),
-            Rect::new(0, frame.size().height - 1, frame.size().width, 1),
+            Paragraph::new(status)
+                .style(Style::default().fg(Color::Black).bg(Color::White))
+                .alignment(Alignment::Left),
+            rect_bottom_bar,
+        );
+
+        frame.render_widget(
+            Paragraph::new("q to quit")
+                .style(Style::default().fg(Color::Black).bg(Color::White))
+                .alignment(Alignment::Right),
+            rect_bottom_bar,
         );
     }
 }
