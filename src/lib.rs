@@ -123,7 +123,7 @@ fn run(
     let mut state = State::default();
 
     loop {
-        terminal.draw(|frame| render::ui(frame, input, &state, config))?;
+        terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
         match console::Term::stderr().read_char()? {
             'q' => break,
             'i' => state.mode = Mode::Insert,
@@ -134,7 +134,7 @@ fn run(
     Ok(())
 }
 
-mod render {
+mod tui {
     use ratatui::{
         prelude::{Alignment, CrosstermBackend, Rect},
         style::Style,
@@ -146,17 +146,17 @@ mod render {
 
     use super::{Config, Mode, State};
 
-    pub(super) fn ui(
+    pub(super) fn render_ui(
         frame: &mut Frame<CrosstermBackend<console::Term>>,
         input: &Value,
         state: &State,
         config: &Config,
     ) {
-        data(frame, input);
-        status_bar(frame, state, config);
+        render_data(frame, input);
+        render_status_bar(frame, state, config);
     }
 
-    fn data(frame: &mut Frame<CrosstermBackend<console::Term>>, data: &Value) {
+    fn render_data(frame: &mut Frame<CrosstermBackend<console::Term>>, data: &Value) {
         let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, frame.size().height - 1);
 
         frame.render_widget(
@@ -165,7 +165,7 @@ mod render {
         );
     }
 
-    fn status_bar(
+    fn render_status_bar(
         frame: &mut Frame<CrosstermBackend<console::Term>>,
         state: &State,
         config: &Config,
