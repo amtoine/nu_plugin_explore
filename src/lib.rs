@@ -40,9 +40,9 @@ impl Plugin for Explore {
     }
 }
 
-fn explore(call: &EvaluatedCall, _input: &Value) -> Result<Value, LabeledError> {
+fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
     let mut terminal = setup_terminal().context("setup failed").unwrap();
-    run(&mut terminal).context("app loop failed").unwrap();
+    run(&mut terminal, input).context("app loop failed").unwrap();
     restore_terminal(&mut terminal)
         .context("restore terminal failed")
         .unwrap();
@@ -62,9 +62,9 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<console::Term>>) ->
     terminal.show_cursor().context("unable to show cursor")
 }
 
-fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>) -> Result<()> {
+fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>, input: &Value) -> Result<()> {
     loop {
-        terminal.draw(render_app)?;
+        terminal.draw(|frame| render_app(frame, input))?;
         match console::Term::stderr().read_char()? {
             'q' => break,
             _ => {},
@@ -73,7 +73,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>) -> Result<()> {
     Ok(())
 }
 
-fn render_app(frame: &mut Frame<CrosstermBackend<console::Term>>) {
+fn render_app(frame: &mut Frame<CrosstermBackend<console::Term>>, _input: &Value) {
     let greeting = Paragraph::new("Hello World! (press 'q' to quit)");
     frame.render_widget(greeting, frame.size());
 }
