@@ -65,8 +65,9 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<console::Term>>) ->
 fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>) -> Result<()> {
     loop {
         terminal.draw(render_app)?;
-        if console::Term::stderr().read_char()? == 'q' {
-            break;
+        match console::Term::stderr().read_char()? {
+            'q' => break,
+            _ => {},
         }
     }
     Ok(())
