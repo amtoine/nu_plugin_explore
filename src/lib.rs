@@ -86,7 +86,10 @@ mod render {
     use nu_protocol::Value;
 
     pub(super) fn ui(frame: &mut Frame<CrosstermBackend<console::Term>>, input: &Value) {
-        frame.render_widget(Paragraph::new(format!("{:#?}", input)), frame.size());
+        frame.render_widget(
+            Paragraph::new(format!("{:#?}", input)),
+            Rect::new(0, 0, frame.size().width, frame.size().height - 1),
+        );
         status_bar(frame, "Status: OK");
     }
 
