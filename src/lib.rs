@@ -42,7 +42,9 @@ impl Plugin for Explore {
 
 fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
     let mut terminal = setup_terminal().context("setup failed").unwrap();
-    run(&mut terminal, input).context("app loop failed").unwrap();
+    run(&mut terminal, input)
+        .context("app loop failed")
+        .unwrap();
     restore_terminal(&mut terminal)
         .context("restore terminal failed")
         .unwrap();
@@ -67,7 +69,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>, input: &Value) 
         terminal.draw(|frame| render_app(frame, input))?;
         match console::Term::stderr().read_char()? {
             'q' => break,
-            _ => {},
+            _ => {}
         }
     }
     Ok(())
