@@ -46,6 +46,11 @@ fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
             background: Color::White,
             foreground: Color::Black,
         },
+        keybindings: KeyBindingsMap {
+            quit: 'q',
+            insert: 'i',
+            normal: 'n',
+        },
     };
 
     let mut terminal = setup_terminal().context("setup failed").unwrap();
@@ -111,8 +116,15 @@ struct StatusBarConfig {
     foreground: Color,
 }
 
+struct KeyBindingsMap {
+    quit: char,
+    insert: char,
+    normal: char,
+}
+
 struct Config {
     status_bar: StatusBarConfig,
+    keybindings: KeyBindingsMap,
 }
 
 fn run(
@@ -124,11 +136,14 @@ fn run(
 
     loop {
         terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
-        match console::Term::stderr().read_char()? {
-            'q' => break,
-            'i' => state.mode = Mode::Insert,
-            'n' => state.mode = Mode::Normal,
-            _ => {}
+
+        let char = console::Term::stderr().read_char()?;
+        if char == config.keybindings.quit {
+            break;
+        } else if char == config.keybindings.insert {
+            state.mode = Mode::Insert;
+        } else if char == config.keybindings.normal {
+            state.mode = Mode::Normal;
         }
     }
     Ok(())
@@ -183,13 +198,13 @@ mod tui {
         );
 
         let hints = match state.mode {
-            Mode::Normal => "i to INSERT",
-            Mode::Insert => "n to NORMAL",
+            Mode::Normal => format!("{} to {}", config.keybindings.insert, Mode::Insert),
+            Mode::Insert => format!("{} to {}", config.keybindings.normal, Mode::Normal),
         }
         .to_string();
 
         frame.render_widget(
-            Paragraph::new(hints + " | q to quit")
+            Paragraph::new(hints + &format!(" | {} to quit", config.keybindings.quit))
                 .style(style)
                 .alignment(Alignment::Right),
             bottom_bar_rect,
