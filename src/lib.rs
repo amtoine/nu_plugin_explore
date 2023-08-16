@@ -80,7 +80,8 @@ fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>, input: &Value) 
     Ok(())
 }
 
-fn render_app(frame: &mut Frame<CrosstermBackend<console::Term>>, _input: &Value) {
+fn render_app(frame: &mut Frame<CrosstermBackend<console::Term>>, input: &Value) {
+    frame.render_widget(Paragraph::new(format!("{:#?}", input)), frame.size());
     render_status_bar(frame, "Status: OK");
 }
 
