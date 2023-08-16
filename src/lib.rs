@@ -112,9 +112,11 @@ mod render {
     }
 
     fn data(frame: &mut Frame<CrosstermBackend<console::Term>>, data: &Value) {
+        let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, frame.size().height - 1);
+
         frame.render_widget(
             Paragraph::new(format!("{:#?}", data)),
-            Rect::new(0, 0, frame.size().width, frame.size().height - 1),
+            rect_without_bottom_bar,
         );
     }
 
