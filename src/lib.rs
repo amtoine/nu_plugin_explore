@@ -168,10 +168,11 @@ mod render {
         let current_state = match state.mode {
             Mode::Normal => "NORMAL",
             Mode::Insert => "INSERT",
-        };
+        }
+        .to_string();
 
         frame.render_widget(
-            Paragraph::new(current_state)
+            Paragraph::new(current_state + ": " + &state.position)
                 .style(style)
                 .alignment(Alignment::Left),
             bottom_bar_rect,
@@ -180,10 +181,11 @@ mod render {
         let hints = match state.mode {
             Mode::Normal => "i to INSERT",
             Mode::Insert => "n to NORMAL",
-        };
+        }
+        .to_string();
 
         frame.render_widget(
-            Paragraph::new(hints.to_owned() + " | q to quit")
+            Paragraph::new(hints + " | q to quit")
                 .style(style)
                 .alignment(Alignment::Right),
             bottom_bar_rect,
