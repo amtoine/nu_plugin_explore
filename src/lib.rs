@@ -3,7 +3,12 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::CrosstermBackend, widgets::Paragraph, Frame, Terminal};
+use ratatui::{
+    prelude::{CrosstermBackend, Rect},
+    style::{Color, Style},
+    widgets::Paragraph,
+    Frame, Terminal,
+};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
@@ -76,6 +81,14 @@ fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>, input: &Value) 
 }
 
 fn render_app(frame: &mut Frame<CrosstermBackend<console::Term>>, _input: &Value) {
-    let greeting = Paragraph::new("Hello World! (press 'q' to quit)");
-    frame.render_widget(greeting, frame.size());
+    render_status_bar(frame, "Status: OK");
+}
+
+fn render_status_bar(frame: &mut Frame<CrosstermBackend<console::Term>>, status: &str) {
+    frame.render_widget(
+        Paragraph::new(status)
+            .style(Style::default().bg(Color::White))
+            .style(Style::default().fg(Color::Black)),
+        Rect::new(0, frame.size().height - 1, frame.size().width, 1),
+    );
 }
