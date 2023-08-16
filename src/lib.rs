@@ -64,11 +64,26 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<console::Term>>) ->
     terminal.show_cursor().context("unable to show cursor")
 }
 
+enum State {
+    Normal,
+    Insert,
+}
+
+impl State {
+    fn default() -> State {
+        State::Normal
+    }
+}
+
 fn run(terminal: &mut Terminal<CrosstermBackend<console::Term>>, input: &Value) -> Result<()> {
+    let mut state = State::default();
+
     loop {
-        terminal.draw(|frame| render::ui(frame, input))?;
+        terminal.draw(|frame| render::ui(frame, input, &state))?;
         match console::Term::stderr().read_char()? {
             'q' => break,
+            'i' => state = State::Insert,
+            'n' => state = State::Normal,
             _ => {}
         }
     }
@@ -85,9 +100,15 @@ mod render {
 
     use nu_protocol::Value;
 
-    pub(super) fn ui(frame: &mut Frame<CrosstermBackend<console::Term>>, input: &Value) {
+    use super::State;
+
+    pub(super) fn ui(
+        frame: &mut Frame<CrosstermBackend<console::Term>>,
+        input: &Value,
+        state: &State,
+    ) {
         data(frame, input);
-        status_bar(frame, "Status: OK");
+        status_bar(frame, state);
     }
 
     fn data(frame: &mut Frame<CrosstermBackend<console::Term>>, data: &Value) {
@@ -97,7 +118,11 @@ mod render {
         );
     }
 
-    fn status_bar(frame: &mut Frame<CrosstermBackend<console::Term>>, status: &str) {
+    fn status_bar(frame: &mut Frame<CrosstermBackend<console::Term>>, status: &State) {
+        let status = match status {
+            State::Normal => "NORMAL",
+            State::Insert => "INSERT",
+        };
         frame.render_widget(
             Paragraph::new(status).style(Style::default().fg(Color::Black).bg(Color::White)),
             Rect::new(0, frame.size().height - 1, frame.size().width, 1),
