@@ -71,14 +71,28 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<console::Term>>) ->
     terminal.show_cursor().context("unable to show cursor")
 }
 
-enum State {
+enum Mode {
     Normal,
     Insert,
 }
 
+impl Mode {
+    fn default() -> Mode {
+        Mode::Normal
+    }
+}
+
+struct State {
+    position: String,
+    mode: Mode,
+}
+
 impl State {
     fn default() -> State {
-        State::Normal
+        State {
+            position: "".into(),
+            mode: Mode::default(),
+        }
     }
 }
 
@@ -102,8 +116,8 @@ fn run(
         terminal.draw(|frame| render::ui(frame, input, &state, config))?;
         match console::Term::stderr().read_char()? {
             'q' => break,
-            'i' => state = State::Insert,
-            'n' => state = State::Normal,
+            'i' => state.mode = Mode::Insert,
+            'n' => state.mode = Mode::Normal,
             _ => {}
         }
     }
@@ -120,7 +134,7 @@ mod render {
 
     use nu_protocol::Value;
 
-    use super::{Config, State};
+    use super::{Config, Mode, State};
 
     pub(super) fn ui(
         frame: &mut Frame<CrosstermBackend<console::Term>>,
@@ -143,7 +157,7 @@ mod render {
 
     fn status_bar(
         frame: &mut Frame<CrosstermBackend<console::Term>>,
-        status: &State,
+        state: &State,
         config: &Config,
     ) {
         let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
@@ -151,9 +165,9 @@ mod render {
             .fg(config.status_bar.foreground)
             .bg(config.status_bar.background);
 
-        let current_state = match status {
-            State::Normal => "NORMAL",
-            State::Insert => "INSERT",
+        let current_state = match state.mode {
+            Mode::Normal => "NORMAL",
+            Mode::Insert => "INSERT",
         };
 
         frame.render_widget(
@@ -163,9 +177,9 @@ mod render {
             bottom_bar_rect,
         );
 
-        let hints = match status {
-            State::Normal => "i to INSERT",
-            State::Insert => "n to NORMAL",
+        let hints = match state.mode {
+            Mode::Normal => "i to INSERT",
+            Mode::Insert => "n to NORMAL",
         };
 
         frame.render_widget(
