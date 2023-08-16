@@ -146,7 +146,7 @@ mod render {
         status: &State,
         config: &Config,
     ) {
-        let rect_bottom_bar = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
+        let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
         let status = match status {
             State::Normal => "NORMAL",
@@ -161,7 +161,7 @@ mod render {
                         .bg(config.status_bar.background),
                 )
                 .alignment(Alignment::Left),
-            rect_bottom_bar,
+            bottom_bar_rect,
         );
 
         frame.render_widget(
@@ -172,7 +172,7 @@ mod render {
                         .bg(config.status_bar.background),
                 )
                 .alignment(Alignment::Right),
-            rect_bottom_bar,
+            bottom_bar_rect,
         );
     }
 }
