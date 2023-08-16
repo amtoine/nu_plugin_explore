@@ -147,6 +147,9 @@ mod render {
         config: &Config,
     ) {
         let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
+        let style = Style::default()
+            .fg(config.status_bar.foreground)
+            .bg(config.status_bar.background);
 
         let current_state = match status {
             State::Normal => "NORMAL",
@@ -155,11 +158,7 @@ mod render {
 
         frame.render_widget(
             Paragraph::new(current_state)
-                .style(
-                    Style::default()
-                        .fg(config.status_bar.foreground)
-                        .bg(config.status_bar.background),
-                )
+                .style(style)
                 .alignment(Alignment::Left),
             bottom_bar_rect,
         );
@@ -171,11 +170,7 @@ mod render {
 
         frame.render_widget(
             Paragraph::new(hints.to_owned() + " | q to quit")
-                .style(
-                    Style::default()
-                        .fg(config.status_bar.foreground)
-                        .bg(config.status_bar.background),
-                )
+                .style(style)
                 .alignment(Alignment::Right),
             bottom_bar_rect,
         );
