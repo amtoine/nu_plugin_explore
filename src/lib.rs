@@ -3,7 +3,7 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::*, widgets::*};
+use ratatui::{prelude::CrosstermBackend, widgets::Paragraph, Frame, Terminal};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
