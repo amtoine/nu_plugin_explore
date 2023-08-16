@@ -93,14 +93,14 @@ impl std::fmt::Display for Mode {
 }
 
 struct State {
-    position: String,
+    cell_path: Vec<String>,
     mode: Mode,
 }
 
 impl State {
     fn default() -> State {
         State {
-            position: "".into(),
+            cell_path: vec![],
             mode: Mode::default(),
         }
     }
@@ -176,7 +176,7 @@ mod tui {
             .bg(config.status_bar.background);
 
         frame.render_widget(
-            Paragraph::new(state.mode.to_string() + ": " + &state.position)
+            Paragraph::new(state.mode.to_string() + &format!(": {:?}", state.cell_path))
                 .style(style)
                 .alignment(Alignment::Left),
             bottom_bar_rect,
