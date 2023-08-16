@@ -148,13 +148,13 @@ mod render {
     ) {
         let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
-        let status = match status {
+        let current_state = match status {
             State::Normal => "NORMAL",
             State::Insert => "INSERT",
         };
 
         frame.render_widget(
-            Paragraph::new(status)
+            Paragraph::new(current_state)
                 .style(
                     Style::default()
                         .fg(config.status_bar.foreground)
@@ -164,8 +164,13 @@ mod render {
             bottom_bar_rect,
         );
 
+        let hints = match status {
+            State::Normal => "i to INSERT",
+            State::Insert => "n to NORMAL",
+        };
+
         frame.render_widget(
-            Paragraph::new("q to quit")
+            Paragraph::new(hints.to_owned() + " | q to quit")
                 .style(
                     Style::default()
                         .fg(config.status_bar.foreground)
