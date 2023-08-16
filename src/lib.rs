@@ -82,6 +82,16 @@ impl Mode {
     }
 }
 
+impl std::fmt::Display for Mode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let repr = match self {
+            Mode::Normal => "NORMAL",
+            Mode::Insert => "INSERT",
+        };
+        write!(f, "{}", repr)
+    }
+}
+
 struct State {
     position: String,
     mode: Mode,
@@ -165,14 +175,8 @@ mod render {
             .fg(config.status_bar.foreground)
             .bg(config.status_bar.background);
 
-        let current_state = match state.mode {
-            Mode::Normal => "NORMAL",
-            Mode::Insert => "INSERT",
-        }
-        .to_string();
-
         frame.render_widget(
-            Paragraph::new(current_state + ": " + &state.position)
+            Paragraph::new(state.mode.to_string() + ": " + &state.position)
                 .style(style)
                 .alignment(Alignment::Left),
             bottom_bar_rect,
