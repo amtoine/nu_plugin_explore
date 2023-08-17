@@ -6,7 +6,10 @@ use crossterm::{
 use ratatui::{prelude::CrosstermBackend, style::Color, Terminal};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
-use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
+use nu_protocol::{
+    ast::{CellPath, PathMember},
+    Category, PluginExample, PluginSignature, Span, Type, Value,
+};
 
 pub struct Explore;
 
@@ -98,14 +101,14 @@ impl std::fmt::Display for Mode {
 }
 
 struct State {
-    cell_path: Vec<String>,
+    cell_path: CellPath,
     mode: Mode,
 }
 
 impl State {
     fn default() -> State {
         State {
-            cell_path: vec![],
+            cell_path: CellPath { members: vec![] },
             mode: Mode::default(),
         }
     }
@@ -135,12 +138,19 @@ fn run(
     let mut state = State::default();
     match input {
         Value::List { vals, .. } => {
-            let start = if vals.is_empty() { "" } else { "0" };
-            state.cell_path.push(start.to_string())
+            let start = if vals.is_empty() { usize::MAX } else { 0 };
+            state.cell_path.members.push(PathMember::Int {
+                val: start,
+                span: Span::unknown(),
+                optional: false,
+            })
         }
-        Value::Record { cols, .. } => state
-            .cell_path
-            .push(cols.get(0).unwrap_or(&"".to_string()).to_string()),
+        Value::Record { cols, .. } => state.cell_path.members.push(PathMember::String {
+            val: cols.get(0).unwrap_or(&"".to_string()).into(),
+            span: Span::unknown(),
+            optional: false,
+        }),
+
         _ => {}
     };
 
@@ -167,7 +177,7 @@ mod tui {
         Frame,
     };
 
-    use nu_protocol::Value;
+    use nu_protocol::{ast::PathMember, Value};
 
     use super::{Config, Mode, State};
 
@@ -201,9 +211,25 @@ mod tui {
             .bg(config.status_bar.background);
 
         frame.render_widget(
-            Paragraph::new(state.mode.to_string() + &format!(": {:?}", state.cell_path))
-                .style(style)
-                .alignment(Alignment::Left),
+            Paragraph::new(
+                state.mode.to_string()
+                    + &format!(
+                        ": {:?}",
+                        state
+                            .cell_path
+                            .members
+                            .iter()
+                            .map(|m| {
+                                match m {
+                                    PathMember::Int { val, .. } => format!("{}", val).to_string(),
+                                    PathMember::String { val, .. } => val.to_string(),
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    ),
+            )
+            .style(style)
+            .alignment(Alignment::Left),
             bottom_bar_rect,
         );
 
