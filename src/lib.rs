@@ -361,17 +361,27 @@ mod tui {
 
         let data_repr = match data.clone().follow_cell_path(&data_path, false) {
             Err(_) => panic!("unexpected error when following cell path during rendering"),
-            Ok(Value::List { vals, .. }) => vals
-                .iter()
-                .map(render_value)
-                .collect::<Vec<String>>()
-                .join("\n"),
-            Ok(Value::Record { cols, vals, .. }) => cols
-                .iter()
-                .zip(vals)
-                .map(|(col, val)| format!("{}: {}", col, render_value(&val)))
-                .collect::<Vec<String>>()
-                .join("\n"),
+            Ok(Value::List { vals, .. }) => {
+                if vals.is_empty() {
+                    "[list 0 item]".to_string()
+                } else {
+                    vals.iter()
+                        .map(render_value)
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                }
+            }
+            Ok(Value::Record { cols, vals, .. }) => {
+                if cols.is_empty() {
+                    "{record 0 field}".to_string()
+                } else {
+                    cols.iter()
+                        .zip(vals)
+                        .map(|(col, val)| format!("{}: {}", col, render_value(&val)))
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                }
+            }
             // FIXME: use a proper conversion to string
             Ok(value) => value.debug_value(),
         };
