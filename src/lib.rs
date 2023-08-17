@@ -114,6 +114,27 @@ impl State {
     }
 }
 
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let repr = self.mode.to_string()
+            + &format!(
+                ": {}",
+                self.cell_path
+                    .members
+                    .iter()
+                    .map(|m| {
+                        match m {
+                            PathMember::Int { val, .. } => format!("{}", val).to_string(),
+                            PathMember::String { val, .. } => val.to_string(),
+                        }
+                    })
+                    .collect::<Vec<String>>()
+                    .join(".")
+            );
+        write!(f, "{}", repr)
+    }
+}
+
 struct StatusBarConfig {
     background: Color,
     foreground: Color,
@@ -279,7 +300,7 @@ mod tui {
         Frame,
     };
 
-    use nu_protocol::{ast::PathMember, Value};
+    use nu_protocol::Value;
 
     use super::{Config, Mode, State};
 
@@ -313,26 +334,9 @@ mod tui {
             .bg(config.status_bar.background);
 
         frame.render_widget(
-            Paragraph::new(
-                state.mode.to_string()
-                    + &format!(
-                        ": {}",
-                        state
-                            .cell_path
-                            .members
-                            .iter()
-                            .map(|m| {
-                                match m {
-                                    PathMember::Int { val, .. } => format!("{}", val).to_string(),
-                                    PathMember::String { val, .. } => val.to_string(),
-                                }
-                            })
-                            .collect::<Vec<String>>()
-                            .join(".")
-                    ),
-            )
-            .style(style)
-            .alignment(Alignment::Left),
+            Paragraph::new(state.to_string())
+                .style(style)
+                .alignment(Alignment::Left),
             bottom_bar_rect,
         );
 
