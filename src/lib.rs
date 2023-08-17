@@ -194,32 +194,9 @@ fn run(
         } else if char == 'k' {
             go_up_or_down_in_data(&mut state, input, Direction::Up);
         } else if char == 'l' {
-            match input
-                .clone()
-                .follow_cell_path(&state.cell_path.members, false)
-            {
-                Ok(Value::List { vals, .. }) => {
-                    let start = if vals.is_empty() { usize::MAX } else { 0 };
-                    state.cell_path.members.push(PathMember::Int {
-                        val: start,
-                        span: Span::unknown(),
-                        optional: false,
-                    })
-                }
-                Ok(Value::Record { cols, .. }) => {
-                    state.cell_path.members.push(PathMember::String {
-                        val: cols.get(0).unwrap_or(&"".to_string()).into(),
-                        span: Span::unknown(),
-                        optional: false,
-                    })
-                }
-                Err(_) => panic!("unexpected error when following cell path"),
-                _ => {}
-            }
+            go_deeper_in_data(&mut state, input);
         } else if char == 'h' {
-            if state.cell_path.members.len() > 1 {
-                state.cell_path.members.pop();
-            }
+            go_back_in_data(&mut state);
         }
     }
     Ok(())
@@ -280,6 +257,35 @@ fn go_up_or_down_in_data(state: &mut State, input: &Value, direction: Direction)
         }
         Err(_) => panic!("unexpected error when following cell path"),
         _ => {}
+    }
+}
+
+fn go_deeper_in_data(state: &mut State, input: &Value) {
+    match input
+        .clone()
+        .follow_cell_path(&state.cell_path.members, false)
+    {
+        Ok(Value::List { vals, .. }) => {
+            let start = if vals.is_empty() { usize::MAX } else { 0 };
+            state.cell_path.members.push(PathMember::Int {
+                val: start,
+                span: Span::unknown(),
+                optional: false,
+            })
+        }
+        Ok(Value::Record { cols, .. }) => state.cell_path.members.push(PathMember::String {
+            val: cols.get(0).unwrap_or(&"".to_string()).into(),
+            span: Span::unknown(),
+            optional: false,
+        }),
+        Err(_) => panic!("unexpected error when following cell path"),
+        _ => {}
+    }
+}
+
+fn go_back_in_data(state: &mut State) {
+    if state.cell_path.members.len() > 1 {
+        state.cell_path.members.pop();
     }
 }
 
