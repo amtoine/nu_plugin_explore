@@ -109,6 +109,7 @@ impl std::fmt::Display for Mode {
 
 struct State {
     cell_path: CellPath,
+    bottom: bool,
     mode: Mode,
 }
 
@@ -116,6 +117,7 @@ impl State {
     fn default() -> State {
         State {
             cell_path: CellPath { members: vec![] },
+            bottom: false,
             mode: Mode::default(),
         }
     }
@@ -302,14 +304,15 @@ fn go_deeper_in_data(state: &mut State, input: &Value) {
             optional: false,
         }),
         Err(_) => panic!("unexpected error when following cell path"),
-        _ => {}
+        _ => state.bottom = true,
     }
 }
 
 fn go_back_in_data(state: &mut State) {
-    if state.cell_path.members.len() > 1 {
+    if !state.bottom & (state.cell_path.members.len() > 1) {
         state.cell_path.members.pop();
     }
+    state.bottom = false;
 }
 
 mod tui {
@@ -330,15 +333,27 @@ mod tui {
         state: &State,
         config: &Config,
     ) {
-        render_data(frame, input);
+        render_data(frame, input, state);
         render_status_bar(frame, state, config);
     }
 
-    fn render_data(frame: &mut Frame<CrosstermBackend<console::Term>>, data: &Value) {
+    fn render_data(
+        frame: &mut Frame<CrosstermBackend<console::Term>>,
+        data: &Value,
+        state: &State,
+    ) {
         let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, frame.size().height - 1);
 
+        let mut data_path = state.cell_path.members.clone();
+        if !state.bottom {
+            data_path.pop();
+        }
+
         frame.render_widget(
-            Paragraph::new(format!("{:#?}", data)),
+            Paragraph::new(format!(
+                "{:#?}",
+                data.clone().follow_cell_path(&data_path, false)
+            )),
             rect_without_bottom_bar,
         );
     }
@@ -354,7 +369,7 @@ mod tui {
             .bg(config.status_bar.background);
 
         frame.render_widget(
-            Paragraph::new(state.to_string())
+            Paragraph::new(state.mode.to_string())
                 .style(style)
                 .alignment(Alignment::Left),
             bottom_bar_rect,
