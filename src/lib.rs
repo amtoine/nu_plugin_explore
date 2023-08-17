@@ -133,6 +133,16 @@ fn run(
     config: &Config,
 ) -> Result<()> {
     let mut state = State::default();
+    match input {
+        Value::List { vals, .. } => {
+            let start = if vals.is_empty() { "" } else { "0" };
+            state.cell_path.push(start.to_string())
+        }
+        Value::Record { cols, .. } => state
+            .cell_path
+            .push(cols.get(0).unwrap_or(&"".to_string()).to_string()),
+        _ => {}
+    };
 
     loop {
         terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
