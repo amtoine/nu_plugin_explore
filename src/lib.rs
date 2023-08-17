@@ -310,7 +310,9 @@ fn run(
                 _ => {}
             }
         } else if char == 'h' {
-            state.cell_path.members.pop();
+            if state.cell_path.members.len() > 1 {
+                state.cell_path.members.pop();
+            }
         }
     }
     Ok(())
