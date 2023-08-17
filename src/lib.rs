@@ -79,6 +79,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<console::Term>>) ->
     terminal.show_cursor().context("unable to show cursor")
 }
 
+#[derive(PartialEq)]
 enum Mode {
     Normal,
     Insert,
@@ -190,13 +191,21 @@ fn run(
         } else if char == config.keybindings.normal {
             state.mode = Mode::Normal;
         } else if char == 'j' {
-            go_up_or_down_in_data(&mut state, input, Direction::Down);
+            if state.mode == Mode::Normal {
+                go_up_or_down_in_data(&mut state, input, Direction::Down);
+            }
         } else if char == 'k' {
-            go_up_or_down_in_data(&mut state, input, Direction::Up);
+            if state.mode == Mode::Normal {
+                go_up_or_down_in_data(&mut state, input, Direction::Up);
+            }
         } else if char == 'l' {
-            go_deeper_in_data(&mut state, input);
+            if state.mode == Mode::Normal {
+                go_deeper_in_data(&mut state, input);
+            }
         } else if char == 'h' {
-            go_back_in_data(&mut state);
+            if state.mode == Mode::Normal {
+                go_back_in_data(&mut state);
+            }
         }
     }
     Ok(())
