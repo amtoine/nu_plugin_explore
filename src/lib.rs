@@ -45,6 +45,7 @@ impl Plugin for Explore {
 
 fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
     let config = Config {
+        show_cell_path: true,
         status_bar: StatusBarConfig {
             background: Color::White,
             foreground: Color::Black,
@@ -145,6 +146,7 @@ struct KeyBindingsMap {
 struct Config {
     status_bar: StatusBarConfig,
     keybindings: KeyBindingsMap,
+    show_cell_path: bool,
 }
 
 enum Direction {
@@ -317,8 +319,10 @@ mod tui {
         state: &State,
         config: &Config,
     ) {
-        render_data(frame, input, state);
-        render_cell_path(frame, state);
+        render_data(frame, input, state, config);
+        if config.show_cell_path {
+            render_cell_path(frame, state);
+        }
         render_status_bar(frame, state, config);
     }
 
@@ -326,8 +330,14 @@ mod tui {
         frame: &mut Frame<CrosstermBackend<console::Term>>,
         data: &Value,
         state: &State,
+        config: &Config,
     ) {
-        let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, frame.size().height - 2);
+        let data_frame_height = if config.show_cell_path {
+            frame.size().height - 2
+        } else {
+            frame.size().height - 1
+        };
+        let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
         let mut data_path = state.cell_path.members.clone();
         if !state.bottom {
