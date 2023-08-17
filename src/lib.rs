@@ -123,27 +123,6 @@ impl State {
     }
 }
 
-impl std::fmt::Display for State {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let repr = self.mode.to_string()
-            + &format!(
-                ": {}",
-                self.cell_path
-                    .members
-                    .iter()
-                    .map(|m| {
-                        match m {
-                            PathMember::Int { val, .. } => format!("{}", val).to_string(),
-                            PathMember::String { val, .. } => val.to_string(),
-                        }
-                    })
-                    .collect::<Vec<String>>()
-                    .join(".")
-            );
-        write!(f, "{}", repr)
-    }
-}
-
 struct StatusBarConfig {
     background: Color,
     foreground: Color,
@@ -323,6 +302,7 @@ mod tui {
         Frame,
     };
 
+    use nu_protocol::ast::PathMember;
     use nu_protocol::Value;
 
     use super::{Config, Mode, State};
@@ -334,6 +314,7 @@ mod tui {
         config: &Config,
     ) {
         render_data(frame, input, state);
+        render_cell_path(frame, state);
         render_status_bar(frame, state, config);
     }
 
@@ -342,7 +323,7 @@ mod tui {
         data: &Value,
         state: &State,
     ) {
-        let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, frame.size().height - 1);
+        let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, frame.size().height - 2);
 
         let mut data_path = state.cell_path.members.clone();
         if !state.bottom {
@@ -355,6 +336,30 @@ mod tui {
                 data.clone().follow_cell_path(&data_path, false)
             )),
             rect_without_bottom_bar,
+        );
+    }
+
+    fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &State) {
+        let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
+        let cell_path = format!(
+            "cell path: $.{}",
+            state
+                .cell_path
+                .members
+                .iter()
+                .map(|m| {
+                    match m {
+                        PathMember::Int { val, .. } => format!("{}", val).to_string(),
+                        PathMember::String { val, .. } => val.to_string(),
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(".")
+        );
+
+        frame.render_widget(
+            Paragraph::new(cell_path).alignment(Alignment::Left),
+            next_to_bottom_bar_rect,
         );
     }
 
