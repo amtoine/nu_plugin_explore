@@ -53,6 +53,12 @@ fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
             quit: 'q',
             insert: 'i',
             normal: 'n',
+            navigation: NavigationBindingsMap {
+                left: 'h',
+                down: 'j',
+                up: 'k',
+                right: 'l',
+            },
         },
     };
 
@@ -141,10 +147,18 @@ struct StatusBarConfig {
     foreground: Color,
 }
 
+struct NavigationBindingsMap {
+    up: char,
+    down: char,
+    left: char,
+    right: char,
+}
+
 struct KeyBindingsMap {
     quit: char,
     insert: char,
     normal: char,
+    navigation: NavigationBindingsMap,
 }
 
 struct Config {
@@ -190,19 +204,19 @@ fn run(
             state.mode = Mode::Insert;
         } else if char == config.keybindings.normal {
             state.mode = Mode::Normal;
-        } else if char == 'j' {
+        } else if char == config.keybindings.navigation.down {
             if state.mode == Mode::Normal {
                 go_up_or_down_in_data(&mut state, input, Direction::Down);
             }
-        } else if char == 'k' {
+        } else if char == config.keybindings.navigation.up {
             if state.mode == Mode::Normal {
                 go_up_or_down_in_data(&mut state, input, Direction::Up);
             }
-        } else if char == 'l' {
+        } else if char == config.keybindings.navigation.right {
             if state.mode == Mode::Normal {
                 go_deeper_in_data(&mut state, input);
             }
-        } else if char == 'h' {
+        } else if char == config.keybindings.navigation.left {
             if state.mode == Mode::Normal {
                 go_back_in_data(&mut state);
             }
