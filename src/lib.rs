@@ -1,3 +1,6 @@
+mod config;
+mod tui;
+
 use anyhow::{Context, Result};
 use crossterm::{
     execute,
@@ -11,7 +14,7 @@ use nu_protocol::{
     Category, PluginExample, PluginSignature, Span, Type, Value,
 };
 
-mod tui;
+use config::{Config, KeyBindingsMap, NavigationBindingsMap, StatusBarConfig};
 
 pub struct Explore;
 
@@ -124,31 +127,6 @@ impl State {
             mode: Mode::default(),
         }
     }
-}
-
-struct StatusBarConfig {
-    background: Color,
-    foreground: Color,
-}
-
-struct NavigationBindingsMap {
-    up: char,
-    down: char,
-    left: char,
-    right: char,
-}
-
-struct KeyBindingsMap {
-    quit: char,
-    insert: char,
-    normal: char,
-    navigation: NavigationBindingsMap,
-}
-
-struct Config {
-    status_bar: StatusBarConfig,
-    keybindings: KeyBindingsMap,
-    show_cell_path: bool,
 }
 
 enum Direction {
