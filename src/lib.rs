@@ -161,18 +161,15 @@ fn run(
 ) -> Result<()> {
     let mut state = State::default();
     match input {
-        Value::List { vals, .. } => {
-            let start = if vals.is_empty() { usize::MAX } else { 0 };
-            state.cell_path.members.push(PathMember::Int {
-                val: start,
-                span: Span::unknown(),
-                optional: false,
-            })
-        }
+        Value::List { vals, .. } => state.cell_path.members.push(PathMember::Int {
+            val: 0,
+            span: Span::unknown(),
+            optional: vals.is_empty(),
+        }),
         Value::Record { cols, .. } => state.cell_path.members.push(PathMember::String {
             val: cols.get(0).unwrap_or(&"".to_string()).into(),
             span: Span::unknown(),
-            optional: false,
+            optional: cols.is_empty(),
         }),
         _ => {}
     };
@@ -275,18 +272,15 @@ fn go_deeper_in_data(state: &mut State, input: &Value) {
         .clone()
         .follow_cell_path(&state.cell_path.members, false)
     {
-        Ok(Value::List { vals, .. }) => {
-            let start = if vals.is_empty() { usize::MAX } else { 0 };
-            state.cell_path.members.push(PathMember::Int {
-                val: start,
-                span: Span::unknown(),
-                optional: false,
-            })
-        }
+        Ok(Value::List { vals, .. }) => state.cell_path.members.push(PathMember::Int {
+            val: 0,
+            span: Span::unknown(),
+            optional: vals.is_empty(),
+        }),
         Ok(Value::Record { cols, .. }) => state.cell_path.members.push(PathMember::String {
             val: cols.get(0).unwrap_or(&"".to_string()).into(),
             span: Span::unknown(),
-            optional: false,
+            optional: cols.is_empty(),
         }),
         Err(_) => panic!("unexpected error when following cell path"),
         _ => state.bottom = true,
