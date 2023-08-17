@@ -164,6 +164,108 @@ fn run(
             state.mode = Mode::Insert;
         } else if char == config.keybindings.normal {
             state.mode = Mode::Normal;
+        } else if char == 'j' {
+            let current = state.cell_path.members.pop();
+
+            match input
+                .clone()
+                .follow_cell_path(&state.cell_path.members, false)
+            {
+                Ok(Value::List { vals, .. }) => {
+                    let new = match current {
+                        Some(PathMember::Int {
+                            val,
+                            span,
+                            optional,
+                        }) => PathMember::Int {
+                            val: if vals.is_empty() {
+                                val
+                            } else {
+                                (val + 1) % vals.len()
+                            },
+                            span,
+                            optional,
+                        },
+                        None => panic!("unexpected error when unpacking current cell path"),
+                        _ => panic!("current should be an integer path member"),
+                    };
+                    state.cell_path.members.push(new);
+                }
+                Ok(Value::Record { cols, .. }) => {
+                    let new = match current {
+                        Some(PathMember::String {
+                            val,
+                            span,
+                            optional,
+                        }) => PathMember::String {
+                            val: if cols.is_empty() {
+                                "".into()
+                            } else {
+                                let index = cols.iter().position(|x| x == &val).unwrap();
+                                cols[(index + 1) % cols.len()].clone()
+                            },
+                            span,
+                            optional,
+                        },
+                        None => panic!("unexpected error when unpacking current cell path"),
+                        _ => panic!("current should be an string path member"),
+                    };
+                    state.cell_path.members.push(new);
+                }
+                Err(_) => panic!("unexpected error when following cell path"),
+                _ => {}
+            }
+        } else if char == 'k' {
+            let current = state.cell_path.members.pop();
+
+            match input
+                .clone()
+                .follow_cell_path(&state.cell_path.members, false)
+            {
+                Ok(Value::List { vals, .. }) => {
+                    let new = match current {
+                        Some(PathMember::Int {
+                            val,
+                            span,
+                            optional,
+                        }) => PathMember::Int {
+                            val: if vals.is_empty() {
+                                val
+                            } else {
+                                (val - 1) % vals.len()
+                            },
+                            span,
+                            optional,
+                        },
+                        None => panic!("unexpected error when unpacking current cell path"),
+                        _ => panic!("current should be an integer path member"),
+                    };
+                    state.cell_path.members.push(new);
+                }
+                Ok(Value::Record { cols, .. }) => {
+                    let new = match current {
+                        Some(PathMember::String {
+                            val,
+                            span,
+                            optional,
+                        }) => PathMember::String {
+                            val: if cols.is_empty() {
+                                "".into()
+                            } else {
+                                let index = cols.iter().position(|x| x == &val).unwrap();
+                                cols[(index - 1) % cols.len()].clone()
+                            },
+                            span,
+                            optional,
+                        },
+                        None => panic!("unexpected error when unpacking current cell path"),
+                        _ => panic!("current should be an string path member"),
+                    };
+                    state.cell_path.members.push(new);
+                }
+                Err(_) => panic!("unexpected error when following cell path"),
+                _ => {}
+            }
         }
     }
     Ok(())
