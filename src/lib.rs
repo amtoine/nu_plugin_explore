@@ -309,6 +309,8 @@ fn run(
                 Err(_) => panic!("unexpected error when following cell path"),
                 _ => {}
             }
+        } else if char == 'h' {
+            state.cell_path.members.pop();
         }
     }
     Ok(())
