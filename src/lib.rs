@@ -202,7 +202,7 @@ fn run(
                             val: if vals.is_empty() {
                                 val
                             } else {
-                                (val + 1) % vals.len()
+                                (val + 1 + vals.len()) % vals.len()
                             },
                             span,
                             optional,
@@ -223,7 +223,7 @@ fn run(
                                 "".into()
                             } else {
                                 let index = cols.iter().position(|x| x == &val).unwrap();
-                                cols[(index + 1) % cols.len()].clone()
+                                cols[(index + 1 + cols.len()) % cols.len()].clone()
                             },
                             span,
                             optional,
@@ -253,7 +253,7 @@ fn run(
                             val: if vals.is_empty() {
                                 val
                             } else {
-                                (val - 1) % vals.len()
+                                (val - 1 + vals.len()) % vals.len()
                             },
                             span,
                             optional,
@@ -274,7 +274,7 @@ fn run(
                                 "".into()
                             } else {
                                 let index = cols.iter().position(|x| x == &val).unwrap();
-                                cols[(index - 1) % cols.len()].clone()
+                                cols[(index - 1 + cols.len()) % cols.len()].clone()
                             },
                             span,
                             optional,
