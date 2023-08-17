@@ -1,11 +1,8 @@
 mod config;
+mod terminal;
 mod tui;
 
 use anyhow::{Context, Result};
-use crossterm::{
-    execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
-};
 use ratatui::{prelude::CrosstermBackend, style::Color, Terminal};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
@@ -15,6 +12,8 @@ use nu_protocol::{
 };
 
 use config::{Config, KeyBindingsMap, NavigationBindingsMap, StatusBarConfig};
+use terminal::setup as setup_terminal;
+use terminal::restore as restore_terminal;
 
 pub struct Explore;
 
@@ -77,18 +76,6 @@ fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
         .unwrap();
 
     Ok(Value::nothing(call.head))
-}
-
-fn setup_terminal() -> Result<Terminal<CrosstermBackend<console::Term>>> {
-    let mut stderr = console::Term::stderr();
-    execute!(stderr, EnterAlternateScreen).context("unable to enter alternate screen")?;
-    Terminal::new(CrosstermBackend::new(stderr)).context("creating terminal failed")
-}
-
-fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<console::Term>>) -> Result<()> {
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)
-        .context("unable to switch to main screen")?;
-    terminal.show_cursor().context("unable to show cursor")
 }
 
 #[derive(PartialEq)]
