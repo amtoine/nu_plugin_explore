@@ -427,8 +427,20 @@ mod tui {
         );
 
         let hints = match state.mode {
-            Mode::Normal => format!("{} to {}", config.keybindings.insert, Mode::Insert),
-            Mode::Insert => format!("{} to {}", config.keybindings.normal, Mode::Normal),
+            Mode::Normal => format!(
+                "{} to {} | {}{}{}{} to move around",
+                config.keybindings.insert,
+                Mode::Insert,
+                config.keybindings.navigation.left,
+                config.keybindings.navigation.down,
+                config.keybindings.navigation.up,
+                config.keybindings.navigation.right,
+            ),
+            Mode::Insert => format!(
+                "{} to {} | COMING SOON",
+                config.keybindings.normal,
+                Mode::Normal
+            ),
         }
         .to_string();
 
