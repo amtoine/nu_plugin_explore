@@ -316,7 +316,7 @@ mod tui {
             Paragraph::new(
                 state.mode.to_string()
                     + &format!(
-                        ": {:?}",
+                        ": {}",
                         state
                             .cell_path
                             .members
@@ -328,6 +328,7 @@ mod tui {
                                 }
                             })
                             .collect::<Vec<String>>()
+                            .join(".")
                     ),
             )
             .style(style)
