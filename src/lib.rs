@@ -207,6 +207,10 @@ fn run(
 }
 
 fn go_up_or_down_in_data(state: &mut State, input: &Value, direction: Direction) {
+    if state.bottom {
+        return ();
+    }
+
     let direction = match direction {
         Direction::Up => usize::MAX,
         Direction::Down => 1,
