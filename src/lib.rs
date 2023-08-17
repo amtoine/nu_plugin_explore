@@ -171,7 +171,6 @@ fn run(
             span: Span::unknown(),
             optional: false,
         }),
-
         _ => {}
     };
 
@@ -283,6 +282,29 @@ fn run(
                         _ => panic!("current should be an string path member"),
                     };
                     state.cell_path.members.push(new);
+                }
+                Err(_) => panic!("unexpected error when following cell path"),
+                _ => {}
+            }
+        } else if char == 'l' {
+            match input
+                .clone()
+                .follow_cell_path(&state.cell_path.members, false)
+            {
+                Ok(Value::List { vals, .. }) => {
+                    let start = if vals.is_empty() { usize::MAX } else { 0 };
+                    state.cell_path.members.push(PathMember::Int {
+                        val: start,
+                        span: Span::unknown(),
+                        optional: false,
+                    })
+                }
+                Ok(Value::Record { cols, .. }) => {
+                    state.cell_path.members.push(PathMember::String {
+                        val: cols.get(0).unwrap_or(&"".to_string()).into(),
+                        span: Span::unknown(),
+                        optional: false,
+                    })
                 }
                 Err(_) => panic!("unexpected error when following cell path"),
                 _ => {}
