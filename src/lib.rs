@@ -326,6 +326,27 @@ mod tui {
         render_status_bar(frame, state, config);
     }
 
+    fn render_value(value: &Value) -> String {
+        match value {
+            Value::List { vals, .. } => {
+                if vals.len() <= 1 {
+                    format!("[list {} item]", vals.len())
+                } else {
+                    format!("[list {} items]", vals.len())
+                }
+            }
+            Value::Record { cols, .. } => {
+                if cols.len() <= 1 {
+                    format!("{{record {} field}}", cols.len())
+                } else {
+                    format!("{{record {} fields}}", cols.len())
+                }
+            }
+            // FIXME: use a proper conversion to string
+            value => value.debug_value(),
+        }
+    }
+
     fn render_data(
         frame: &mut Frame<CrosstermBackend<console::Term>>,
         data: &Value,
@@ -344,13 +365,24 @@ mod tui {
             data_path.pop();
         }
 
-        frame.render_widget(
-            Paragraph::new(format!(
-                "{:#?}",
-                data.clone().follow_cell_path(&data_path, false)
-            )),
-            rect_without_bottom_bar,
-        );
+        let data_repr = match data.clone().follow_cell_path(&data_path, false) {
+            Err(_) => panic!("unexpected error when following cell path during rendering"),
+            Ok(Value::List { vals, .. }) => vals
+                .iter()
+                .map(render_value)
+                .collect::<Vec<String>>()
+                .join("\n"),
+            Ok(Value::Record { cols, vals, .. }) => cols
+                .iter()
+                .zip(vals)
+                .map(|(col, val)| format!("{}: {}", col, render_value(&val)))
+                .collect::<Vec<String>>()
+                .join("\n"),
+            // FIXME: use a proper conversion to string
+            Ok(value) => value.debug_value(),
+        };
+
+        frame.render_widget(Paragraph::new(data_repr), rect_without_bottom_bar);
     }
 
     fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &State) {
