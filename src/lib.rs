@@ -336,8 +336,8 @@ mod tui {
                     format!("{{record {} fields}}", cols.len())
                 }
             }
-            // FIXME: use a proper conversion to string
-            value => value.debug_value(),
+            // FIXME: use a real config
+            value => value.into_string(" ", &nu_protocol::Config::default()),
         }
     }
 
@@ -382,8 +382,8 @@ mod tui {
                         .join("\n")
                 }
             }
-            // FIXME: use a proper conversion to string
-            Ok(value) => value.debug_value(),
+            // FIXME: use a real config
+            Ok(value) => value.into_string(" ", &nu_protocol::Config::default()),
         };
 
         frame.render_widget(Paragraph::new(data_repr), rect_without_bottom_bar);
