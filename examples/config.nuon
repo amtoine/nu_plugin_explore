@@ -2,7 +2,7 @@
     show_cell_path: true,
     colors: {
         normal: {
-            background: black,
+            background: reset, # "black" is not pure *black*
             foreground: white,
         },
         selected: {

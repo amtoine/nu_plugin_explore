@@ -64,7 +64,7 @@ impl Config {
             show_cell_path: true,
             colors: ColorConfig {
                 normal: BgFgColorConfig {
-                    background: Color::Black,
+                    background: Color::Reset, // "Black" is not pure *black*
                     foreground: Color::White,
                 },
                 selected: BgFgColorConfig {

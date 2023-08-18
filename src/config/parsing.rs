@@ -71,6 +71,7 @@ pub(super) fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<M
 pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
+            "reset" => Ok(Some(Color::Reset)),
             "black" => Ok(Some(Color::Black)),
             "red" => Ok(Some(Color::Red)),
             "green" => Ok(Some(Color::Green)),
