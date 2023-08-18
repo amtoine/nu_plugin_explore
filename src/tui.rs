@@ -8,7 +8,7 @@ use ratatui::{
 use nu_protocol::ast::PathMember;
 use nu_protocol::Value;
 
-use super::config::repr_keycode;
+use super::config::{repr_keycode, Layout};
 use super::{Config, Mode, State};
 
 pub(super) fn render_ui(
@@ -24,28 +24,89 @@ pub(super) fn render_ui(
     render_status_bar(frame, state, config);
 }
 
-fn render_value(value: &Value, _config: &Config) -> Vec<String> {
-    match value {
-        Value::List { vals, .. } => {
-            if vals.len() <= 1 {
-                vec![format!("[list {} item]", vals.len())]
-            } else {
-                vec![format!("[list {} items]", vals.len())]
+fn repr_list(vals: &[Value], config: &Config) -> Vec<String> {
+    if vals.len() <= 1 {
+        match config.layout {
+            Layout::Compact => vec![format!("[list {} item]", vals.len())],
+            Layout::Table => vec![format!("[{} item]", vals.len()), "list".to_string()],
+        }
+    } else {
+        match config.layout {
+            Layout::Compact => vec![format!("[list {} items]", vals.len())],
+            Layout::Table => vec![format!("[{} items]", vals.len()), "list".to_string()],
+        }
+    }
+}
+
+fn repr_record(cols: &[String], config: &Config) -> Vec<String> {
+    if cols.len() <= 1 {
+        match config.layout {
+            Layout::Compact => vec![format!("{{record {} field}}", cols.len())],
+            Layout::Table => {
+                vec![format!("{{{} field}}", cols.len()), "record".to_string()]
             }
         }
-        Value::Record { cols, .. } => {
-            if cols.len() <= 1 {
-                vec![format!("{{record {} field}}", cols.len())]
-            } else {
-                vec![format!("{{record {} fields}}", cols.len())]
+    } else {
+        match config.layout {
+            Layout::Compact => vec![format!("{{record {} fields}}", cols.len())],
+            Layout::Table => {
+                vec![format!("{{{} fields}}", cols.len()), "record".to_string()]
             }
         }
-        // FIXME: use a real config
-        value => vec![format!(
+    }
+}
+
+fn repr_simple_value(value: &Value, config: &Config) -> Vec<String> {
+    // FIXME: use a real config
+    match config.layout {
+        Layout::Compact => vec![format!(
             "({}) {}",
             value.get_type().to_string(),
             value.into_string(" ", &nu_protocol::Config::default())
         )],
+        Layout::Table => vec![
+            value.into_string(" ", &nu_protocol::Config::default()),
+            value.get_type().to_string(),
+        ],
+    }
+}
+
+fn repr_value(value: &Value, config: &Config) -> Vec<String> {
+    match value {
+        Value::List { vals, .. } => repr_list(vals, config),
+        Value::Record { cols, .. } => repr_record(cols, config),
+        x => repr_simple_value(x, config),
+    }
+}
+
+fn repr_data(data: &Value, cell_path: &[PathMember], config: &Config) -> Vec<Vec<String>> {
+    match data.clone().follow_cell_path(cell_path, false) {
+        Err(_) => panic!("unexpected error when following cell path during rendering"),
+        Ok(Value::List { vals, .. }) => {
+            vec![if vals.is_empty() {
+                vec!["[list 0 item]".to_string()]
+            } else {
+                vals.iter()
+                    .map(|v| repr_value(v, config)[0].clone())
+                    .collect::<Vec<String>>()
+            }]
+        }
+        Ok(Value::Record { cols, vals, .. }) => {
+            vec![if cols.is_empty() {
+                vec!["{record 0 field}".to_string()]
+            } else {
+                cols.iter()
+                    .zip(vals)
+                    .map(|(col, val)| format!("{}: {}", col, repr_value(&val, config)[0]))
+                    .collect::<Vec<String>>()
+            }]
+        }
+        // FIXME: use a real config
+        Ok(value) => vec![vec![format!(
+            "({}) {}",
+            value.get_type().to_string(),
+            value.into_string(" ", &nu_protocol::Config::default())
+        )]],
     }
 }
 
@@ -65,52 +126,10 @@ fn render_data(
     let mut data_path = state.cell_path.members.clone();
     let current = if !state.bottom { data_path.pop() } else { None };
 
-    let items: Vec<ListItem> = match data.clone().follow_cell_path(&data_path, false) {
-        Err(_) => panic!("unexpected error when following cell path during rendering"),
-        Ok(Value::List { vals, .. }) => {
-            if vals.is_empty() {
-                vec!["[list 0 item]".to_string()]
-            } else {
-                vals.iter()
-                    .map(|v| render_value(v, config)[0].clone())
-                    .collect::<Vec<String>>()
-            }
-        }
-        Ok(Value::Record { cols, vals, .. }) => {
-            if cols.is_empty() {
-                vec!["{record 0 field}".to_string()]
-            } else {
-                cols.iter()
-                    .zip(vals)
-                    .map(|(col, val)| format!("{}: {}", col, render_value(&val, config)[0]))
-                    .collect::<Vec<String>>()
-            }
-        }
-        // FIXME: use a real config
-        Ok(value) => vec![format!(
-            "({}) {}",
-            value.get_type().to_string(),
-            value.into_string(" ", &nu_protocol::Config::default())
-        )],
-    }
-    .iter()
-    .map(|line| {
-        ListItem::new(line.clone()).style(
-            Style::default()
-                .fg(config.colors.normal.foreground)
-                .bg(config.colors.normal.background),
-        )
-    })
-    .collect();
-
     let highlight_style = Style::default()
         .fg(config.colors.selected.foreground)
         .bg(config.colors.selected.background)
         .add_modifier(config.colors.selected_modifier);
-
-    let items = List::new(items)
-        .highlight_style(highlight_style)
-        .highlight_symbol(&config.colors.selected_symbol);
 
     let selected = match current {
         Some(PathMember::Int { val, .. }) => val,
@@ -125,11 +144,32 @@ fn render_data(
         None => 0,
     };
 
-    frame.render_stateful_widget(
-        items,
-        rect_without_bottom_bar,
-        &mut ListState::default().with_selected(Some(selected)),
-    )
+    match config.layout {
+        Layout::Compact => {
+            let items: Vec<ListItem> = repr_data(data, &data_path, config)[0]
+                .clone()
+                .iter()
+                .map(|line| {
+                    ListItem::new(line.clone()).style(
+                        Style::default()
+                            .fg(config.colors.normal.foreground)
+                            .bg(config.colors.normal.background),
+                    )
+                })
+                .collect();
+
+            let items = List::new(items)
+                .highlight_style(highlight_style)
+                .highlight_symbol(&config.colors.selected_symbol);
+
+            frame.render_stateful_widget(
+                items,
+                rect_without_bottom_bar,
+                &mut ListState::default().with_selected(Some(selected)),
+            )
+        }
+        Layout::Table => {}
+    }
 }
 
 fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &State) {
