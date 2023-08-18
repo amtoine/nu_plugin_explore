@@ -43,8 +43,8 @@ pub(super) struct Config {
 }
 
 impl Config {
-    pub(super) fn default() -> Config {
-        Config {
+    pub(super) fn default() -> Self {
+        Self {
             show_cell_path: true,
             colors: ColorConfig {
                 normal: BgFgColorConfig {
