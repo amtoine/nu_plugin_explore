@@ -1,7 +1,7 @@
 use ratatui::{
-    prelude::{Alignment, CrosstermBackend, Rect},
+    prelude::{Alignment, Color, CrosstermBackend, Modifier, Rect},
     style::Style,
-    widgets::Paragraph,
+    widgets::{List, ListItem, ListState, Paragraph},
     Frame,
 };
 
@@ -58,38 +58,64 @@ fn render_data(
     let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
     let mut data_path = state.cell_path.members.clone();
-    if !state.bottom {
-        data_path.pop();
-    }
+    let current = if !state.bottom { data_path.pop() } else { None };
 
-    let data_repr = match data.clone().follow_cell_path(&data_path, false) {
+    let items: Vec<ListItem> = match data.clone().follow_cell_path(&data_path, false) {
         Err(_) => panic!("unexpected error when following cell path during rendering"),
         Ok(Value::List { vals, .. }) => {
             if vals.is_empty() {
-                "[list 0 item]".to_string()
+                vec!["[list 0 item]".to_string()]
             } else {
-                vals.iter()
-                    .map(render_value)
-                    .collect::<Vec<String>>()
-                    .join("\n")
+                vals.iter().map(render_value).collect::<Vec<String>>()
             }
         }
         Ok(Value::Record { cols, vals, .. }) => {
             if cols.is_empty() {
-                "{record 0 field}".to_string()
+                vec!["{record 0 field}".to_string()]
             } else {
                 cols.iter()
                     .zip(vals)
                     .map(|(col, val)| format!("{}: {}", col, render_value(&val)))
                     .collect::<Vec<String>>()
-                    .join("\n")
             }
         }
         // FIXME: use a real config
-        Ok(value) => value.into_string(" ", &nu_protocol::Config::default()),
+        Ok(value) => vec![value.into_string(" ", &nu_protocol::Config::default())],
+    }
+    .iter()
+    .map(|line| {
+        // FIXME: make that configurable
+        ListItem::new(line.clone()).style(Style::default().fg(Color::White).bg(Color::Black))
+    })
+    .collect();
+
+    let items = List::new(items)
+        .highlight_style(
+            // FIXME: make that configurable
+            Style::default()
+                .bg(Color::LightGreen)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol(">> ");
+
+    let selected = match current {
+        Some(PathMember::Int { val, .. }) => val,
+        Some(PathMember::String { val, .. }) => data
+            .clone()
+            .follow_cell_path(&data_path, false)
+            .expect("unexpected error when following cell path during rendering")
+            .columns()
+            .iter()
+            .position(|x| x == &val)
+            .unwrap(),
+        None => 0,
     };
 
-    frame.render_widget(Paragraph::new(data_repr), rect_without_bottom_bar);
+    frame.render_stateful_widget(
+        items,
+        rect_without_bottom_bar,
+        &mut ListState::default().with_selected(Some(selected)),
+    )
 }
 
 fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &State) {
