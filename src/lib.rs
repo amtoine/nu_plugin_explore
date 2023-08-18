@@ -60,8 +60,8 @@ fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
                 background: Color::White,
                 foreground: Color::Black,
             },
-            selected_modifier: Modifier::empty(),
-            selected_symbol: ">> ".into(),
+            selected_modifier: Modifier::BOLD,
+            selected_symbol: "".into(),
             status_bar: BgFgColorConfig {
                 background: Color::White,
                 foreground: Color::Black,
