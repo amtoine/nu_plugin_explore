@@ -29,3 +29,6 @@ register target/release/nu_plugin_explore
 - [ ] add check for the config to make sure it's valid
 - [ ] when going into a file or URL, open it
 - [ ] give different colors to names and type
+- [ ] add tests
+- [ ] restrict the visibility of objects when possible
+- [ ] show true tables as such
