@@ -1,7 +1,7 @@
 use ratatui::{
-    prelude::{Alignment, CrosstermBackend, Rect},
+    prelude::{Alignment, Constraint, CrosstermBackend, Rect},
     style::Style,
-    widgets::{List, ListItem, ListState, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
 };
 
@@ -82,31 +82,77 @@ fn repr_value(value: &Value, config: &Config) -> Vec<String> {
 fn repr_data(data: &Value, cell_path: &[PathMember], config: &Config) -> Vec<Vec<String>> {
     match data.clone().follow_cell_path(cell_path, false) {
         Err(_) => panic!("unexpected error when following cell path during rendering"),
-        Ok(Value::List { vals, .. }) => {
-            vec![if vals.is_empty() {
-                vec!["[list 0 item]".to_string()]
-            } else {
-                vals.iter()
-                    .map(|v| repr_value(v, config)[0].clone())
-                    .collect::<Vec<String>>()
-            }]
-        }
-        Ok(Value::Record { cols, vals, .. }) => {
-            vec![if cols.is_empty() {
-                vec!["{record 0 field}".to_string()]
-            } else {
-                cols.iter()
-                    .zip(vals)
-                    .map(|(col, val)| format!("{}: {}", col, repr_value(&val, config)[0]))
-                    .collect::<Vec<String>>()
-            }]
-        }
+        Ok(Value::List { vals, .. }) => match config.layout {
+            Layout::Compact => {
+                vec![if vals.is_empty() {
+                    vec!["[list 0 item]".to_string()]
+                } else {
+                    vals.iter()
+                        .map(|v| repr_value(v, config)[0].clone())
+                        .collect::<Vec<String>>()
+                }]
+            }
+            Layout::Table => {
+                if vals.is_empty() {
+                    vec![vec!["".into(), "[0 item]".into(), "list".into()]]
+                } else {
+                    vals.iter()
+                        .map(|val| {
+                            let mut value = repr_value(&val, config);
+                            if value.len() < 3 {
+                                let mut base = vec![];
+                                for _ in 0..(3 - value.len()) {
+                                    base.push("".into())
+                                }
+                                base.append(&mut value);
+                                base
+                            } else {
+                                value
+                            }
+                        })
+                        .collect::<Vec<Vec<String>>>()
+                }
+            }
+        },
+        Ok(Value::Record { cols, vals, .. }) => match config.layout {
+            Layout::Compact => {
+                vec![if cols.is_empty() {
+                    vec!["{record 0 field}".to_string()]
+                } else {
+                    cols.iter()
+                        .zip(vals)
+                        .map(|(col, val)| format!("{}: {}", col, repr_value(&val, config)[0]))
+                        .collect::<Vec<String>>()
+                }]
+            }
+            Layout::Table => {
+                if cols.is_empty() {
+                    vec![vec!["".into(), "{0 field}".into(), "record".into()]]
+                } else {
+                    cols.iter()
+                        .zip(vals)
+                        .map(|(col, val)| {
+                            let mut res = vec![col.clone()];
+                            res.append(&mut repr_value(&val, config));
+                            res
+                        })
+                        .collect::<Vec<Vec<String>>>()
+                }
+            }
+        },
         // FIXME: use a real config
-        Ok(value) => vec![vec![format!(
-            "({}) {}",
-            value.get_type().to_string(),
-            value.into_string(" ", &nu_protocol::Config::default())
-        )]],
+        Ok(value) => match config.layout {
+            Layout::Compact => vec![vec![format!(
+                "({}) {}",
+                value.get_type().to_string(),
+                value.into_string(" ", &nu_protocol::Config::default())
+            )]],
+            Layout::Table => vec![vec![
+                "".into(),
+                value.into_string(" ", &nu_protocol::Config::default()),
+                value.get_type().to_string(),
+            ]],
+        },
     }
 }
 
@@ -126,6 +172,9 @@ fn render_data(
     let mut data_path = state.cell_path.members.clone();
     let current = if !state.bottom { data_path.pop() } else { None };
 
+    let normal_style = Style::default()
+        .fg(config.colors.normal.foreground)
+        .bg(config.colors.normal.background);
     let highlight_style = Style::default()
         .fg(config.colors.selected.foreground)
         .bg(config.colors.selected.background)
@@ -149,13 +198,7 @@ fn render_data(
             let items: Vec<ListItem> = repr_data(data, &data_path, config)[0]
                 .clone()
                 .iter()
-                .map(|line| {
-                    ListItem::new(line.clone()).style(
-                        Style::default()
-                            .fg(config.colors.normal.foreground)
-                            .bg(config.colors.normal.background),
-                    )
-                })
+                .map(|line| ListItem::new(line.clone()).style(normal_style))
                 .collect();
 
             let items = List::new(items)
@@ -168,7 +211,29 @@ fn render_data(
                 &mut ListState::default().with_selected(Some(selected)),
             )
         }
-        Layout::Table => {}
+        Layout::Table => {
+            let rows: Vec<Row> = repr_data(data, &data_path, config)
+                .clone()
+                .iter()
+                .map(|row| Row::new(row.clone()).style(normal_style))
+                .collect();
+
+            let table = Table::new(rows)
+                .block(Block::default().borders(Borders::ALL))
+                .highlight_style(highlight_style)
+                .highlight_symbol(&config.colors.selected_symbol)
+                .widths(&[
+                    Constraint::Percentage(20),
+                    Constraint::Percentage(70),
+                    Constraint::Percentage(10),
+                ]);
+
+            frame.render_stateful_widget(
+                table,
+                rect_without_bottom_bar,
+                &mut TableState::default().with_selected(Some(selected)),
+            )
+        }
     }
 }
 
