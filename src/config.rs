@@ -33,7 +33,7 @@ pub(super) struct KeyBindingsMap {
     pub normal: Key,
     pub navigation: NavigationBindingsMap,
     pub peek: Key,
-    pub peeking: PeekingBindingsMap
+    pub peeking: PeekingBindingsMap,
 }
 
 pub(super) struct Config {
