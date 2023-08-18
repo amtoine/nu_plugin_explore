@@ -1,0 +1,37 @@
+{
+    show_cell_path: true,
+    colors: {
+        normal: {
+            background: black,
+            foreground: white,
+        },
+        selected: {
+            background: white,
+            foreground: black,
+        },
+        selected_modifier: "bold",
+        selected_symbol: "",
+        status_bar: {
+            background: white,
+            foreground: black,
+        },
+    },
+    keybindings: {
+        quit: 'q',
+        insert: 'i',
+        normal: "escape",
+        navigation: {
+            left: 'h',
+            down: 'j',
+            up: 'k',
+            right: 'l',
+        },
+        peek: 'p',
+        peeking: {
+            all: 'a',
+            current: 'c',
+            under: 'u',
+            quit: "escape",
+        },
+    },
+}
