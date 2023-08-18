@@ -7,6 +7,7 @@ mod tui;
 use anyhow::{Context, Result};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
+use nu_protocol::SyntaxShape;
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
 
 use app::{Mode, State};
@@ -21,6 +22,7 @@ impl Plugin for Explore {
         vec![PluginSignature::build("explore")
             .usage("TODO")
             .input_output_type(Type::Any, Type::Any)
+            .optional("config", SyntaxShape::Record(vec![]), "TODO")
             .plugin_examples(vec![PluginExample {
                 example: "open Cargo.toml | explore".into(),
                 description: "TODO".into(),
