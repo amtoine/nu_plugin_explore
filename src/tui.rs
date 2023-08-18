@@ -1,5 +1,5 @@
 use ratatui::{
-    prelude::{Alignment, Color, CrosstermBackend, Modifier, Rect},
+    prelude::{Alignment, CrosstermBackend, Rect},
     style::Style,
     widgets::{List, ListItem, ListState, Paragraph},
     Frame,
@@ -84,19 +84,22 @@ fn render_data(
     }
     .iter()
     .map(|line| {
-        // FIXME: make that configurable
-        ListItem::new(line.clone()).style(Style::default().fg(Color::White).bg(Color::Black))
+        ListItem::new(line.clone()).style(
+            Style::default()
+                .fg(config.colors.normal.foreground)
+                .bg(config.colors.normal.background),
+        )
     })
     .collect();
 
+    let highlight_style = Style::default()
+        .fg(config.colors.selected.foreground)
+        .bg(config.colors.selected.background)
+        .add_modifier(config.colors.selected_modifier);
+
     let items = List::new(items)
-        .highlight_style(
-            // FIXME: make that configurable
-            Style::default()
-                .bg(Color::LightGreen)
-                .add_modifier(Modifier::BOLD),
-        )
-        .highlight_symbol(">> ");
+        .highlight_style(highlight_style)
+        .highlight_symbol(&config.colors.selected_symbol);
 
     let selected = match current {
         Some(PathMember::Int { val, .. }) => val,
@@ -149,8 +152,8 @@ fn render_status_bar(
 ) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
     let style = Style::default()
-        .fg(config.status_bar.foreground)
-        .bg(config.status_bar.background);
+        .fg(config.colors.status_bar.foreground)
+        .bg(config.colors.status_bar.background);
 
     frame.render_widget(
         Paragraph::new(state.mode.to_string())

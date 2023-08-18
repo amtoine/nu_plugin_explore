@@ -10,8 +10,9 @@ use ratatui::style::Color;
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
 
-use app::{State, Mode};
-use config::{Config, KeyBindingsMap, NavigationBindingsMap, StatusBarConfig};
+use app::{Mode, State};
+use config::{ColorConfig, BgFgColorConfig, Config, KeyBindingsMap, NavigationBindingsMap};
+use ratatui::style::Modifier;
 use terminal::restore as restore_terminal;
 use terminal::setup as setup_terminal;
 
@@ -50,9 +51,21 @@ impl Plugin for Explore {
 fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
     let config = Config {
         show_cell_path: true,
-        status_bar: StatusBarConfig {
-            background: Color::White,
-            foreground: Color::Black,
+        colors: ColorConfig {
+            normal: BgFgColorConfig {
+                background: Color::Black,
+                foreground: Color::White,
+            },
+            selected: BgFgColorConfig {
+                background: Color::White,
+                foreground: Color::Black,
+            },
+            selected_modifier: Modifier::empty(),
+            selected_symbol: ">> ".into(),
+            status_bar: BgFgColorConfig {
+                background: Color::White,
+                foreground: Color::Black,
+            },
         },
         keybindings: KeyBindingsMap {
             quit: 'q',

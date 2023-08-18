@@ -1,6 +1,14 @@
-use ratatui::style::Color;
+use ratatui::style::{Color, Modifier};
 
-pub(super) struct StatusBarConfig {
+pub(super) struct ColorConfig {
+    pub normal: BgFgColorConfig,
+    pub selected: BgFgColorConfig,
+    pub selected_modifier: Modifier,
+    pub selected_symbol: String,
+    pub status_bar: BgFgColorConfig,
+}
+
+pub(super) struct BgFgColorConfig {
     pub background: Color,
     pub foreground: Color,
 }
@@ -20,7 +28,7 @@ pub(super) struct KeyBindingsMap {
 }
 
 pub(super) struct Config {
-    pub status_bar: StatusBarConfig,
+    pub colors: ColorConfig,
     pub keybindings: KeyBindingsMap,
     pub show_cell_path: bool,
 }
