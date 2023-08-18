@@ -13,6 +13,7 @@ use super::{config::Config, navigation, tui};
 pub(super) enum Mode {
     Normal,
     Insert,
+    Peeking,
 }
 
 impl Mode {
@@ -26,6 +27,7 @@ impl std::fmt::Display for Mode {
         let repr = match self {
             Mode::Normal => "NORMAL",
             Mode::Insert => "INSERT",
+            Mode::Peeking => "PEEKING",
         };
         write!(f, "{}", repr)
     }
@@ -51,7 +53,7 @@ pub(super) fn run(
     terminal: &mut Terminal<CrosstermBackend<console::Term>>,
     input: &Value,
     config: &Config,
-) -> Result<()> {
+) -> Result<Value> {
     let mut state = State::default();
     match input {
         Value::List { vals, .. } => state.cell_path.members.push(PathMember::Int {
@@ -75,9 +77,13 @@ pub(super) fn run(
         if key == config.keybindings.quit {
             break;
         } else if key == config.keybindings.insert {
-            state.mode = Mode::Insert;
+            if state.mode == Mode::Normal {
+                state.mode = Mode::Insert;
+            }
         } else if key == config.keybindings.normal {
-            state.mode = Mode::Normal;
+            if state.mode == Mode::Insert {
+                state.mode = Mode::Normal;
+            }
         } else if key == config.keybindings.navigation.down {
             if state.mode == Mode::Normal {
                 navigation::go_up_or_down_in_data(&mut state, input, Direction::Down);
@@ -94,7 +100,28 @@ pub(super) fn run(
             if state.mode == Mode::Normal {
                 navigation::go_back_in_data(&mut state);
             }
+        } else if key == config.keybindings.peek {
+            if state.mode == Mode::Normal {
+                state.mode = Mode::Peeking;
+            }
+        }
+
+        if state.mode == Mode::Peeking {
+            if key == config.keybindings.peeking.quit {
+                state.mode = Mode::Normal;
+            } else if key == config.keybindings.peeking.all {
+                return Ok(input.clone());
+            } else if key == config.keybindings.peeking.current {
+                state.cell_path.members.pop();
+                return Ok(input
+                    .clone()
+                    .follow_cell_path(&state.cell_path.members, false)?);
+            } else if key == config.keybindings.peeking.under {
+                return Ok(input
+                    .clone()
+                    .follow_cell_path(&state.cell_path.members, false)?);
+            }
         }
     }
-    Ok(())
+    Ok(Value::nothing(Span::unknown()))
 }

@@ -20,12 +20,20 @@ pub(super) struct NavigationBindingsMap {
     pub left: Key,
     pub right: Key,
 }
+pub(super) struct PeekingBindingsMap {
+    pub all: Key,
+    pub current: Key,
+    pub under: Key,
+    pub quit: Key,
+}
 
 pub(super) struct KeyBindingsMap {
     pub quit: Key,
     pub insert: Key,
     pub normal: Key,
     pub navigation: NavigationBindingsMap,
+    pub peek: Key,
+    pub peeking: PeekingBindingsMap
 }
 
 pub(super) struct Config {

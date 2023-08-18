@@ -165,18 +165,25 @@ fn render_status_bar(
 
     let hints = match state.mode {
         Mode::Normal => format!(
-            "{} to {} | {}{}{}{} to move around",
+            "{} to {} | {}{}{}{} to move around | {} to peek",
             repr_keycode(&config.keybindings.insert),
             Mode::Insert,
             repr_keycode(&config.keybindings.navigation.left),
             repr_keycode(&config.keybindings.navigation.down),
             repr_keycode(&config.keybindings.navigation.up),
             repr_keycode(&config.keybindings.navigation.right),
+            repr_keycode(&config.keybindings.peek),
         ),
         Mode::Insert => format!(
             "{} to {} | COMING SOON",
             repr_keycode(&config.keybindings.normal),
             Mode::Normal
+        ),
+        Mode::Peeking => format!(
+            "{} to peek all | {} to peek current view | {} to peek under cursor",
+            repr_keycode(&config.keybindings.peeking.all),
+            repr_keycode(&config.keybindings.peeking.current),
+            repr_keycode(&config.keybindings.peeking.under),
         ),
     }
     .to_string();
