@@ -41,7 +41,11 @@ fn render_value(value: &Value) -> String {
             }
         }
         // FIXME: use a real config
-        value => value.into_string(" ", &nu_protocol::Config::default()),
+        value => format!(
+            "({}) {}",
+            value.get_type().to_string(),
+            value.into_string(" ", &nu_protocol::Config::default())
+        ),
     }
 }
 
@@ -81,7 +85,11 @@ fn render_data(
             }
         }
         // FIXME: use a real config
-        Ok(value) => vec![value.into_string(" ", &nu_protocol::Config::default())],
+        Ok(value) => vec![format!(
+            "({}) {}",
+            value.get_type().to_string(),
+            value.into_string(" ", &nu_protocol::Config::default())
+        )],
     }
     .iter()
     .map(|line| {
