@@ -5,14 +5,13 @@ mod terminal;
 mod tui;
 
 use anyhow::{Context, Result};
-use ratatui::style::Color;
+use ratatui::style::{Modifier, Color};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
 
 use app::{Mode, State};
 use config::{ColorConfig, BgFgColorConfig, Config, KeyBindingsMap, NavigationBindingsMap};
-use ratatui::style::Modifier;
 use terminal::restore as restore_terminal;
 use terminal::setup as setup_terminal;
 
