@@ -24,6 +24,8 @@ register target/release/nu_plugin_explore
 ## TODO
 - [ ] get rid of the `.clone`s
 - [ ] handle errors properly (`.unwrap`s and `panic!`s)
-- [ ] get the config from `$env.config`
+- [ ] get the config from `$env.config` => can parse configuration from CLI
 - [x] support non-character bindings
 - [ ] add check for the config to make sure it's valid
+- [ ] when going into a file or URL, open it
+- [ ] give different colors to names and type
