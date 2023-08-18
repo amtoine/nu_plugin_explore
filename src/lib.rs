@@ -70,7 +70,7 @@ fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
         keybindings: KeyBindingsMap {
             quit: Key::Char('q'),
             insert: Key::Char('i'),
-            normal: Key::Char('n'),
+            normal: Key::Escape,
             navigation: NavigationBindingsMap {
                 left: Key::Char('h'),
                 down: Key::Char('j'),

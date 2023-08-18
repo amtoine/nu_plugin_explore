@@ -41,6 +41,7 @@ pub(super) fn repr_keycode(keycode: &Key) -> String {
         Key::ArrowUp => "↑".into(),
         Key::ArrowRight => "→".into(),
         Key::ArrowDown => "↓".into(),
-        _ => "*".into(),
+        Key::Escape => "<esc>".into(),
+        _ => "??".into(),
     }
 }
