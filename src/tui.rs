@@ -8,6 +8,7 @@ use ratatui::{
 use nu_protocol::ast::PathMember;
 use nu_protocol::Value;
 
+use super::config::repr_keycode;
 use super::{Config, Mode, State};
 
 pub(super) fn render_ui(
@@ -165,23 +166,23 @@ fn render_status_bar(
     let hints = match state.mode {
         Mode::Normal => format!(
             "{} to {} | {}{}{}{} to move around",
-            config.keybindings.insert,
+            repr_keycode(&config.keybindings.insert),
             Mode::Insert,
-            config.keybindings.navigation.left,
-            config.keybindings.navigation.down,
-            config.keybindings.navigation.up,
-            config.keybindings.navigation.right,
+            repr_keycode(&config.keybindings.navigation.left),
+            repr_keycode(&config.keybindings.navigation.down),
+            repr_keycode(&config.keybindings.navigation.up),
+            repr_keycode(&config.keybindings.navigation.right),
         ),
         Mode::Insert => format!(
             "{} to {} | COMING SOON",
-            config.keybindings.normal,
+            repr_keycode(&config.keybindings.normal),
             Mode::Normal
         ),
     }
     .to_string();
 
     frame.render_widget(
-        Paragraph::new(hints + &format!(" | {} to quit", config.keybindings.quit))
+        Paragraph::new(hints + &format!(" | {} to quit", repr_keycode(&config.keybindings.quit)))
             .style(style)
             .alignment(Alignment::Right),
         bottom_bar_rect,

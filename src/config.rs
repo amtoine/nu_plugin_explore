@@ -1,3 +1,4 @@
+use console::Key;
 use ratatui::style::{Color, Modifier};
 
 pub(super) struct ColorConfig {
@@ -14,16 +15,16 @@ pub(super) struct BgFgColorConfig {
 }
 
 pub(super) struct NavigationBindingsMap {
-    pub up: char,
-    pub down: char,
-    pub left: char,
-    pub right: char,
+    pub up: Key,
+    pub down: Key,
+    pub left: Key,
+    pub right: Key,
 }
 
 pub(super) struct KeyBindingsMap {
-    pub quit: char,
-    pub insert: char,
-    pub normal: char,
+    pub quit: Key,
+    pub insert: Key,
+    pub normal: Key,
     pub navigation: NavigationBindingsMap,
 }
 
@@ -31,4 +32,15 @@ pub(super) struct Config {
     pub colors: ColorConfig,
     pub keybindings: KeyBindingsMap,
     pub show_cell_path: bool,
+}
+
+pub(super) fn repr_keycode(keycode: &Key) -> String {
+    match keycode {
+        Key::Char(c) => c.to_string(),
+        Key::ArrowLeft => "←".into(),
+        Key::ArrowUp => "↑".into(),
+        Key::ArrowRight => "→".into(),
+        Key::ArrowDown => "↓".into(),
+        _ => "*".into(),
+    }
 }

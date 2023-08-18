@@ -70,26 +70,27 @@ pub(super) fn run(
     loop {
         terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
 
-        let char = console::Term::stderr().read_char()?;
-        if char == config.keybindings.quit {
+        let key = console::Term::stderr().read_key()?;
+
+        if key == config.keybindings.quit {
             break;
-        } else if char == config.keybindings.insert {
+        } else if key == config.keybindings.insert {
             state.mode = Mode::Insert;
-        } else if char == config.keybindings.normal {
+        } else if key == config.keybindings.normal {
             state.mode = Mode::Normal;
-        } else if char == config.keybindings.navigation.down {
+        } else if key == config.keybindings.navigation.down {
             if state.mode == Mode::Normal {
                 navigation::go_up_or_down_in_data(&mut state, input, Direction::Down);
             }
-        } else if char == config.keybindings.navigation.up {
+        } else if key == config.keybindings.navigation.up {
             if state.mode == Mode::Normal {
                 navigation::go_up_or_down_in_data(&mut state, input, Direction::Up);
             }
-        } else if char == config.keybindings.navigation.right {
+        } else if key == config.keybindings.navigation.right {
             if state.mode == Mode::Normal {
                 navigation::go_deeper_in_data(&mut state, input);
             }
-        } else if char == config.keybindings.navigation.left {
+        } else if key == config.keybindings.navigation.left {
             if state.mode == Mode::Normal {
                 navigation::go_back_in_data(&mut state);
             }

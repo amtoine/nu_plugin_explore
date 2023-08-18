@@ -5,6 +5,7 @@ mod terminal;
 mod tui;
 
 use anyhow::{Context, Result};
+use console::Key;
 use ratatui::style::{Modifier, Color};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
@@ -67,14 +68,14 @@ fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
             },
         },
         keybindings: KeyBindingsMap {
-            quit: 'q',
-            insert: 'i',
-            normal: 'n',
+            quit: Key::Char('q'),
+            insert: Key::Char('i'),
+            normal: Key::Char('n'),
             navigation: NavigationBindingsMap {
-                left: 'h',
-                down: 'j',
-                up: 'k',
-                right: 'l',
+                left: Key::Char('h'),
+                down: Key::Char('j'),
+                up: Key::Char('k'),
+                right: Key::Char('l'),
             },
         },
     };

@@ -25,5 +25,5 @@ register target/release/nu_plugin_explore
 - [ ] get rid of the `.clone`s
 - [ ] handle errors properly (`.unwrap`s and `panic!`s)
 - [ ] get the config from `$env.config`
-- [ ] support non-character bindings
+- [x] support non-character bindings
 - [ ] add check for the config to make sure it's valid
