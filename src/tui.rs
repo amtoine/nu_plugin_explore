@@ -24,28 +24,28 @@ pub(super) fn render_ui(
     render_status_bar(frame, state, config);
 }
 
-fn render_value(value: &Value) -> String {
+fn render_value(value: &Value, _config: &Config) -> Vec<String> {
     match value {
         Value::List { vals, .. } => {
             if vals.len() <= 1 {
-                format!("[list {} item]", vals.len())
+                vec![format!("[list {} item]", vals.len())]
             } else {
-                format!("[list {} items]", vals.len())
+                vec![format!("[list {} items]", vals.len())]
             }
         }
         Value::Record { cols, .. } => {
             if cols.len() <= 1 {
-                format!("{{record {} field}}", cols.len())
+                vec![format!("{{record {} field}}", cols.len())]
             } else {
-                format!("{{record {} fields}}", cols.len())
+                vec![format!("{{record {} fields}}", cols.len())]
             }
         }
         // FIXME: use a real config
-        value => format!(
+        value => vec![format!(
             "({}) {}",
             value.get_type().to_string(),
             value.into_string(" ", &nu_protocol::Config::default())
-        ),
+        )],
     }
 }
 
@@ -71,7 +71,9 @@ fn render_data(
             if vals.is_empty() {
                 vec!["[list 0 item]".to_string()]
             } else {
-                vals.iter().map(render_value).collect::<Vec<String>>()
+                vals.iter()
+                    .map(|v| render_value(v, config)[0].clone())
+                    .collect::<Vec<String>>()
             }
         }
         Ok(Value::Record { cols, vals, .. }) => {
@@ -80,7 +82,7 @@ fn render_data(
             } else {
                 cols.iter()
                     .zip(vals)
-                    .map(|(col, val)| format!("{}: {}", col, render_value(&val)))
+                    .map(|(col, val)| format!("{}: {}", col, render_value(&val, config)[0]))
                     .collect::<Vec<String>>()
             }
         }
