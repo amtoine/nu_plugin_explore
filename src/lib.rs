@@ -5,16 +5,12 @@ mod terminal;
 mod tui;
 
 use anyhow::{Context, Result};
-use console::Key;
-use ratatui::style::{Color, Modifier};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
 
 use app::{Mode, State};
-use config::{
-    BgFgColorConfig, ColorConfig, Config, KeyBindingsMap, NavigationBindingsMap, PeekingBindingsMap,
-};
+use config::Config;
 use terminal::restore as restore_terminal;
 use terminal::setup as setup_terminal;
 
@@ -51,43 +47,7 @@ impl Plugin for Explore {
 }
 
 fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
-    let config = Config {
-        show_cell_path: true,
-        colors: ColorConfig {
-            normal: BgFgColorConfig {
-                background: Color::Black,
-                foreground: Color::White,
-            },
-            selected: BgFgColorConfig {
-                background: Color::White,
-                foreground: Color::Black,
-            },
-            selected_modifier: Modifier::BOLD,
-            selected_symbol: "".into(),
-            status_bar: BgFgColorConfig {
-                background: Color::White,
-                foreground: Color::Black,
-            },
-        },
-        keybindings: KeyBindingsMap {
-            quit: Key::Char('q'),
-            insert: Key::Char('i'),
-            normal: Key::Escape,
-            navigation: NavigationBindingsMap {
-                left: Key::Char('h'),
-                down: Key::Char('j'),
-                up: Key::Char('k'),
-                right: Key::Char('l'),
-            },
-            peek: Key::Char('p'),
-            peeking: PeekingBindingsMap {
-                all: Key::Char('a'),
-                current: Key::Char('c'),
-                under: Key::Char('u'),
-                quit: Key::Escape,
-            },
-        },
-    };
+    let config = Config::default();
 
     let mut terminal = setup_terminal().context("setup failed").unwrap();
     let result = app::run(&mut terminal, input, &config).context("app loop failed");

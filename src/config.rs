@@ -42,6 +42,48 @@ pub(super) struct Config {
     pub show_cell_path: bool,
 }
 
+impl Config {
+    pub(super) fn default() -> Config {
+        Config {
+            show_cell_path: true,
+            colors: ColorConfig {
+                normal: BgFgColorConfig {
+                    background: Color::Black,
+                    foreground: Color::White,
+                },
+                selected: BgFgColorConfig {
+                    background: Color::White,
+                    foreground: Color::Black,
+                },
+                selected_modifier: Modifier::BOLD,
+                selected_symbol: "".into(),
+                status_bar: BgFgColorConfig {
+                    background: Color::White,
+                    foreground: Color::Black,
+                },
+            },
+            keybindings: KeyBindingsMap {
+                quit: Key::Char('q'),
+                insert: Key::Char('i'),
+                normal: Key::Escape,
+                navigation: NavigationBindingsMap {
+                    left: Key::Char('h'),
+                    down: Key::Char('j'),
+                    up: Key::Char('k'),
+                    right: Key::Char('l'),
+                },
+                peek: Key::Char('p'),
+                peeking: PeekingBindingsMap {
+                    all: Key::Char('a'),
+                    current: Key::Char('c'),
+                    under: Key::Char('u'),
+                    quit: Key::Escape,
+                },
+            },
+        }
+    }
+}
+
 pub(super) fn repr_keycode(keycode: &Key) -> String {
     match keycode {
         Key::Char(c) => c.to_string(),
