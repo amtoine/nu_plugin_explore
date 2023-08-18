@@ -7,8 +7,8 @@ mod tui;
 use anyhow::{Context, Result};
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
-use nu_protocol::SyntaxShape;
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
+use nu_protocol::{Span, SyntaxShape};
 
 use app::{Mode, State};
 use config::Config;
@@ -49,7 +49,11 @@ impl Plugin for Explore {
 }
 
 fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
-    let config = Config::default();
+    let config = Config::from_value(call.opt(0).unwrap().unwrap_or(Value::record(
+        vec![],
+        vec![],
+        Span::unknown(),
+    )))?;
 
     let mut terminal = setup_terminal().context("setup failed").unwrap();
     let result = app::run(&mut terminal, input, &config).context("app loop failed");
