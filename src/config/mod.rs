@@ -6,7 +6,7 @@ use nu_protocol::Value;
 
 mod parsing;
 use parsing::{
-    follow_cell_path, invalid_field, invalid_type, try_bool, try_fg_bg_colors, try_key,
+    follow_cell_path, invalid_field, invalid_type, try_bool, try_fg_bg_colors, try_key, try_layout,
     try_modifier, try_string,
 };
 
@@ -52,16 +52,23 @@ pub(super) struct KeyBindingsMap {
     pub peeking: PeekingBindingsMap,
 }
 
+pub(super) enum Layout {
+    Table,
+    Compact,
+}
+
 pub(super) struct Config {
     pub colors: ColorConfig,
     pub keybindings: KeyBindingsMap,
     pub show_cell_path: bool,
+    pub layout: Layout,
 }
 
 impl Config {
     pub(super) fn default() -> Self {
         Self {
             show_cell_path: true,
+            layout: Layout::Table,
             colors: ColorConfig {
                 normal: BgFgColorConfig {
                     background: Color::Reset, // "Black" is not pure *black*
@@ -117,6 +124,11 @@ impl Config {
                 "show_cell_path" => {
                     if let Some(val) = try_bool(&value, &["show_cell_path"])? {
                         config.show_cell_path = val
+                    }
+                }
+                "layout" => {
+                    if let Some(val) = try_layout(&value, &["layout"])? {
+                        config.layout = val
                     }
                 }
                 "colors" => {

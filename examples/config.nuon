@@ -1,5 +1,6 @@
 {
     show_cell_path: true,
+    layout: "table",
     colors: {
         normal: {
             background: reset, # "black" is not pure *black*

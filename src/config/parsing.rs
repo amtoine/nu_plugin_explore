@@ -4,7 +4,7 @@ use ratatui::style::{Color, Modifier};
 use nu_plugin::LabeledError;
 use nu_protocol::{ast::PathMember, Span, Value};
 
-use super::BgFgColorConfig;
+use super::{BgFgColorConfig, Layout};
 
 pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledError {
     LabeledError {
@@ -166,6 +166,28 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, 
                 }
 
                 Ok(Some(Key::Char(x.to_string().chars().nth(0).unwrap())))
+            }
+        },
+        Some(x) => Err(invalid_type(&x, cell_path, "string")),
+        _ => Ok(None),
+    }
+}
+
+pub(super) fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Layout>, LabeledError> {
+    match follow_cell_path(value, cell_path) {
+        Some(Value::String { val, .. }) => match val.as_str() {
+            "table" => Ok(Some(Layout::Table)),
+            "compact" => Ok(Some(Layout::Compact)),
+            x => {
+                return Err(LabeledError {
+                    label: "invalid config".into(),
+                    msg: format!(
+                        r#"`$.{}` should be one of [table, compact] , found {}"#,
+                        cell_path.join("."),
+                        x
+                    ),
+                    span: value.span().ok(),
+                })
             }
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
