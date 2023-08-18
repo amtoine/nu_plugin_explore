@@ -160,9 +160,18 @@ fn render_status_bar(
     config: &Config,
 ) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
-    let style = Style::default()
-        .fg(config.colors.status_bar.foreground)
-        .bg(config.colors.status_bar.background);
+
+    let style = match state.mode {
+        Mode::Normal => Style::default()
+            .fg(config.colors.status_bar.normal.foreground)
+            .bg(config.colors.status_bar.normal.background),
+        Mode::Insert => Style::default()
+            .fg(config.colors.status_bar.insert.foreground)
+            .bg(config.colors.status_bar.insert.background),
+        Mode::Peeking => Style::default()
+            .fg(config.colors.status_bar.peek.foreground)
+            .bg(config.colors.status_bar.peek.background),
+    };
 
     frame.render_widget(
         Paragraph::new(state.mode.to_string())

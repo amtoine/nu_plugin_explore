@@ -12,9 +12,19 @@
         selected_modifier: "bold",
         selected_symbol: "",
         status_bar: {
-            background: white,
-            foreground: black,
-        },
+            normal: {
+                background: white,
+                foreground: black,
+            },
+            insert: {
+                background: lightyellow,
+                foreground: black,
+            },
+            peek: {
+                background: lightgreen,
+                foreground: black,
+            }
+        }
     },
     keybindings: {
         quit: 'q',

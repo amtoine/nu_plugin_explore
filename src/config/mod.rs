@@ -10,12 +10,18 @@ use parsing::{
     try_modifier, try_string,
 };
 
+pub(super) struct StatusBarColorConfig {
+    pub normal: BgFgColorConfig,
+    pub insert: BgFgColorConfig,
+    pub peek: BgFgColorConfig,
+}
+
 pub(super) struct ColorConfig {
     pub normal: BgFgColorConfig,
     pub selected: BgFgColorConfig,
     pub selected_modifier: Modifier,
     pub selected_symbol: String,
-    pub status_bar: BgFgColorConfig,
+    pub status_bar: StatusBarColorConfig,
 }
 
 #[derive(Clone)]
@@ -67,9 +73,19 @@ impl Config {
                 },
                 selected_modifier: Modifier::BOLD,
                 selected_symbol: "".into(),
-                status_bar: BgFgColorConfig {
-                    background: Color::White,
-                    foreground: Color::Black,
+                status_bar: StatusBarColorConfig {
+                    normal: BgFgColorConfig {
+                        background: Color::White,
+                        foreground: Color::Black,
+                    },
+                    insert: BgFgColorConfig {
+                        background: Color::LightYellow,
+                        foreground: Color::Black,
+                    },
+                    peek: BgFgColorConfig {
+                        background: Color::LightGreen,
+                        foreground: Color::Black,
+                    },
                 },
             },
             keybindings: KeyBindingsMap {
@@ -144,12 +160,56 @@ impl Config {
                                 }
                             }
                             "status_bar" => {
-                                if let Some(val) = try_fg_bg_colors(
-                                    &value,
-                                    &["colors", "status_bar"],
-                                    &config.colors.status_bar,
-                                )? {
-                                    config.colors.status_bar = val
+                                let (columns, span) =
+                                    match follow_cell_path(&value, &["colors", "status_bar"])
+                                        .unwrap()
+                                    {
+                                        Value::Record { cols, span, .. } => (cols, span),
+                                        x => {
+                                            return Err(invalid_type(
+                                                &x,
+                                                &["colors", "status_bar"],
+                                                "record",
+                                            ))
+                                        }
+                                    };
+
+                                for column in columns {
+                                    match column.as_str() {
+                                        "normal" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "status_bar", "normal"],
+                                                &config.colors.status_bar.normal,
+                                            )? {
+                                                config.colors.status_bar.normal = val
+                                            }
+                                        }
+                                        "insert" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "status_bar", "insert"],
+                                                &config.colors.status_bar.insert,
+                                            )? {
+                                                config.colors.status_bar.insert = val
+                                            }
+                                        }
+                                        "peek" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "status_bar", "peek"],
+                                                &config.colors.status_bar.peek,
+                                            )? {
+                                                config.colors.status_bar.peek = val
+                                            }
+                                        }
+                                        x => {
+                                            return Err(invalid_field(
+                                                &["colors", "status_bar", x],
+                                                Some(span),
+                                            ))
+                                        }
+                                    }
                                 }
                             }
                             x => return Err(invalid_field(&["colors", x], Some(span))),
