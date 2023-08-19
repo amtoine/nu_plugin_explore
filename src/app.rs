@@ -67,6 +67,7 @@ impl State {
 }
 
 /// the result of a state transition
+#[derive(Debug, PartialEq)]
 struct TransitionResult {
     /// whether or not to exit the application
     exit: bool,
@@ -202,7 +203,10 @@ mod tests {
     use nu_protocol::{Span, Value};
 
     use super::{transition_state, State};
-    use crate::{app::Mode, config::Config};
+    use crate::{
+        app::{Mode, TransitionResult},
+        config::{repr_keycode, Config},
+    };
 
     /// {
     ///     l: ["my", "list", "elements"],
@@ -274,7 +278,38 @@ mod tests {
 
     #[test]
     fn quit() {
-        /**/
+        let config = Config::default();
+        let keybindings = config.clone().keybindings;
+
+        let mut state = State::default();
+        let value = test_value();
+
+        let expected = TransitionResult {
+            exit: true,
+            result: None,
+        };
+
+        let transitions = vec![
+            (&keybindings.insert, false),
+            (&keybindings.quit, true),
+            (&keybindings.normal, false),
+            (&keybindings.quit, true),
+            (&keybindings.peek, false),
+            (&keybindings.quit, true),
+        ];
+
+        for (key, quit) in transitions {
+            let result = transition_state(key, &config, &mut state, &value).unwrap();
+            if quit {
+                assert_eq!(
+                    result,
+                    expected,
+                    "expected to quit with {} in {} mode",
+                    repr_keycode(key),
+                    state.mode
+                );
+            }
+        }
     }
 
     #[test]
