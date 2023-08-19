@@ -6,11 +6,12 @@
 //! 1. the keybindings
 //! 1. the internal state of the application
 use anyhow::Result;
+use console::Key;
 use ratatui::{prelude::CrosstermBackend, Terminal};
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
-    Span, Value,
+    ShellError, Span, Value,
 };
 
 use super::navigation::Direction;
@@ -65,6 +66,14 @@ impl State {
     }
 }
 
+/// the result of a state transition
+struct TransitionResult {
+    /// whether or not to exit the application
+    exit: bool,
+    /// a potential value to return
+    result: Option<Value>,
+}
+
 /// run the application
 ///
 /// this function
@@ -98,55 +107,91 @@ pub(super) fn run(
         terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
 
         let key = console::Term::stderr().read_key()?;
-
-        if key == config.keybindings.quit {
-            break;
-        } else if key == config.keybindings.insert {
-            if state.mode == Mode::Normal {
-                state.mode = Mode::Insert;
-            }
-        } else if key == config.keybindings.normal {
-            if state.mode == Mode::Insert {
-                state.mode = Mode::Normal;
-            }
-        } else if key == config.keybindings.navigation.down {
-            if state.mode == Mode::Normal {
-                navigation::go_up_or_down_in_data(&mut state, input, Direction::Down);
-            }
-        } else if key == config.keybindings.navigation.up {
-            if state.mode == Mode::Normal {
-                navigation::go_up_or_down_in_data(&mut state, input, Direction::Up);
-            }
-        } else if key == config.keybindings.navigation.right {
-            if state.mode == Mode::Normal {
-                navigation::go_deeper_in_data(&mut state, input);
-            }
-        } else if key == config.keybindings.navigation.left {
-            if state.mode == Mode::Normal {
-                navigation::go_back_in_data(&mut state);
-            }
-        } else if key == config.keybindings.peek {
-            if state.mode == Mode::Normal {
-                state.mode = Mode::Peeking;
-            }
-        }
-
-        if state.mode == Mode::Peeking {
-            if key == config.keybindings.peeking.quit {
-                state.mode = Mode::Normal;
-            } else if key == config.keybindings.peeking.all {
-                return Ok(input.clone());
-            } else if key == config.keybindings.peeking.current {
-                state.cell_path.members.pop();
-                return Ok(input
-                    .clone()
-                    .follow_cell_path(&state.cell_path.members, false)?);
-            } else if key == config.keybindings.peeking.under {
-                return Ok(input
-                    .clone()
-                    .follow_cell_path(&state.cell_path.members, false)?);
-            }
+        match transition_state(key, config, &mut state, input)? {
+            TransitionResult { exit: true, result } => match result {
+                None => break,
+                Some(value) => return Ok(value),
+            },
+            TransitionResult { exit: false, .. } => {}
         }
     }
     Ok(Value::nothing(Span::unknown()))
+}
+
+/// perform the state transition based on the key pressed and the previous state
+fn transition_state(
+    key: Key,
+    config: &Config,
+    state: &mut State,
+    value: &Value,
+) -> Result<TransitionResult, ShellError> {
+    if key == config.keybindings.quit {
+        return Ok(TransitionResult {
+            exit: true,
+            result: None,
+        });
+    } else if key == config.keybindings.insert {
+        if state.mode == Mode::Normal {
+            state.mode = Mode::Insert;
+        }
+    } else if key == config.keybindings.normal {
+        if state.mode == Mode::Insert {
+            state.mode = Mode::Normal;
+        }
+    } else if key == config.keybindings.navigation.down {
+        if state.mode == Mode::Normal {
+            navigation::go_up_or_down_in_data(state, value, Direction::Down);
+        }
+    } else if key == config.keybindings.navigation.up {
+        if state.mode == Mode::Normal {
+            navigation::go_up_or_down_in_data(state, value, Direction::Up);
+        }
+    } else if key == config.keybindings.navigation.right {
+        if state.mode == Mode::Normal {
+            navigation::go_deeper_in_data(state, value);
+        }
+    } else if key == config.keybindings.navigation.left {
+        if state.mode == Mode::Normal {
+            navigation::go_back_in_data(state);
+        }
+    } else if key == config.keybindings.peek {
+        if state.mode == Mode::Normal {
+            state.mode = Mode::Peeking;
+        }
+    }
+
+    if state.mode == Mode::Peeking {
+        if key == config.keybindings.peeking.quit {
+            state.mode = Mode::Normal;
+        } else if key == config.keybindings.peeking.all {
+            return Ok(TransitionResult {
+                exit: true,
+                result: Some(value.clone()),
+            });
+        } else if key == config.keybindings.peeking.current {
+            state.cell_path.members.pop();
+            return Ok(TransitionResult {
+                exit: true,
+                result: Some(
+                    value
+                        .clone()
+                        .follow_cell_path(&state.cell_path.members, false)?,
+                ),
+            });
+        } else if key == config.keybindings.peeking.under {
+            return Ok(TransitionResult {
+                exit: true,
+                result: Some(
+                    value
+                        .clone()
+                        .follow_cell_path(&state.cell_path.members, false)?,
+                ),
+            });
+        }
+    }
+
+    Ok(TransitionResult {
+        exit: false,
+        result: None,
+    })
 }
