@@ -1,0 +1,18 @@
+{
+    quit: 'q',
+    insert: 'i',
+    normal: "escape",
+    navigation: {
+        left: 'h',
+        down: 'j',
+        up: 'k',
+        right: 'l',
+    },
+    peek: 'p',
+    peeking: {
+        all: 'a',
+        current: 'c',
+        under: 'u',
+        quit: "escape",
+    },
+}

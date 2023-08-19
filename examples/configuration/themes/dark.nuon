@@ -1,0 +1,26 @@
+{
+    normal: {
+        background: reset, # "black" is not pure *black*
+        foreground: white,
+    },
+    selected: {
+        background: white,
+        foreground: black,
+    },
+    selected_modifier: "bold",
+    selected_symbol: "",
+    status_bar: {
+        normal: {
+            background: white,
+            foreground: black,
+        },
+        insert: {
+            background: lightyellow,
+            foreground: black,
+        },
+        peek: {
+            background: lightgreen,
+            foreground: black,
+        }
+    }
+}

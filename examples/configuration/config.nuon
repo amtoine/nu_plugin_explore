@@ -1,0 +1,4 @@
+{
+    show_cell_path: true,
+    layout: "table",
+}
