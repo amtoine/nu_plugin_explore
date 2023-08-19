@@ -18,7 +18,7 @@ use super::navigation::Direction;
 use super::{config::Config, navigation, tui};
 
 /// the mode in which the application is
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(super) enum Mode {
     /// the NORMAL mode is the *navigation* mode, where the user can move around in the data
     Normal,
@@ -272,17 +272,22 @@ mod tests {
         ];
 
         for (key, expected_mode) in transitions {
+            let mode = state.mode.clone();
+
             let result = transition_state(&key, &config, &mut state, &value).unwrap();
+
             assert!(
                 !result.exit,
-                "unexpected exit after pressing {}",
-                repr_keycode(key)
+                "unexpected exit after pressing {} in {}",
+                repr_keycode(key),
+                mode,
             );
             assert!(
                 state.mode == expected_mode,
-                "expected to be in {} after pressing {}, found {}",
+                "expected to be in {} after pressing {} in {}, found {}",
                 expected_mode,
                 repr_keycode(key),
+                mode,
                 state.mode
             );
         }
@@ -306,20 +311,23 @@ mod tests {
         ];
 
         for (key, exit) in transitions {
+            let mode = state.mode.clone();
+
             let result = transition_state(key, &config, &mut state, &value).unwrap();
+
             if exit {
                 assert!(
                     result.exit,
                     "expected to quit after pressing {} in {} mode",
                     repr_keycode(key),
-                    state.mode
+                    mode
                 );
             } else {
                 assert!(
                     !result.exit,
                     "expected NOT to quit after pressing {} in {} mode",
                     repr_keycode(key),
-                    state.mode
+                    mode
                 );
             }
         }
