@@ -68,7 +68,10 @@ pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>
 }
 
 /// try to parse a string in the *value* at the given *cell path*
-pub(super) fn try_string(value: &Value, cell_path: &[&str]) -> Result<Option<String>, LabeledError> {
+pub(super) fn try_string(
+    value: &Value,
+    cell_path: &[&str],
+) -> Result<Option<String>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => Ok(Some(val)),
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
@@ -77,7 +80,10 @@ pub(super) fn try_string(value: &Value, cell_path: &[&str]) -> Result<Option<Str
 }
 
 /// try to parse an ANSI modifier in the *value* at the given *cell path*
-pub(super) fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<Modifier>, LabeledError> {
+pub(super) fn try_modifier(
+    value: &Value,
+    cell_path: &[&str],
+) -> Result<Option<Modifier>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::Nothing { .. }) => Ok(Some(Modifier::empty())),
         Some(Value::String { val, .. }) => match val.as_str() {
@@ -212,7 +218,10 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, 
 }
 
 /// try to parse a layout in the *value* at the given *cell path*
-pub(super) fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Layout>, LabeledError> {
+pub(super) fn try_layout(
+    value: &Value,
+    cell_path: &[&str],
+) -> Result<Option<Layout>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
             "table" => Ok(Some(Layout::Table)),
