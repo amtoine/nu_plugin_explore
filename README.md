@@ -12,6 +12,7 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
     - [*installing manually*](#installing-manually)
     - [*using `nupm install`*](#using-nupm-install)
 - [*usage*](#usage)
+- [*configuration*](#configuration)
 - [*see the documentation locally*](#see-the-documentation-locally)
 - [*TODO*](#todo)
 
@@ -116,6 +117,17 @@ help explore
 - run the command
 ```nushell
 open Cargo.toml | explore
+```
+
+# configuration
+the default configuration can be found in [`examples/configuration`](examples/configuration) and can
+be tested as follows
+```nushell
+$nu | explore (
+    open examples/configuration/config.nuon
+        | insert colors (open examples/configuration/themes/dark.nuon)
+        | insert keybindings (open examples/configuration/keybindings.nuon)
+)
 ```
 
 # see the documentation locally
