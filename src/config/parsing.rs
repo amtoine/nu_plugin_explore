@@ -1,3 +1,5 @@
+//! utilities to parse a [`Value`](https://docs.rs/nu-protocol/0.83.1/nu_protocol/enum.Value.html)
+//! into a configuration
 use console::Key;
 use ratatui::style::{Color, Modifier};
 
@@ -6,6 +8,21 @@ use nu_protocol::{ast::PathMember, Span, Value};
 
 use super::{BgFgColorConfig, Layout};
 
+/// return an *invalid field* error
+///
+/// # Example
+/// ```rust
+/// return Err(invalid_field(&["foo"], Some(span))),
+/// ```
+/// would give an error like
+/// ```nushell
+/// Error:   × invalid config
+///    ╭─[entry #3:1:1]
+///  1 │ explore {foo: 123}
+///    ·         ─────┬────
+///    ·              ╰── `$.foo` is not a valid config field
+///    ╰────
+/// ```
 pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledError {
     LabeledError {
         label: "invalid config".into(),
@@ -14,6 +31,21 @@ pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledEr
     }
 }
 
+/// return an *invalid type* error
+///
+/// # Example
+/// ```rust
+/// return Err(invalid_type(&some_int, &["layout"], "string")),
+/// ```
+/// would give an error like
+/// ```nushell
+/// Error:   × invalid config
+///    ╭─[entry #7:1:1]
+///  1 │ explore {layout: 123}
+///    ·                  ─┬─
+///    ·                   ╰── `$.layout` should be a string, found int
+///    ╰────
+/// ```
 pub(super) fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) -> LabeledError {
     LabeledError {
         label: "invalid config".into(),
@@ -26,6 +58,7 @@ pub(super) fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) ->
     }
 }
 
+/// try to parse a bool in the *value* at the given *cell path*
 pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::Bool { val, .. }) => Ok(Some(val)),
@@ -34,6 +67,7 @@ pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>
     }
 }
 
+/// try to parse a string in the *value* at the given *cell path*
 pub(super) fn try_string(value: &Value, cell_path: &[&str]) -> Result<Option<String>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => Ok(Some(val)),
@@ -42,6 +76,7 @@ pub(super) fn try_string(value: &Value, cell_path: &[&str]) -> Result<Option<Str
     }
 }
 
+/// try to parse an ANSI modifier in the *value* at the given *cell path*
 pub(super) fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<Modifier>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::Nothing { .. }) => Ok(Some(Modifier::empty())),
@@ -68,6 +103,7 @@ pub(super) fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<M
     }
 }
 
+/// try to parse a color in the *value* at the given *cell path*
 pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
@@ -105,6 +141,7 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
     }
 }
 
+/// try to parse a background / foreground color pair in the *value* at the given *cell path*
 pub(super) fn try_fg_bg_colors(
     value: &Value,
     cell_path: &[&str],
@@ -144,6 +181,7 @@ pub(super) fn try_fg_bg_colors(
     Ok(Some(colors))
 }
 
+/// try to parse a key in the *value* at the given *cell path*
 pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
@@ -173,6 +211,7 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, 
     }
 }
 
+/// try to parse a layout in the *value* at the given *cell path*
 pub(super) fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Layout>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
@@ -195,6 +234,22 @@ pub(super) fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Lay
     }
 }
 
+/// follow a cell path into a Value, giving the resulting Value if it exists
+///
+/// # Example
+/// ```rust
+/// follow_cell_path(&value, &["foo", "bar", "baz"]).unwrap()
+/// ```
+/// would give `123` in a Nushell structure such as
+/// ```nushell
+/// {
+///     foo: {
+///         bar: {
+///             baz: 123
+///         }
+///     }
+/// }
+/// ```
 pub(super) fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Value> {
     let cell_path = cell_path
         .iter()
