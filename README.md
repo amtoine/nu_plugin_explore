@@ -133,7 +133,11 @@ cargo doc --document-private-items --no-deps --open
 - [ ] add check for the config to make sure it's valid
 - [ ] when going into a file or URL, open it
 - [ ] give different colors to names and type
-- [ ] add tests
+- [ ] add tests...
+  - [ ] to `navigation.rs` to make sure the navigation in the data is ok
+  - [ ] to `app.rs` to make sure the application state machine works
+  - [ ] to `parsing.rs` to make sure the parsing of the config works
+  - [ ] to `tui.rs` to make sure the rendering works as intended
 - [ ] restrict the visibility of objects when possible
 - [ ] show true tables as such
 
