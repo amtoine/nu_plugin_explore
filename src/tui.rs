@@ -72,7 +72,7 @@ fn repr_simple_value(value: &Value, config: &Config) -> Vec<String> {
     match config.layout {
         Layout::Compact => vec![format!(
             "({}) {}",
-            value.get_type().to_string(),
+            value.get_type(),
             value.into_string(" ", &nu_protocol::Config::default())
         )],
         Layout::Table => vec![
@@ -115,7 +115,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember], config: &Config) -> Vec<Vec
                 } else {
                     vals.iter()
                         .map(|val| {
-                            let mut value = repr_value(&val, config);
+                            let mut value = repr_value(val, config);
                             if value.len() < 3 {
                                 let mut base = vec![];
                                 for _ in 0..(3 - value.len()) {
@@ -161,7 +161,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember], config: &Config) -> Vec<Vec
         Ok(value) => match config.layout {
             Layout::Compact => vec![vec![format!(
                 "({}) {}",
-                value.get_type().to_string(),
+                value.get_type(),
                 value.into_string(" ", &nu_protocol::Config::default())
             )]],
             Layout::Table => vec![vec![
@@ -236,7 +236,6 @@ fn render_data(
         }
         Layout::Table => {
             let rows: Vec<Row> = repr_data(data, &data_path, config)
-                .clone()
                 .iter()
                 .map(|row| Row::new(row.clone()).style(normal_style))
                 .collect();
@@ -287,7 +286,7 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &
             .iter()
             .map(|m| {
                 match m {
-                    PathMember::Int { val, .. } => format!("{}", val).to_string(),
+                    PathMember::Int { val, .. } => val.to_string(),
                     PathMember::String { val, .. } => val.to_string(),
                 }
             })
@@ -377,8 +376,7 @@ fn render_status_bar(
             repr_keycode(&config.keybindings.peeking.current),
             repr_keycode(&config.keybindings.peeking.under),
         ),
-    }
-    .to_string();
+    };
 
     frame.render_widget(
         Paragraph::new(hints + &format!(" | {} to quit", repr_keycode(&config.keybindings.quit)))

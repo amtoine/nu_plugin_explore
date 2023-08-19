@@ -25,7 +25,7 @@ pub(super) enum Direction {
 /// > - poping the last element to know where we are and then pushing back the new element
 pub(super) fn go_up_or_down_in_data(state: &mut State, input: &Value, direction: Direction) {
     if state.bottom {
-        return ();
+        return;
     }
 
     let direction = match direction {

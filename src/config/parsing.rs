@@ -11,8 +11,8 @@ use super::{BgFgColorConfig, Layout};
 /// return an *invalid field* error
 ///
 /// # Example
-/// ```rust
-/// return Err(invalid_field(&["foo"], Some(span))),
+/// ```text
+/// invalid_field(&["foo"], Some(span))
 /// ```
 /// would give an error like
 /// ```nushell
@@ -34,8 +34,8 @@ pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledEr
 /// return an *invalid type* error
 ///
 /// # Example
-/// ```rust
-/// return Err(invalid_type(&some_int, &["layout"], "string")),
+/// ```text
+/// invalid_type(&some_int, &["layout"], "string"),
 /// ```
 /// would give an error like
 /// ```nushell
@@ -52,7 +52,7 @@ pub(super) fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) ->
         msg: format!(
             "`$.{}` should be a {expected}, found {}",
             cell_path.join("."),
-            value.get_type().to_string()
+            value.get_type()
         ),
         span: value.span().ok(),
     }
@@ -68,7 +68,10 @@ pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>
 }
 
 /// try to parse a string in the *value* at the given *cell path*
-pub(super) fn try_string(value: &Value, cell_path: &[&str]) -> Result<Option<String>, LabeledError> {
+pub(super) fn try_string(
+    value: &Value,
+    cell_path: &[&str],
+) -> Result<Option<String>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => Ok(Some(val)),
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
@@ -77,7 +80,10 @@ pub(super) fn try_string(value: &Value, cell_path: &[&str]) -> Result<Option<Str
 }
 
 /// try to parse an ANSI modifier in the *value* at the given *cell path*
-pub(super) fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<Modifier>, LabeledError> {
+pub(super) fn try_modifier(
+    value: &Value,
+    cell_path: &[&str],
+) -> Result<Option<Modifier>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::Nothing { .. }) => Ok(Some(Modifier::empty())),
         Some(Value::String { val, .. }) => match val.as_str() {
@@ -86,17 +92,15 @@ pub(super) fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<M
             "italic" => Ok(Some(Modifier::ITALIC)),
             "underline" => Ok(Some(Modifier::UNDERLINED)),
             "blink" => Ok(Some(Modifier::SLOW_BLINK)),
-            x => {
-                return Err(LabeledError {
-                    label: "invalid config".into(),
-                    msg: format!(
-                        r#"`$.{}` should be the empty string, one of [italic, bold, underline, blink] or null, found {}"#,
-                        cell_path.join("."),
-                        x
-                    ),
-                    span: value.span().ok(),
-                })
-            }
+            x => Err(LabeledError {
+                label: "invalid config".into(),
+                msg: format!(
+                    r#"`$.{}` should be the empty string, one of [italic, bold, underline, blink] or null, found {}"#,
+                    cell_path.join("."),
+                    x
+                ),
+                span: value.span().ok(),
+            }),
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string or null")),
         _ => Ok(None),
@@ -124,17 +128,15 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
             "lightmagenta" => Ok(Some(Color::LightMagenta)),
             "lightcyan" => Ok(Some(Color::LightCyan)),
             "white" => Ok(Some(Color::White)),
-            x => {
-                return Err(LabeledError {
-                    label: "invalid config".into(),
-                    msg: format!(
-                        r#"`$.{}` should be one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found {}"#,
-                        cell_path.join("."),
-                        x
-                    ),
-                    span: value.span().ok(),
-                })
-            }
+            x => Err(LabeledError {
+                label: "invalid config".into(),
+                msg: format!(
+                    r#"`$.{}` should be one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found {}"#,
+                    cell_path.join("."),
+                    x
+                ),
+                span: value.span().ok(),
+            }),
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
         _ => Ok(None),
@@ -147,9 +149,9 @@ pub(super) fn try_fg_bg_colors(
     cell_path: &[&str],
     default: &BgFgColorConfig,
 ) -> Result<Option<BgFgColorConfig>, LabeledError> {
-    let (columns, span) = match follow_cell_path(&value, &cell_path).unwrap() {
+    let (columns, span) = match follow_cell_path(value, cell_path).unwrap() {
         Value::Record { cols, span, .. } => (cols, span),
-        x => return Err(invalid_type(&x, &cell_path, "record")),
+        x => return Err(invalid_type(&x, cell_path, "record")),
     };
 
     let mut colors: BgFgColorConfig = default.clone();
@@ -159,14 +161,14 @@ pub(super) fn try_fg_bg_colors(
             "background" => {
                 let mut cell_path = cell_path.to_vec();
                 cell_path.push("background");
-                if let Some(val) = try_color(&value, &cell_path)? {
+                if let Some(val) = try_color(value, &cell_path)? {
                     colors.background = val
                 }
             }
             "foreground" => {
                 let mut cell_path = cell_path.to_vec();
                 cell_path.push("foreground");
-                if let Some(val) = try_color(&value, &cell_path)? {
+                if let Some(val) = try_color(value, &cell_path)? {
                     colors.foreground = val
                 }
             }
@@ -203,6 +205,7 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, 
                     });
                 }
 
+                #[allow(clippy::iter_nth_zero)]
                 Ok(Some(Key::Char(x.to_string().chars().nth(0).unwrap())))
             }
         },
@@ -212,22 +215,23 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, 
 }
 
 /// try to parse a layout in the *value* at the given *cell path*
-pub(super) fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Layout>, LabeledError> {
+pub(super) fn try_layout(
+    value: &Value,
+    cell_path: &[&str],
+) -> Result<Option<Layout>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
             "table" => Ok(Some(Layout::Table)),
             "compact" => Ok(Some(Layout::Compact)),
-            x => {
-                return Err(LabeledError {
-                    label: "invalid config".into(),
-                    msg: format!(
-                        r#"`$.{}` should be one of [table, compact] , found {}"#,
-                        cell_path.join("."),
-                        x
-                    ),
-                    span: value.span().ok(),
-                })
-            }
+            x => Err(LabeledError {
+                label: "invalid config".into(),
+                msg: format!(
+                    r#"`$.{}` should be one of [table, compact] , found {}"#,
+                    cell_path.join("."),
+                    x
+                ),
+                span: value.span().ok(),
+            }),
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
         _ => Ok(None),
@@ -237,7 +241,7 @@ pub(super) fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Lay
 /// follow a cell path into a Value, giving the resulting Value if it exists
 ///
 /// # Example
-/// ```rust
+/// ```text
 /// follow_cell_path(&value, &["foo", "bar", "baz"]).unwrap()
 /// ```
 /// would give `123` in a Nushell structure such as

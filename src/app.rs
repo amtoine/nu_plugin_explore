@@ -119,6 +119,7 @@ pub(super) fn run(
 }
 
 /// perform the state transition based on the key pressed and the previous state
+#[allow(clippy::collapsible_if)]
 fn transition_state(
     key: Key,
     config: &Config,
