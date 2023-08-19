@@ -1,3 +1,9 @@
+//! management of the outside configuration of `explore`
+//!
+//! this module
+//! 1. holds the data structure of the [`Config`]
+//! 1. gives default values to a [`Config`] with [`Config::default`]
+//! 1. parses a Nushell [`Value`](https://docs.rs/nu-protocol/0.83.1/nu_protocol/enum.Value.html) into a valid [`Config`]
 use console::Key;
 use ratatui::style::{Color, Modifier};
 
@@ -10,53 +16,78 @@ use parsing::{
     try_modifier, try_string,
 };
 
+/// the configuration for the status bar colors in all [`crate::app::Mode`]s
 pub(super) struct StatusBarColorConfig {
     pub normal: BgFgColorConfig,
     pub insert: BgFgColorConfig,
     pub peek: BgFgColorConfig,
 }
 
+/// the colors of the application
 pub(super) struct ColorConfig {
+    /// the color when a row is NOT selected
     pub normal: BgFgColorConfig,
+    /// the color when a row is selected
     pub selected: BgFgColorConfig,
+    /// the modifier to apply to the row under the cursor
     pub selected_modifier: Modifier,
+    /// the symbol to show to the left of the selected row under the cursor
     pub selected_symbol: String,
     pub status_bar: StatusBarColorConfig,
 }
 
+/// a pair of background / foreground colors
 #[derive(Clone)]
 pub(super) struct BgFgColorConfig {
     pub background: Color,
     pub foreground: Color,
 }
 
+/// the bindings in NORMAL mode (see [crate::app::Mode::Normal])
 pub(super) struct NavigationBindingsMap {
+    /// go one row up in the data
     pub up: Key,
+    /// go one row down in the data
     pub down: Key,
+    /// go one level higher in the data
     pub left: Key,
+    /// go one level deeper in the data
     pub right: Key,
 }
+
+/// the bindings in PEEKING mode (see [crate::app::Mode::Peeking])
 pub(super) struct PeekingBindingsMap {
+    /// peek the whole data structure
     pub all: Key,
+    /// peek the current level
     pub current: Key,
+    /// peek the current level, but only the row under the cursor
     pub under: Key,
     pub quit: Key,
 }
 
+/// the keybindings mapping
 pub(super) struct KeyBindingsMap {
     pub quit: Key,
+    /// go into INSERT mode (see [crate::app::Mode::Insert])
     pub insert: Key,
+    /// go back into NORMAL mode (see [crate::app::Mode::Normal])
     pub normal: Key,
     pub navigation: NavigationBindingsMap,
+    /// go into PEEKING mode (see [crate::app::Mode::Peeking])
     pub peek: Key,
     pub peeking: PeekingBindingsMap,
 }
 
+/// the layout of the application
 pub(super) enum Layout {
+    /// show each row in a `[name, data, type]` column
     Table,
+    /// show each row in compact form, to the left, `"{name}: ({type}) {data}"`
     Compact,
 }
 
+/// the configuration of the whole application
 pub(super) struct Config {
     pub colors: ColorConfig,
     pub keybindings: KeyBindingsMap,
@@ -384,6 +415,7 @@ impl Config {
     }
 }
 
+/// represent a [`Key`] as a simple string
 pub(super) fn repr_keycode(keycode: &Key) -> String {
     match keycode {
         Key::Char(c) => c.to_string(),
