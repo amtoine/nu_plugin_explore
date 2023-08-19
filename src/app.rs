@@ -271,4 +271,25 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn quit() {
+        /**/
+    }
+
+    #[test]
+    fn navigate_the_data() {
+        /**/
+    }
+
+    #[test]
+    fn peek_data() {
+        /**/
+    }
+
+    #[ignore = "data edition is not implemented for now"]
+    #[test]
+    fn edit_cells() {
+        /**/
+    }
 }
