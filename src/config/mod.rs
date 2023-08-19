@@ -17,6 +17,7 @@ use parsing::{
 };
 
 /// the configuration for the status bar colors in all [`crate::app::Mode`]s
+#[derive(Clone)]
 pub(super) struct StatusBarColorConfig {
     pub normal: BgFgColorConfig,
     pub insert: BgFgColorConfig,
@@ -24,6 +25,7 @@ pub(super) struct StatusBarColorConfig {
 }
 
 /// the colors of the application
+#[derive(Clone)]
 pub(super) struct ColorConfig {
     /// the color when a row is NOT selected
     pub normal: BgFgColorConfig,
@@ -44,6 +46,7 @@ pub(super) struct BgFgColorConfig {
 }
 
 /// the bindings in NORMAL mode (see [crate::app::Mode::Normal])
+#[derive(Clone)]
 pub(super) struct NavigationBindingsMap {
     /// go one row up in the data
     pub up: Key,
@@ -56,6 +59,7 @@ pub(super) struct NavigationBindingsMap {
 }
 
 /// the bindings in PEEKING mode (see [crate::app::Mode::Peeking])
+#[derive(Clone)]
 pub(super) struct PeekingBindingsMap {
     /// peek the whole data structure
     pub all: Key,
@@ -67,6 +71,7 @@ pub(super) struct PeekingBindingsMap {
 }
 
 /// the keybindings mapping
+#[derive(Clone)]
 pub(super) struct KeyBindingsMap {
     pub quit: Key,
     /// go into INSERT mode (see [crate::app::Mode::Insert])
@@ -80,6 +85,7 @@ pub(super) struct KeyBindingsMap {
 }
 
 /// the layout of the application
+#[derive(Clone)]
 pub(super) enum Layout {
     /// show each row in a `[name, data, type]` column
     Table,
@@ -88,6 +94,7 @@ pub(super) enum Layout {
 }
 
 /// the configuration of the whole application
+#[derive(Clone)]
 pub(super) struct Config {
     pub colors: ColorConfig,
     pub keybindings: KeyBindingsMap,
