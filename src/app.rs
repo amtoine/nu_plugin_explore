@@ -107,7 +107,7 @@ pub(super) fn run(
         terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
 
         let key = console::Term::stderr().read_key()?;
-        match transition_state(key, config, &mut state, input)? {
+        match transition_state(&key, config, &mut state, input)? {
             TransitionResult { exit: true, result } => match result {
                 None => break,
                 Some(value) => return Ok(value),
@@ -121,55 +121,55 @@ pub(super) fn run(
 /// perform the state transition based on the key pressed and the previous state
 #[allow(clippy::collapsible_if)]
 fn transition_state(
-    key: Key,
+    key: &Key,
     config: &Config,
     state: &mut State,
     value: &Value,
 ) -> Result<TransitionResult, ShellError> {
-    if key == config.keybindings.quit {
+    if key == &config.keybindings.quit {
         return Ok(TransitionResult {
             exit: true,
             result: None,
         });
-    } else if key == config.keybindings.insert {
+    } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
             state.mode = Mode::Insert;
         }
-    } else if key == config.keybindings.normal {
+    } else if key == &config.keybindings.normal {
         if state.mode == Mode::Insert {
             state.mode = Mode::Normal;
         }
-    } else if key == config.keybindings.navigation.down {
+    } else if key == &config.keybindings.navigation.down {
         if state.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(state, value, Direction::Down);
         }
-    } else if key == config.keybindings.navigation.up {
+    } else if key == &config.keybindings.navigation.up {
         if state.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(state, value, Direction::Up);
         }
-    } else if key == config.keybindings.navigation.right {
+    } else if key == &config.keybindings.navigation.right {
         if state.mode == Mode::Normal {
             navigation::go_deeper_in_data(state, value);
         }
-    } else if key == config.keybindings.navigation.left {
+    } else if key == &config.keybindings.navigation.left {
         if state.mode == Mode::Normal {
             navigation::go_back_in_data(state);
         }
-    } else if key == config.keybindings.peek {
+    } else if key == &config.keybindings.peek {
         if state.mode == Mode::Normal {
             state.mode = Mode::Peeking;
         }
     }
 
     if state.mode == Mode::Peeking {
-        if key == config.keybindings.peeking.quit {
+        if key == &config.keybindings.peeking.quit {
             state.mode = Mode::Normal;
-        } else if key == config.keybindings.peeking.all {
+        } else if key == &config.keybindings.peeking.all {
             return Ok(TransitionResult {
                 exit: true,
                 result: Some(value.clone()),
             });
-        } else if key == config.keybindings.peeking.current {
+        } else if key == &config.keybindings.peeking.current {
             state.cell_path.members.pop();
             return Ok(TransitionResult {
                 exit: true,
@@ -179,7 +179,7 @@ fn transition_state(
                         .follow_cell_path(&state.cell_path.members, false)?,
                 ),
             });
-        } else if key == config.keybindings.peeking.under {
+        } else if key == &config.keybindings.peeking.under {
             return Ok(TransitionResult {
                 exit: true,
                 result: Some(
