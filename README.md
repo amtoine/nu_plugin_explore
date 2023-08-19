@@ -57,10 +57,8 @@ git clone https://github.com/nushell/nushell /path/to/nushell
 
 finally run the following to setup the dependencies
 ```nushell
-open Cargo.toml
-    | update dependencies.nu-plugin.path ($nushell | path join "crates" "nu-plugin")
-    | update dependencies.nu-protocol.path ($nushell | path join "crates" "nu-protocol")
-    | save --force Cargo.toml
+cargo add nu-plugin --path ($nushell | path join "crates" "nu-plugin")
+cargo add nu-protocol --path ($nushell | path join "crates" "nu-protocol") --features plugin
 ```
 
 ## install the plugin
