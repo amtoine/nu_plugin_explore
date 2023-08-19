@@ -128,3 +128,140 @@ pub(super) fn go_back_in_data(state: &mut State) {
     }
     state.bottom = false;
 }
+
+#[cfg(test)]
+mod tests {
+    use nu_protocol::{ast::PathMember, Span, Value};
+
+    use super::{go_back_in_data, go_deeper_in_data, go_up_or_down_in_data, Direction};
+    use crate::app::State;
+
+    fn test_string_pathmember(val: impl Into<String>) -> PathMember {
+        PathMember::String {
+            val: val.into(),
+            span: Span::test_data(),
+            optional: false,
+        }
+    }
+
+    fn test_int_pathmember(val: usize) -> PathMember {
+        PathMember::Int {
+            val,
+            span: Span::test_data(),
+            optional: false,
+        }
+    }
+
+    #[test]
+    fn go_up_and_down_in_list() {
+        let value = Value::test_list(vec![
+            Value::test_nothing(),
+            Value::test_nothing(),
+            Value::test_nothing(),
+        ]);
+        let mut state = State::from_value(&value);
+
+        let sequence = vec![
+            (Direction::Down, 1),
+            (Direction::Down, 2),
+            (Direction::Down, 0),
+            (Direction::Up, 2),
+            (Direction::Up, 1),
+            (Direction::Up, 0),
+        ];
+        for (direction, id) in sequence {
+            go_up_or_down_in_data(&mut state, &value, direction);
+            let expected = vec![test_int_pathmember(id)];
+            assert_eq!(state.cell_path.members, expected);
+        }
+    }
+
+    #[test]
+    fn go_up_and_down_in_record() {
+        let value = Value::test_record(
+            vec!["a", "b", "c"],
+            vec![
+                Value::test_nothing(),
+                Value::test_nothing(),
+                Value::test_nothing(),
+            ],
+        );
+        let mut state = State::from_value(&value);
+
+        let sequence = vec![
+            (Direction::Down, "b"),
+            (Direction::Down, "c"),
+            (Direction::Down, "a"),
+            (Direction::Up, "c"),
+            (Direction::Up, "b"),
+            (Direction::Up, "a"),
+        ];
+        for (direction, id) in sequence {
+            go_up_or_down_in_data(&mut state, &value, direction);
+            let expected = vec![test_string_pathmember(id)];
+            assert_eq!(state.cell_path.members, expected);
+        }
+    }
+
+    #[test]
+    fn go_deeper() {
+        let value = Value::test_list(vec![Value::test_record(
+            vec!["a"],
+            vec![Value::test_list(vec![Value::test_nothing()])],
+        )]);
+        let mut state = State::from_value(&value);
+
+        let mut expected = vec![test_int_pathmember(0)];
+        assert_eq!(state.cell_path.members, expected);
+
+        go_deeper_in_data(&mut state, &value);
+        expected.push(test_string_pathmember("a"));
+        assert_eq!(state.cell_path.members, expected);
+
+        go_deeper_in_data(&mut state, &value);
+        expected.push(test_int_pathmember(0));
+        assert_eq!(state.cell_path.members, expected);
+    }
+
+    #[test]
+    fn hit_bottom() {
+        let value = Value::test_nothing();
+        let mut state = State::from_value(&value);
+
+        assert!(!state.bottom);
+
+        go_deeper_in_data(&mut state, &value);
+        assert!(state.bottom);
+    }
+
+    #[test]
+    fn go_back() {
+        let value = Value::test_list(vec![Value::test_record(
+            vec!["a"],
+            vec![Value::test_list(vec![Value::test_nothing()])],
+        )]);
+        let mut state = State::from_value(&value);
+        state.cell_path.members = vec![
+            test_int_pathmember(0),
+            test_string_pathmember("a"),
+            test_int_pathmember(0),
+        ];
+        state.bottom = true;
+
+        let mut expected = state.cell_path.members.clone();
+
+        go_back_in_data(&mut state);
+        assert_eq!(state.cell_path.members, expected);
+
+        go_back_in_data(&mut state);
+        expected.pop();
+        assert_eq!(state.cell_path.members, expected);
+
+        go_back_in_data(&mut state);
+        expected.pop();
+        assert_eq!(state.cell_path.members, expected);
+
+        go_back_in_data(&mut state);
+        assert_eq!(state.cell_path.members, expected);
+    }
+}
