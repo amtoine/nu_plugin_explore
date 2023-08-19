@@ -67,7 +67,7 @@ impl Default for State {
 }
 
 impl State {
-    fn from_value(value: &Value) -> Self {
+    pub(super) fn from_value(value: &Value) -> Self {
         let mut state = Self::default();
         match value {
             Value::List { vals, .. } => state.cell_path.members.push(PathMember::Int {
