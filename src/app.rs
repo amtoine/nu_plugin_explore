@@ -196,3 +196,93 @@ fn transition_state(
         result: None,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use nu_protocol::{Span, Value};
+
+    use super::{transition_state, State};
+    use crate::{app::Mode, config::Config};
+
+    /// {
+    ///     l: ["my", "list", "elements"],
+    ///     r: {a: 1, b: 2},
+    ///     s: "some string",
+    ///     i: 123,
+    /// }
+    fn test_value() -> Value {
+        Value::record(
+            vec!["l".into(), "r".into(), "s".into(), "i".into()],
+            vec![
+                Value::list(
+                    vec![
+                        Value::string("my", Span::test_data()),
+                        Value::string("list", Span::test_data()),
+                        Value::string("elements", Span::test_data()),
+                    ],
+                    Span::test_data(),
+                ),
+                Value::record(
+                    vec!["a".into(), "b".into()],
+                    vec![
+                        Value::int(1, Span::test_data()),
+                        Value::int(2, Span::test_data()),
+                    ],
+                    Span::test_data(),
+                ),
+                Value::string("some string", Span::test_data()),
+                Value::int(123, Span::test_data()),
+            ],
+            Span::test_data(),
+        )
+    }
+
+    #[test]
+    fn switch_modes() {
+        let config = Config::default();
+        let keybindings = config.clone().keybindings;
+
+        let mut state = State::default();
+        let value = test_value();
+
+        assert!(state.mode == Mode::Normal);
+
+        // NORMAL -> NORMAL
+        let result = transition_state(&keybindings.normal, &config, &mut state, &value).unwrap();
+        assert!(!result.exit);
+        assert!(state.mode == Mode::Normal);
+
+        // NORMAL -> INSERT
+        let result = transition_state(&keybindings.insert, &config, &mut state, &value).unwrap();
+        assert!(!result.exit);
+        assert!(state.mode == Mode::Insert);
+
+        // INSERT -> INSERT
+        let result = transition_state(&keybindings.insert, &config, &mut state, &value).unwrap();
+        assert!(!result.exit);
+        assert!(state.mode == Mode::Insert);
+
+        // INSERT -> NORMAL
+        let result = transition_state(&keybindings.normal, &config, &mut state, &value).unwrap();
+        assert!(!result.exit);
+        assert!(state.mode == Mode::Normal);
+
+        // NORMAL -> PEEKING
+        let result = transition_state(&keybindings.peek, &config, &mut state, &value).unwrap();
+        assert!(!result.exit);
+        assert!(state.mode == Mode::Peeking);
+
+        // PEEKING -> PEEKING
+        let result = transition_state(&keybindings.peek, &config, &mut state, &value).unwrap();
+        assert!(!result.exit);
+        assert!(state.mode == Mode::Peeking);
+
+        // PEEKING -> NORMAL
+        let result = transition_state(&keybindings.normal, &config, &mut state, &value).unwrap();
+        assert!(!result.exit);
+        assert!(state.mode == Mode::Normal);
+
+        // INSERT -> PEEKING: not allowed
+        // PEEKING -> INSERT: not allowed
+    }
+}
