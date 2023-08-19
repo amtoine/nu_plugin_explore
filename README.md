@@ -6,11 +6,9 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
   - [*the idea behind an explorer*](#the-idea-behind-an-explorer)
   - [*why not `nu-explore`?*](#why-not-nu-explore)
 - [*installation*](#installation)
-  - [*setup the Nushell dependencies*](#setup-the-Nushell-dependencies)
-  - [*install the plugin*](#install-the-plugin)
-    - [*building from source*](#building-from-source)
-    - [*installing manually*](#installing-manually)
-    - [*using `nupm install`*](#using-nupm-install)
+  - [*building from source*](#building-from-source)
+  - [*installing manually*](#installing-manually)
+  - [*using `nupm install`*](#using-nupm-install)
 - [*usage*](#usage)
 - [*configuration*](#configuration)
 - [*see the documentation locally*](#see-the-documentation-locally)
@@ -37,35 +35,8 @@ will come very handy in a day-to-day basis for me at least :)
 so here we are... LET'S GO :muscle:
 
 # installation
-> **Note**  
-> the plugin has been written with the latest revision of [Nushell]
-
-## setup the Nushell dependencies
-as one can see in the [`Cargo.toml`](Cargo.toml) file, the [Nushell] dependencies are empty
-and need to be setup.  
-the reason is that the latest revision of [`nu-plugin`] and [`nu-protocol`] are not on [crates.io]
-
-to setup these dependencies, please download the source code of [Nushell], e.g.
-```nushell
-git clone https://github.com/nushell/nushell /path/to/nushell
-```
-
-> **Note**  
-> this is a little variable to make the following script simpler
-> ```nushell
-> let nushell: path = /path/to/nushell
-> ```
-
-finally run the following to setup the dependencies
-```nushell
-cargo add nu-plugin --path ($nushell | path join "crates" "nu-plugin")
-cargo add nu-protocol --path ($nushell | path join "crates" "nu-protocol") --features plugin
-```
-
-## install the plugin
-now that the dependencies are all setup, we can install the plugin: there are threee ways to do it
-
-### building from source
+there are three ways to do it:
+## building from source
 - build the plugin
 ```nushell
 cargo build --release
@@ -76,7 +47,7 @@ register target/release/nu_plugin_explore
 ```
 - do not forget to restart [Nushell]
 
-### installing manually
+## installing manually
 - define the install root, e.g. `$env.CARGO_HOME` or `/some/where/plugins/`
 ```nushell
 let install_root: path = ...
@@ -91,7 +62,7 @@ nu --commands $"register ($install_root | path join "bin" $name)"
 ```
 - do not forget to restart [Nushell]
 
-### using `nupm install`
+## using `nupm install`
 > **Warning**  
 > this is a very alpha software and even requires to use the code from an unmerged PR :eyes:
 

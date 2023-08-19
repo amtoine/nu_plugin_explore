@@ -8,6 +8,7 @@ name: continuous-integration
 
 env:
   CLIPPY_OPTIONS: "-D warnings"
+  NU_VERSION: "0.83.1"
 
 jobs:
   fmt-clippy:
@@ -25,7 +26,10 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Setup dependencies
-        run: bash .github/scripts/add-nu-dependencies.sh
+        run: |
+          cargo add "nu-plugin@$NU_VERSION"
+          cargo add "nu-protocol@$NU_VERSION" --features plugin
+        shell: bash
 
       - name: Clippy
         run: cargo clippy --workspace -- $CLIPPY_OPTIONS
@@ -47,7 +51,10 @@ jobs:
           rustflags: ""
 
       - name: Setup dependencies
-        run: bash .github/scripts/add-nu-dependencies.sh
+        run: |
+          cargo add "nu-plugin@$NU_VERSION"
+          cargo add "nu-protocol@$NU_VERSION" --features plugin
+        shell: bash
 
       - name: Tests
         run: cargo test --workspace
