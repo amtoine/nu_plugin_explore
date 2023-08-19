@@ -28,18 +28,18 @@ pub(super) enum Mode {
     Peeking,
 }
 
-impl Mode {
-    fn default() -> Mode {
-        Mode::Normal
+impl Default for Mode {
+    fn default() -> Self {
+        Self::Normal
     }
 }
 
 impl std::fmt::Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let repr = match self {
-            Mode::Normal => "NORMAL",
-            Mode::Insert => "INSERT",
-            Mode::Peeking => "PEEKING",
+            Self::Normal => "NORMAL",
+            Self::Insert => "INSERT",
+            Self::Peeking => "PEEKING",
         };
         write!(f, "{}", repr)
     }
@@ -56,9 +56,9 @@ pub(super) struct State {
     pub mode: Mode,
 }
 
-impl State {
-    fn default() -> State {
-        State {
+impl Default for State {
+    fn default() -> Self {
+        Self {
             cell_path: CellPath { members: vec![] },
             bottom: false,
             mode: Mode::default(),
