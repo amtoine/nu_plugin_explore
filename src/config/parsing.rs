@@ -11,8 +11,8 @@ use super::{BgFgColorConfig, Layout};
 /// return an *invalid field* error
 ///
 /// # Example
-/// ```rust
-/// return Err(invalid_field(&["foo"], Some(span))),
+/// ```text
+/// invalid_field(&["foo"], Some(span))
 /// ```
 /// would give an error like
 /// ```nushell
@@ -34,8 +34,8 @@ pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledEr
 /// return an *invalid type* error
 ///
 /// # Example
-/// ```rust
-/// return Err(invalid_type(&some_int, &["layout"], "string")),
+/// ```text
+/// invalid_type(&some_int, &["layout"], "string"),
 /// ```
 /// would give an error like
 /// ```nushell
@@ -241,7 +241,7 @@ pub(super) fn try_layout(
 /// follow a cell path into a Value, giving the resulting Value if it exists
 ///
 /// # Example
-/// ```rust
+/// ```text
 /// follow_cell_path(&value, &["foo", "bar", "baz"]).unwrap()
 /// ```
 /// would give `123` in a Nushell structure such as
