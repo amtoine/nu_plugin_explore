@@ -50,7 +50,9 @@ jobs:
           rustflags: ""
 
       - name: Setup dependencies
-        run: bash .github/scripts/add-nu-dependencies.sh
+        run: |
+          cargo add "nu-plugin@${NU_VERSION}"
+          cargo add "nu-protocol@${NU_VERSION}" --features plugin
 
       - name: Tests
         run: cargo test --workspace
