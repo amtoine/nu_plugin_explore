@@ -385,3 +385,133 @@ fn render_status_bar(
         bottom_bar_rect,
     );
 }
+
+// TODO: add proper assert error messages
+#[cfg(test)]
+mod tests {
+    use nu_protocol::Value;
+
+    use crate::config::{Config, Layout};
+
+    use super::{repr_data, repr_list, repr_record, repr_simple_value};
+
+    #[test]
+    fn simple_value() {
+        let mut config = Config::default();
+
+        #[rustfmt::skip]
+        let cases = vec![
+            (Layout::Table, Value::test_string("foo"), vec!["foo", "string"]),
+            (Layout::Compact, Value::test_string("foo"), vec!["(string) foo"]),
+            (Layout::Table, Value::test_int(1), vec!["1", "int"]),
+            (Layout::Compact, Value::test_int(1), vec!["(int) 1"]),
+            (Layout::Table, Value::test_bool(true), vec!["true", "bool"]),
+            (Layout::Compact, Value::test_bool(true), vec!["(bool) true"]),
+            (Layout::Table, Value::test_nothing(), vec!["", "nothing"]),
+            (Layout::Compact, Value::test_nothing(), vec!["(nothing) "]),
+        ];
+
+        for (layout, value, expected) in cases {
+            config.layout = layout;
+            let result = repr_simple_value(&value, &config);
+            let expected: Vec<String> = expected.iter().map(|x| x.to_string()).collect();
+            assert_eq!(result, expected);
+        }
+    }
+
+    #[test]
+    fn list() {
+        let mut config = Config::default();
+
+        let list = vec![
+            Value::test_string("a"),
+            Value::test_int(1),
+            Value::test_bool(false),
+        ];
+
+        #[rustfmt::skip]
+        let cases = vec![
+            (Layout::Table, list.clone(), vec!["[3 items]", "list"]),
+            (Layout::Compact, list.clone(), vec!["[list 3 items]"]),
+            (Layout::Table, vec![], vec!["[0 item]", "list"]),
+            (Layout::Compact, vec![], vec!["[list 0 item]"]),
+            (Layout::Table, vec![Value::test_nothing()], vec!["[1 item]", "list"]),
+            (Layout::Compact, vec![Value::test_nothing()], vec!["[list 1 item]"]),
+        ];
+
+        for (layout, list, expected) in cases {
+            config.layout = layout;
+            let result = repr_list(&list, &config);
+            let expected: Vec<String> = expected.iter().map(|x| x.to_string()).collect();
+            assert_eq!(result, expected);
+        }
+    }
+
+    #[test]
+    fn record() {
+        let mut config = Config::default();
+
+        #[rustfmt::skip]
+        let cases = vec![
+            (Layout::Table, vec!["a", "b", "c"], vec!["{3 fields}", "record"]),
+            (Layout::Compact, vec!["a", "b", "c"], vec!["{record 3 fields}"]),
+            (Layout::Table, vec![], vec!["{0 field}", "record"]),
+            (Layout::Compact, vec![], vec!["{record 0 field}"]),
+            (Layout::Table, vec!["a"], vec!["{1 field}", "record"]),
+            (Layout::Compact, vec!["a"], vec!["{record 1 field}"]),
+        ];
+
+        for (layout, record, expected) in cases {
+            config.layout = layout;
+            let result = repr_record(
+                &record.iter().map(|x| x.to_string()).collect::<Vec<_>>(),
+                &config,
+            );
+            let expected: Vec<String> = expected.iter().map(|x| x.to_string()).collect();
+            assert_eq!(result, expected);
+        }
+    }
+
+    #[ignore = "repr_value is just a direct wrapper around repr_list, repr_record and repr_simple_value"]
+    #[test]
+    fn value() {}
+
+    #[test]
+    fn data() {
+        let mut config = Config::default();
+
+        let data = Value::test_record(
+            vec!["l", "r", "s", "i"],
+            vec![
+                Value::test_list(vec![
+                    Value::test_string("my"),
+                    Value::test_string("list"),
+                    Value::test_string("elements"),
+                ]),
+                Value::test_record(vec!["a", "b"], vec![Value::test_int(1), Value::test_int(2)]),
+                Value::test_string("some string"),
+                Value::test_int(123),
+            ],
+        );
+
+        config.layout = Layout::Table;
+        let result = repr_data(&data, &[], &config);
+        let expected: Vec<Vec<String>> = vec![
+            vec!["l".into(), "[3 items]".into(), "list".into()],
+            vec!["r".into(), "{2 fields}".into(), "record".into()],
+            vec!["s".into(), "some string".into(), "string".into()],
+            vec!["i".into(), "123".into(), "int".into()],
+        ];
+        assert_eq!(result, expected);
+
+        config.layout = Layout::Compact;
+        let result = repr_data(&data, &[], &config);
+        let expected: Vec<Vec<String>> = vec![vec![
+            "l: [list 3 items]".into(),
+            "r: {record 2 fields}".into(),
+            "s: (string) some string".into(),
+            "i: (int) 123".into(),
+        ]];
+        assert_eq!(result, expected);
+    }
+}
