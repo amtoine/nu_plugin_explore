@@ -212,7 +212,7 @@ mod tests {
 
     use super::{transition_state, State};
     use crate::{
-        app::{Mode, TransitionResult},
+        app::Mode,
         config::{repr_keycode, Config},
     };
 
@@ -259,26 +259,30 @@ mod tests {
 
         assert!(state.mode == Mode::Normal);
 
+        // INSERT -> PEEKING: not allowed
+        // PEEKING -> INSERT: not allowed
         let transitions = vec![
-            (&keybindings.normal, Mode::Normal, "NORMAL -> NORMAL"),
-            (&keybindings.insert, Mode::Insert, "NORMAL -> INSERT"),
-            (&keybindings.insert, Mode::Insert, "INSERT -> INSERT"),
-            (&keybindings.normal, Mode::Normal, "INSERT -> NORMAL"),
-            (&keybindings.peek, Mode::Peeking, "NORMAL -> PEEKING"),
-            (&keybindings.peek, Mode::Peeking, "PEEKING -> PEEKING"),
-            (&keybindings.normal, Mode::Normal, "PEEKING -> NORMAL"),
-            // INSERT -> PEEKING: not allowed
-            // PEEKING -> INSERT: not allowed
+            (&keybindings.normal, Mode::Normal),
+            (&keybindings.insert, Mode::Insert),
+            (&keybindings.insert, Mode::Insert),
+            (&keybindings.normal, Mode::Normal),
+            (&keybindings.peek, Mode::Peeking),
+            (&keybindings.peek, Mode::Peeking),
+            (&keybindings.normal, Mode::Normal),
         ];
 
-        for (key, expected_mode, transition) in transitions {
+        for (key, expected_mode) in transitions {
             let result = transition_state(&key, &config, &mut state, &value).unwrap();
-            assert!(!result.exit, "unexpected exit on {}", transition);
+            assert!(
+                !result.exit,
+                "unexpected exit after pressing {}",
+                repr_keycode(key)
+            );
             assert!(
                 state.mode == expected_mode,
-                "expected {} on {}, found {}",
+                "expected to be in {} after pressing {}, found {}",
                 expected_mode,
-                transition,
+                repr_keycode(key),
                 state.mode
             );
         }
@@ -292,11 +296,6 @@ mod tests {
         let mut state = State::default();
         let value = test_value();
 
-        let expected = TransitionResult {
-            exit: true,
-            result: None,
-        };
-
         let transitions = vec![
             (&keybindings.insert, false),
             (&keybindings.quit, true),
@@ -306,13 +305,19 @@ mod tests {
             (&keybindings.quit, true),
         ];
 
-        for (key, quit) in transitions {
+        for (key, exit) in transitions {
             let result = transition_state(key, &config, &mut state, &value).unwrap();
-            if quit {
-                assert_eq!(
-                    result,
-                    expected,
-                    "expected to quit with {} in {} mode",
+            if exit {
+                assert!(
+                    result.exit,
+                    "expected to quit after pressing {} in {} mode",
+                    repr_keycode(key),
+                    state.mode
+                );
+            } else {
+                assert!(
+                    !result.exit,
+                    "expected NOT to quit after pressing {} in {} mode",
                     repr_keycode(key),
                     state.mode
                 );
@@ -436,9 +441,17 @@ mod tests {
             transition_state(key, &config, &mut state, &value).unwrap();
 
             if bottom {
-                assert!(state.bottom, "expected to be at the bottom");
+                assert!(
+                    state.bottom,
+                    "expected to be at the bottom after pressing {}",
+                    repr_keycode(key)
+                );
             } else {
-                assert!(!state.bottom, "expected NOT to be at the bottom");
+                assert!(
+                    !state.bottom,
+                    "expected NOT to be at the bottom after pressing {}",
+                    repr_keycode(key)
+                );
             }
             assert_eq!(
                 state.cell_path.members,
