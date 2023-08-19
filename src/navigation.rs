@@ -29,7 +29,7 @@ pub(super) fn go_up_or_down_in_data(state: &mut State, input: &Value, direction:
     }
 
     let direction = match direction {
-        Direction::Up => usize::MAX,
+        Direction::Up => -1,
         Direction::Down => 1,
     };
 
@@ -49,7 +49,10 @@ pub(super) fn go_up_or_down_in_data(state: &mut State, input: &Value, direction:
                     val: if vals.is_empty() {
                         val
                     } else {
-                        (val + direction + vals.len()) % vals.len()
+                        let len = vals.len() as i32;
+                        let new_index = (val as i32 + direction + len) % len;
+
+                        new_index as usize
                     },
                     span,
                     optional,
@@ -69,8 +72,11 @@ pub(super) fn go_up_or_down_in_data(state: &mut State, input: &Value, direction:
                     val: if cols.is_empty() {
                         "".into()
                     } else {
-                        let index = cols.iter().position(|x| x == &val).unwrap();
-                        cols[(index + direction + cols.len()) % cols.len()].clone()
+                        let index = cols.iter().position(|x| x == &val).unwrap() as i32;
+                        let len = cols.len() as i32;
+                        let new_index = (index + direction + len) % len;
+
+                        cols[new_index as usize].clone()
                     },
                     span,
                     optional,
