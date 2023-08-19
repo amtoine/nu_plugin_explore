@@ -224,29 +224,18 @@ mod tests {
     ///     i: 123,
     /// }
     fn test_value() -> Value {
-        Value::record(
-            vec!["l".into(), "r".into(), "s".into(), "i".into()],
+        Value::test_record(
+            vec!["l", "r", "s", "i"],
             vec![
-                Value::list(
-                    vec![
-                        Value::string("my", Span::test_data()),
-                        Value::string("list", Span::test_data()),
-                        Value::string("elements", Span::test_data()),
-                    ],
-                    Span::test_data(),
-                ),
-                Value::record(
-                    vec!["a".into(), "b".into()],
-                    vec![
-                        Value::int(1, Span::test_data()),
-                        Value::int(2, Span::test_data()),
-                    ],
-                    Span::test_data(),
-                ),
-                Value::string("some string", Span::test_data()),
-                Value::int(123, Span::test_data()),
+                Value::test_list(vec![
+                    Value::test_string("my"),
+                    Value::test_string("list"),
+                    Value::test_string("elements"),
+                ]),
+                Value::test_record(vec!["a", "b"], vec![Value::test_int(1), Value::test_int(2)]),
+                Value::test_string("some string"),
+                Value::test_int(123),
             ],
-            Span::test_data(),
         )
     }
 
@@ -554,13 +543,9 @@ mod tests {
             (
                 &keybindings.peeking.current,
                 true,
-                Some(Value::record(
-                    vec!["a".into(), "b".into()],
-                    vec![
-                        Value::int(1, Span::test_data()),
-                        Value::int(2, Span::test_data()),
-                    ],
-                    Span::test_data(),
+                Some(Value::test_record(
+                    vec!["a", "b"],
+                    vec![Value::test_int(1), Value::test_int(2)],
                 )),
             ),
         ];
@@ -571,11 +556,7 @@ mod tests {
             (&keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
             (&keybindings.peek, false, None),
             (&keybindings.peeking.all, true, Some(value.clone())),
-            (
-                &keybindings.peeking.under,
-                true,
-                Some(Value::int(1, Span::test_data())),
-            ),
+            (&keybindings.peeking.under, true, Some(Value::test_int(1))),
         ];
         run_peeking_scenario(transitions, &config, &value);
     }
