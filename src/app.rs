@@ -208,6 +208,7 @@ fn transition_state(
 
 #[cfg(test)]
 mod tests {
+    use console::Key;
     use nu_protocol::{ast::PathMember, Span, Value};
 
     use super::{transition_state, State};
@@ -471,9 +472,112 @@ mod tests {
         }
     }
 
+    fn run_peeking_scenario(
+        transitions: Vec<(&Key, bool, Option<Value>)>,
+        config: &Config,
+        value: &Value,
+    ) {
+        let mut state = State::from_value(&value);
+
+        for (key, exit, expected) in transitions {
+            let mode = state.mode.clone();
+
+            let result = transition_state(key, &config, &mut state, &value).unwrap();
+
+            if exit {
+                assert!(
+                    result.exit,
+                    "expected to peek some data after pressing {} in {} mode",
+                    repr_keycode(key),
+                    mode
+                );
+            } else {
+                assert!(
+                    !result.exit,
+                    "expected NOT to peek some data after pressing {} in {} mode",
+                    repr_keycode(key),
+                    mode
+                );
+            }
+
+            match expected {
+                Some(value) => match result.result {
+                    Some(v) => assert_eq!(
+                        value,
+                        v,
+                        "unexpected data after pressing {} in {} mode",
+                        repr_keycode(key),
+                        mode
+                    ),
+                    None => panic!(
+                        "did expect output data after pressing {} in {} mode",
+                        repr_keycode(key),
+                        mode
+                    ),
+                },
+                None => match result.result {
+                    Some(_) => panic!(
+                        "did NOT expect output data after pressing {} in {} mode",
+                        repr_keycode(key),
+                        mode
+                    ),
+                    None => {}
+                },
+            }
+        }
+    }
+
     #[test]
     fn peek_data() {
-        /**/
+        let config = Config::default();
+        let keybindings = config.clone().keybindings;
+
+        let value = test_value();
+
+        let transitions = vec![
+            (&keybindings.peek, false, None),
+            (&keybindings.peeking.all, true, Some(value.clone())),
+        ];
+        run_peeking_scenario(transitions, &config, &value);
+
+        let transitions = vec![
+            (&keybindings.peek, false, None),
+            (&keybindings.peeking.current, true, Some(value.clone())),
+        ];
+        run_peeking_scenario(transitions, &config, &value);
+
+        let transitions = vec![
+            (&keybindings.navigation.down, false, None),
+            (&keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
+            (&keybindings.peek, false, None),
+            (&keybindings.peeking.all, true, Some(value.clone())),
+            (
+                &keybindings.peeking.current,
+                true,
+                Some(Value::record(
+                    vec!["a".into(), "b".into()],
+                    vec![
+                        Value::int(1, Span::test_data()),
+                        Value::int(2, Span::test_data()),
+                    ],
+                    Span::test_data(),
+                )),
+            ),
+        ];
+        run_peeking_scenario(transitions, &config, &value);
+
+        let transitions = vec![
+            (&keybindings.navigation.down, false, None),
+            (&keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
+            (&keybindings.peek, false, None),
+            (&keybindings.peeking.all, true, Some(value.clone())),
+            (
+                &keybindings.peeking.under,
+                true,
+                Some(Value::int(1, Span::test_data())),
+            ),
+        ];
+        run_peeking_scenario(transitions, &config, &value);
     }
 
     #[ignore = "data edition is not implemented for now"]
