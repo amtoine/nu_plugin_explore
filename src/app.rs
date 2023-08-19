@@ -1,3 +1,10 @@
+//! the higher level application
+//!
+//! this module mostly handles
+//! 1. the main TUI loop
+//! 1. the rendering
+//! 1. the keybindings
+//! 1. the internal state of the application
 use anyhow::Result;
 use ratatui::{prelude::CrosstermBackend, Terminal};
 
@@ -9,10 +16,14 @@ use nu_protocol::{
 use super::navigation::Direction;
 use super::{config::Config, navigation, tui};
 
+/// the mode in which the application is
 #[derive(PartialEq)]
 pub(super) enum Mode {
+    /// the NORMAL mode is the *navigation* mode, where the user can move around in the data
     Normal,
+    /// the INSERT mode lets the user edit cells of the structured data
     Insert,
+    /// the PEEKING mode lets the user *peek* data out of the application, to be reused later
     Peeking,
 }
 
@@ -33,9 +44,14 @@ impl std::fmt::Display for Mode {
     }
 }
 
+/// the complete state of the application
 pub(super) struct State {
+    /// the full current path in the data
     pub cell_path: CellPath,
+    /// tells whether or not the user is at the bottom of the data or not, used for rendering in
+    /// [`tui`]
     pub bottom: bool,
+    /// the current [`Mode`]
     pub mode: Mode,
 }
 
@@ -49,6 +65,15 @@ impl State {
     }
 }
 
+/// run the application
+///
+/// this function
+/// 1. creates the initial [`State`]
+/// 1. runs the main application loop
+///
+/// the application loop
+/// 1. renders the TUI with [`tui`]
+/// 1. reads the user's input keys and transition the [`State`] accordingly
 pub(super) fn run(
     terminal: &mut Terminal<CrosstermBackend<console::Term>>,
     input: &Value,
