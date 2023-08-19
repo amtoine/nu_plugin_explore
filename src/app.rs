@@ -66,6 +66,27 @@ impl Default for State {
     }
 }
 
+impl State {
+    fn from_value(value: &Value) -> Self {
+        let mut state = Self::default();
+        match value {
+            Value::List { vals, .. } => state.cell_path.members.push(PathMember::Int {
+                val: 0,
+                span: Span::unknown(),
+                optional: vals.is_empty(),
+            }),
+            Value::Record { cols, .. } => state.cell_path.members.push(PathMember::String {
+                val: cols.get(0).unwrap_or(&"".to_string()).into(),
+                span: Span::unknown(),
+                optional: cols.is_empty(),
+            }),
+            _ => {}
+        }
+
+        state
+    }
+}
+
 /// the result of a state transition
 #[derive(Debug, PartialEq)]
 struct TransitionResult {
@@ -89,20 +110,7 @@ pub(super) fn run(
     input: &Value,
     config: &Config,
 ) -> Result<Value> {
-    let mut state = State::default();
-    match input {
-        Value::List { vals, .. } => state.cell_path.members.push(PathMember::Int {
-            val: 0,
-            span: Span::unknown(),
-            optional: vals.is_empty(),
-        }),
-        Value::Record { cols, .. } => state.cell_path.members.push(PathMember::String {
-            val: cols.get(0).unwrap_or(&"".to_string()).into(),
-            span: Span::unknown(),
-            optional: cols.is_empty(),
-        }),
-        _ => {}
-    };
+    let mut state = State::from_value(&input);
 
     loop {
         terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
