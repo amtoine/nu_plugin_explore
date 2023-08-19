@@ -129,6 +129,7 @@ pub(super) fn go_back_in_data(state: &mut State) {
     state.bottom = false;
 }
 
+// TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
     use nu_protocol::{ast::PathMember, Span, Value};
