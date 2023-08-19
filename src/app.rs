@@ -247,42 +247,28 @@ mod tests {
 
         assert!(state.mode == Mode::Normal);
 
-        // NORMAL -> NORMAL
-        let result = transition_state(&keybindings.normal, &config, &mut state, &value).unwrap();
-        assert!(!result.exit);
-        assert!(state.mode == Mode::Normal);
+        let transitions = vec![
+            (&keybindings.normal, Mode::Normal, "NORMAL -> NORMAL"),
+            (&keybindings.insert, Mode::Insert, "NORMAL -> INSERT"),
+            (&keybindings.insert, Mode::Insert, "INSERT -> INSERT"),
+            (&keybindings.normal, Mode::Normal, "INSERT -> NORMAL"),
+            (&keybindings.peek, Mode::Peeking, "NORMAL -> PEEKING"),
+            (&keybindings.peek, Mode::Peeking, "PEEKING -> PEEKING"),
+            (&keybindings.normal, Mode::Normal, "PEEKING -> NORMAL"),
+            // INSERT -> PEEKING: not allowed
+            // PEEKING -> INSERT: not allowed
+        ];
 
-        // NORMAL -> INSERT
-        let result = transition_state(&keybindings.insert, &config, &mut state, &value).unwrap();
-        assert!(!result.exit);
-        assert!(state.mode == Mode::Insert);
-
-        // INSERT -> INSERT
-        let result = transition_state(&keybindings.insert, &config, &mut state, &value).unwrap();
-        assert!(!result.exit);
-        assert!(state.mode == Mode::Insert);
-
-        // INSERT -> NORMAL
-        let result = transition_state(&keybindings.normal, &config, &mut state, &value).unwrap();
-        assert!(!result.exit);
-        assert!(state.mode == Mode::Normal);
-
-        // NORMAL -> PEEKING
-        let result = transition_state(&keybindings.peek, &config, &mut state, &value).unwrap();
-        assert!(!result.exit);
-        assert!(state.mode == Mode::Peeking);
-
-        // PEEKING -> PEEKING
-        let result = transition_state(&keybindings.peek, &config, &mut state, &value).unwrap();
-        assert!(!result.exit);
-        assert!(state.mode == Mode::Peeking);
-
-        // PEEKING -> NORMAL
-        let result = transition_state(&keybindings.normal, &config, &mut state, &value).unwrap();
-        assert!(!result.exit);
-        assert!(state.mode == Mode::Normal);
-
-        // INSERT -> PEEKING: not allowed
-        // PEEKING -> INSERT: not allowed
+        for (key, expected_mode, transition) in transitions {
+            let result = transition_state(&key, &config, &mut state, &value).unwrap();
+            assert!(!result.exit, "unexpected exit on {}", transition);
+            assert!(
+                state.mode == expected_mode,
+                "expected {} on {}, found {}",
+                expected_mode,
+                transition,
+                state.mode
+            );
+        }
     }
 }
