@@ -1,18 +1,18 @@
 {
-    quit: 'q',
-    insert: 'i',
-    normal: "escape",
-    navigation: {
-        left: 'h',
-        down: 'j',
-        up: 'k',
-        right: 'l',
+    quit: 'q',  # quit `explore`
+    insert: 'i',  # go to INSERT mode to modify the data
+    normal: "escape",  # go back to NORMAL mode to navigate through the data
+    navigation: {  # only in NORMAL mode
+        left: 'h',  # go back one level in the data
+        down: 'j',  # go one row down in the current level
+        up: 'k',  # go one row up in the current level
+        right: 'l',  # go one level deeper in the data or hit the bottom
     },
-    peek: 'p',
-    peeking: {
-        all: 'a',
-        current: 'c',
-        under: 'u',
-        quit: "escape",
+    peek: 'p',  # go to PEEKING mode to peek a value
+    peeking: {  # only in PEEKING mode
+        all: 'a',  # peek the whole data, from the top level
+        current: 'c',  # peek the current data, i.e. what is visible
+        under: 'u',  # peek only what's under the cursor
+        quit: "escape",  # go back to NORMAL mode to navigate through the data
     },
 }

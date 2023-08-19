@@ -1,4 +1,4 @@
 {
-    show_cell_path: true,
-    layout: "table",
+    show_cell_path: true,  # whether or not to show the current cell path above the status bar
+    layout: "table",  # the layout of the data, either "table" or "compact"
 }

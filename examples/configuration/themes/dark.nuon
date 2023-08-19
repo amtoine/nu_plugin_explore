@@ -1,24 +1,24 @@
 {
-    normal: {
+    normal: {  # the colors for a normal row
         background: reset, # "black" is not pure *black*
         foreground: white,
     },
-    selected: {
+    selected: {  # the colors for the row under the cursor
         background: white,
         foreground: black,
     },
-    selected_modifier: "bold",
-    selected_symbol: "",
+    selected_modifier: "bold",  # a modifier to apply onto the row under the cursor
+    selected_symbol: "",  # the symbol to show to the left of the row under the cursor
     status_bar: {
-        normal: {
+        normal: {  # the colors for the status bar in NORMAL mode
             background: white,
             foreground: black,
         },
-        insert: {
+        insert: {  # the colors for the status bar in INSERT mode
             background: lightyellow,
             foreground: black,
         },
-        peek: {
+        peek: {  # the colors for the status bar in PEEKING mode
             background: lightgreen,
             foreground: black,
         }
