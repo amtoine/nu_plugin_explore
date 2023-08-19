@@ -27,8 +27,8 @@ jobs:
 
       - name: Setup dependencies
         run: |
-          cargo add "nu-plugin@${NU_VERSION}"
-          cargo add "nu-protocol@${NU_VERSION}" --features plugin
+          cargo add "nu-plugin@$NU_VERSION"
+          cargo add "nu-protocol@$NU_VERSION" --features plugin
 
       - name: Clippy
         run: cargo clippy --workspace -- $CLIPPY_OPTIONS
@@ -51,8 +51,8 @@ jobs:
 
       - name: Setup dependencies
         run: |
-          cargo add "nu-plugin@${NU_VERSION}"
-          cargo add "nu-protocol@${NU_VERSION}" --features plugin
+          cargo add "nu-plugin@$NU_VERSION"
+          cargo add "nu-protocol@$NU_VERSION" --features plugin
 
       - name: Tests
         run: cargo test --workspace
