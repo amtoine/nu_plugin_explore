@@ -29,6 +29,7 @@ jobs:
         run: |
           cargo add "nu-plugin@$NU_VERSION"
           cargo add "nu-protocol@$NU_VERSION" --features plugin
+        shell: bash
 
       - name: Clippy
         run: cargo clippy --workspace -- $CLIPPY_OPTIONS
@@ -53,6 +54,7 @@ jobs:
         run: |
           cargo add "nu-plugin@$NU_VERSION"
           cargo add "nu-protocol@$NU_VERSION" --features plugin
+        shell: bash
 
       - name: Tests
         run: cargo test --workspace
