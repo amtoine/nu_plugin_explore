@@ -208,7 +208,7 @@ fn transition_state(
 
 #[cfg(test)]
 mod tests {
-    use nu_protocol::{Span, Value};
+    use nu_protocol::{ast::PathMember, Span, Value};
 
     use super::{transition_state, State};
     use crate::{
@@ -320,9 +320,134 @@ mod tests {
         }
     }
 
+    /// a simplified [`PathMember`] that can be put in a single vector, without being too long
+    enum PM<'a> {
+        // the [`PathMember::String`] variant
+        S(&'a str),
+        // the [`PathMember::Int`] variant
+        I(usize),
+    }
+
+    fn to_path_member_vec(cell_path: Vec<PM>) -> Vec<PathMember> {
+        cell_path
+            .iter()
+            .map(|x| match *x {
+                PM::S(val) => PathMember::String {
+                    val: val.into(),
+                    span: Span::test_data(),
+                    optional: false,
+                },
+                PM::I(val) => PathMember::Int {
+                    val,
+                    span: Span::test_data(),
+                    optional: false,
+                },
+            })
+            .collect::<Vec<_>>()
+    }
+
+    fn repr_path_member_vec(members: &[PathMember]) -> String {
+        format!(
+            "$.{}",
+            members
+                .iter()
+                .map(|m| {
+                    match m {
+                        PathMember::Int { val, .. } => val.to_string(),
+                        PathMember::String { val, .. } => val.to_string(),
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(".")
+        )
+    }
+
     #[test]
     fn navigate_the_data() {
-        /**/
+        let config = Config::default();
+        let nav = config.clone().keybindings.navigation;
+
+        let value = test_value();
+        let mut state = State::from_value(&value);
+
+        assert_eq!(state.bottom, false);
+        assert_eq!(
+            state.cell_path.members,
+            to_path_member_vec(vec![PM::S("l")])
+        );
+
+        let transitions = vec![
+            (&nav.up, vec![PM::S("i")], false),
+            (&nav.up, vec![PM::S("s")], false),
+            (&nav.up, vec![PM::S("r")], false),
+            (&nav.up, vec![PM::S("l")], false),
+            (&nav.down, vec![PM::S("r")], false),
+            (&nav.left, vec![PM::S("r")], false),
+            (&nav.right, vec![PM::S("r"), PM::S("a")], false),
+            (&nav.right, vec![PM::S("r"), PM::S("a")], true),
+            (&nav.up, vec![PM::S("r"), PM::S("a")], true),
+            (&nav.down, vec![PM::S("r"), PM::S("a")], true),
+            (&nav.left, vec![PM::S("r"), PM::S("a")], false),
+            (&nav.down, vec![PM::S("r"), PM::S("b")], false),
+            (&nav.right, vec![PM::S("r"), PM::S("b")], true),
+            (&nav.up, vec![PM::S("r"), PM::S("b")], true),
+            (&nav.down, vec![PM::S("r"), PM::S("b")], true),
+            (&nav.left, vec![PM::S("r"), PM::S("b")], false),
+            (&nav.up, vec![PM::S("r"), PM::S("a")], false),
+            (&nav.up, vec![PM::S("r"), PM::S("b")], false),
+            (&nav.left, vec![PM::S("r")], false),
+            (&nav.down, vec![PM::S("s")], false),
+            (&nav.left, vec![PM::S("s")], false),
+            (&nav.right, vec![PM::S("s")], true),
+            (&nav.up, vec![PM::S("s")], true),
+            (&nav.down, vec![PM::S("s")], true),
+            (&nav.left, vec![PM::S("s")], false),
+            (&nav.down, vec![PM::S("i")], false),
+            (&nav.left, vec![PM::S("i")], false),
+            (&nav.right, vec![PM::S("i")], true),
+            (&nav.up, vec![PM::S("i")], true),
+            (&nav.down, vec![PM::S("i")], true),
+            (&nav.left, vec![PM::S("i")], false),
+            (&nav.down, vec![PM::S("l")], false),
+            (&nav.left, vec![PM::S("l")], false),
+            (&nav.right, vec![PM::S("l"), PM::I(0)], false),
+            (&nav.right, vec![PM::S("l"), PM::I(0)], true),
+            (&nav.up, vec![PM::S("l"), PM::I(0)], true),
+            (&nav.down, vec![PM::S("l"), PM::I(0)], true),
+            (&nav.left, vec![PM::S("l"), PM::I(0)], false),
+            (&nav.down, vec![PM::S("l"), PM::I(1)], false),
+            (&nav.right, vec![PM::S("l"), PM::I(1)], true),
+            (&nav.up, vec![PM::S("l"), PM::I(1)], true),
+            (&nav.down, vec![PM::S("l"), PM::I(1)], true),
+            (&nav.left, vec![PM::S("l"), PM::I(1)], false),
+            (&nav.down, vec![PM::S("l"), PM::I(2)], false),
+            (&nav.right, vec![PM::S("l"), PM::I(2)], true),
+            (&nav.up, vec![PM::S("l"), PM::I(2)], true),
+            (&nav.down, vec![PM::S("l"), PM::I(2)], true),
+            (&nav.left, vec![PM::S("l"), PM::I(2)], false),
+            (&nav.up, vec![PM::S("l"), PM::I(1)], false),
+            (&nav.up, vec![PM::S("l"), PM::I(0)], false),
+            (&nav.up, vec![PM::S("l"), PM::I(2)], false),
+            (&nav.left, vec![PM::S("l")], false),
+        ];
+
+        for (key, cell_path, bottom) in transitions {
+            let expected = to_path_member_vec(cell_path);
+            transition_state(key, &config, &mut state, &value).unwrap();
+
+            if bottom {
+                assert!(state.bottom, "expected to be at the bottom");
+            } else {
+                assert!(!state.bottom, "expected NOT to be at the bottom");
+            }
+            assert_eq!(
+                state.cell_path.members,
+                expected,
+                "expected to be at {:?}, found {:?}",
+                repr_path_member_vec(&expected),
+                repr_path_member_vec(&state.cell_path.members)
+            );
+        }
     }
 
     #[test]
