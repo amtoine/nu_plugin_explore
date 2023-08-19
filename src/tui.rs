@@ -1,3 +1,4 @@
+//! the module responsible for rendering the TUI
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
     style::Style,
@@ -11,6 +12,7 @@ use nu_protocol::Value;
 use super::config::{repr_keycode, Layout};
 use super::{Config, Mode, State};
 
+/// render the whole ui
 pub(super) fn render_ui(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
     input: &Value,
@@ -24,6 +26,9 @@ pub(super) fn render_ui(
     render_status_bar(frame, state, config);
 }
 
+/// compute the preview representation of a list
+///
+/// > see the tests for detailed examples
 fn repr_list(vals: &[Value], config: &Config) -> Vec<String> {
     if vals.len() <= 1 {
         match config.layout {
@@ -38,6 +43,9 @@ fn repr_list(vals: &[Value], config: &Config) -> Vec<String> {
     }
 }
 
+/// compute the preview representation of a record
+///
+/// > see the tests for detailed examples
 fn repr_record(cols: &[String], config: &Config) -> Vec<String> {
     if cols.len() <= 1 {
         match config.layout {
@@ -56,6 +64,9 @@ fn repr_record(cols: &[String], config: &Config) -> Vec<String> {
     }
 }
 
+/// compute the preview representation of a simple value
+///
+/// > see the tests for detailed examples
 fn repr_simple_value(value: &Value, config: &Config) -> Vec<String> {
     // FIXME: use a real config
     match config.layout {
@@ -71,6 +82,9 @@ fn repr_simple_value(value: &Value, config: &Config) -> Vec<String> {
     }
 }
 
+/// compute the preview representation of a value
+///
+/// > see the tests for detailed examples
 fn repr_value(value: &Value, config: &Config) -> Vec<String> {
     match value {
         Value::List { vals, .. } => repr_list(vals, config),
@@ -79,6 +93,9 @@ fn repr_value(value: &Value, config: &Config) -> Vec<String> {
     }
 }
 
+/// compute the row / item representation of a complete Nushell Value
+///
+/// > see the tests for detailed examples
 fn repr_data(data: &Value, cell_path: &[PathMember], config: &Config) -> Vec<Vec<String>> {
     match data.clone().follow_cell_path(cell_path, false) {
         Err(_) => panic!("unexpected error when following cell path during rendering"),
@@ -156,6 +173,12 @@ fn repr_data(data: &Value, cell_path: &[PathMember], config: &Config) -> Vec<Vec
     }
 }
 
+/// render the whole data
+///
+/// the layout can be changed from [`crate::config::Config::layout`].
+///
+/// the data will be rendered on top of the bar, and on top of the cell path in case
+/// [`crate::config::Config::show_cell_path`] is set to `true`.
 fn render_data(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
     data: &Value,
@@ -237,6 +260,23 @@ fn render_data(
     }
 }
 
+/// render the cell path just above the status bar
+///
+/// this line can be removed through config, see [`crate::config::Config::show_cell_path`]
+///
+/// # Examples
+/// > :bulb: **Note**  
+/// > the `...` are here to signify that the bar might be truncated and the `||` at the start and
+/// the end of the lines are just to represent the borders of the terminal but will not appear in
+/// the TUI.
+/// - at the beginning
+/// ```text
+/// ||cell path: $.   ...||
+/// ```
+/// - after some navigation, might look like
+/// ```text
+/// ||cell path: $.foo.bar.2.baz    ...||
+/// ```
 fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &State) {
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
@@ -261,6 +301,32 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &
     );
 }
 
+/// render the status bar at the bottom
+///
+/// the bar takes the last line of the TUI only and renders, from left to right
+/// - the current mode
+/// - hints about next bindings to press and actions to do
+///
+/// the color depending of the mode is completely configurable!
+///
+/// # Examples
+/// > :bulb: **Note**  
+/// > - the `...` are here to signify that the bar might be truncated and the `||` at the start and
+/// the end of the lines are just to represent the borders of the terminal but will not appear in
+/// the TUI.
+/// > - these examples use the default bindings
+/// - in NORMAL mode
+/// ```text
+/// ||NORMAL  ...                                     i to INSERT | hjkl to move around | p to peek | q to quit||
+/// ```
+/// - in INSERT mode
+/// ```text
+/// ||INSERT  ...                                                     <esc> to NORMAL | COMING SOON | q to quit||
+/// ```
+/// - in PEEKING mode
+/// ```text
+/// ||PEEKING ... <esc> to NORMAL | a to peek all | c to peek current view | u to peek under cursor | q to quit||
+/// ```
 fn render_status_bar(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
     state: &State,
