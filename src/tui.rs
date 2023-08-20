@@ -1,8 +1,8 @@
 //! the module responsible for rendering the TUI
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
-    style::Style,
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Row, Table, TableState},
+    style::{Color, Style},
+    widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
 };
 
@@ -237,7 +237,16 @@ fn render_data(
         Layout::Table => {
             let rows: Vec<Row> = repr_data(data, &data_path, config)
                 .iter()
-                .map(|row| Row::new(row.clone()).style(normal_style))
+                .map(|row| {
+                    Row::new(vec![
+                        Cell::from(row[0].clone())
+                            .style(Style::default().fg(Color::Green).bg(Color::Reset)),
+                        Cell::from(row[1].clone())
+                            .style(Style::default().fg(Color::Reset).bg(Color::Reset)),
+                        Cell::from(row[2].clone())
+                            .style(Style::default().fg(Color::Red).bg(Color::Reset)),
+                    ])
+                })
                 .collect();
 
             let table = Table::new(rows)
