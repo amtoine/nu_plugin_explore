@@ -116,6 +116,7 @@ cargo doc --document-private-items --no-deps --open
 - [ ] show true tables as such
 - [ ] get the config from `$env.config` => can parse configuration from CLI
 - [ ] add check for the config to make sure it's valid
+- [ ] support for editing cells in INSERT mode
 
 ## internal
 - [x] add tests...
