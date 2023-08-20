@@ -17,7 +17,7 @@ use parsing::{
 };
 
 /// the configuration for the status bar colors in all [`crate::app::Mode`]s
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub(super) struct StatusBarColorConfig {
     pub normal: BgFgColorConfig,
     pub insert: BgFgColorConfig,
@@ -25,7 +25,7 @@ pub(super) struct StatusBarColorConfig {
 }
 
 /// the colors of the application
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub(super) struct ColorConfig {
     /// the color when a row is NOT selected
     pub normal: BgFgColorConfig,
@@ -39,14 +39,14 @@ pub(super) struct ColorConfig {
 }
 
 /// a pair of background / foreground colors
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub(super) struct BgFgColorConfig {
     pub background: Color,
     pub foreground: Color,
 }
 
 /// the bindings in NORMAL mode (see [crate::app::Mode::Normal])
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub(super) struct NavigationBindingsMap {
     /// go one row up in the data
     pub up: Key,
@@ -59,7 +59,7 @@ pub(super) struct NavigationBindingsMap {
 }
 
 /// the bindings in PEEKING mode (see [crate::app::Mode::Peeking])
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub(super) struct PeekingBindingsMap {
     /// peek the whole data structure
     pub all: Key,
@@ -71,7 +71,7 @@ pub(super) struct PeekingBindingsMap {
 }
 
 /// the keybindings mapping
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub(super) struct KeyBindingsMap {
     pub quit: Key,
     /// go into INSERT mode (see [crate::app::Mode::Insert])
@@ -85,7 +85,7 @@ pub(super) struct KeyBindingsMap {
 }
 
 /// the layout of the application
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub(super) enum Layout {
     /// show each row in a `[name, data, type]` column
     Table,
@@ -94,7 +94,7 @@ pub(super) enum Layout {
 }
 
 /// the configuration of the whole application
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub(super) struct Config {
     pub colors: ColorConfig,
     pub keybindings: KeyBindingsMap,
