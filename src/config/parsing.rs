@@ -266,3 +266,298 @@ pub(super) fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Valu
 
     value.clone().follow_cell_path(&cell_path, false).ok()
 }
+
+// TODO: add proper assert error messages
+#[cfg(test)]
+mod tests {
+    use console::Key;
+    use nu_plugin::LabeledError;
+    use nu_protocol::Value;
+    use ratatui::style::{Color, Modifier};
+
+    use super::{
+        follow_cell_path, try_bool, try_color, try_fg_bg_colors, try_key, try_layout, try_modifier,
+        try_string,
+    };
+    use crate::config::{BgFgColorConfig, Layout};
+
+    #[test]
+    fn follow_str_cell_path() {
+        let inner_record_a = Value::test_int(1);
+        let inner_record_b = Value::test_int(2);
+        let record = Value::test_record(
+            vec!["a", "b"],
+            vec![inner_record_a.clone(), inner_record_b.clone()],
+        );
+        let string = Value::test_string("some string");
+        let int = Value::test_int(123);
+
+        let value = Value::test_record(
+            vec!["r", "s", "i"],
+            vec![record.clone(), string.clone(), int.clone()],
+        );
+
+        assert_eq!(follow_cell_path(&value, &[]), Some(value.clone()));
+        assert_eq!(follow_cell_path(&value, &["r"]), Some(record));
+        assert_eq!(follow_cell_path(&value, &["s"]), Some(string));
+        assert_eq!(follow_cell_path(&value, &["i"]), Some(int));
+        assert_eq!(follow_cell_path(&value, &["x"]), None);
+        assert_eq!(follow_cell_path(&value, &["r", "a"]), Some(inner_record_a));
+        assert_eq!(follow_cell_path(&value, &["r", "b"]), Some(inner_record_b));
+        assert_eq!(follow_cell_path(&value, &["r", "x"]), None);
+    }
+
+    fn test_tried_error<T>(
+        result: Result<Option<T>, LabeledError>,
+        cell_path: &str,
+        expected: &str,
+    ) {
+        assert!(result.is_err());
+        let err = result.err().unwrap();
+        assert_eq!(err.label, "invalid config");
+        assert_eq!(err.msg, format!("`$.{}` {}", cell_path, expected));
+    }
+
+    #[test]
+    fn trying_bool() {
+        test_tried_error(
+            try_bool(&Value::test_string("not a bool"), &[]),
+            "",
+            "should be a bool, found string",
+        );
+        test_tried_error(
+            try_bool(&Value::test_int(123), &[]),
+            "",
+            "should be a bool, found int",
+        );
+
+        assert_eq!(try_bool(&Value::test_bool(true), &[]), Ok(Some(true)));
+        assert_eq!(try_bool(&Value::test_bool(false), &[]), Ok(Some(false)));
+        assert_eq!(try_bool(&Value::test_nothing(), &["x"]), Ok(None));
+    }
+
+    #[test]
+    fn trying_string() {
+        test_tried_error(
+            try_string(&Value::test_bool(true), &[]),
+            "",
+            "should be a string, found bool",
+        );
+        test_tried_error(
+            try_string(&Value::test_int(123), &[]),
+            "",
+            "should be a string, found int",
+        );
+
+        assert_eq!(
+            try_string(&Value::test_string("my string"), &[]),
+            Ok(Some("my string".to_string()))
+        );
+        assert_eq!(
+            try_string(&Value::test_string("my string"), &["x"]),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn trying_key() {
+        test_tried_error(
+            try_key(&Value::test_bool(true), &[]),
+            "",
+            "should be a string, found bool",
+        );
+        test_tried_error(
+            try_key(&Value::test_int(123), &[]),
+            "",
+            "should be a string, found int",
+        );
+        test_tried_error(
+            try_key(&Value::test_string("enter"), &[]),
+            "",
+            "should be a character or one of [up, down, left, right, escape] , found enter",
+        );
+
+        let cases = vec![
+            ("up", Key::ArrowUp),
+            ("down", Key::ArrowDown),
+            ("left", Key::ArrowLeft),
+            ("right", Key::ArrowRight),
+            ("escape", Key::Escape),
+            ("a", Key::Char('a')),
+            ("b", Key::Char('b')),
+            ("x", Key::Char('x')),
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(try_key(&Value::test_string(input), &[]), Ok(Some(expected)));
+        }
+    }
+
+    #[test]
+    fn trying_layout() {
+        test_tried_error(
+            try_layout(&Value::test_bool(true), &[]),
+            "",
+            "should be a string, found bool",
+        );
+        test_tried_error(
+            try_layout(&Value::test_int(123), &[]),
+            "",
+            "should be a string, found int",
+        );
+        test_tried_error(
+            try_layout(&Value::test_string("collapsed"), &[]),
+            "",
+            "should be one of [table, compact] , found collapsed",
+        );
+
+        let cases = vec![("table", Layout::Table), ("compact", Layout::Compact)];
+
+        for (input, expected) in cases {
+            assert_eq!(
+                try_layout(&Value::test_string(input), &[]),
+                Ok(Some(expected))
+            );
+        }
+    }
+
+    #[test]
+    fn trying_modifier() {
+        test_tried_error(
+            try_modifier(&Value::test_bool(true), &[]),
+            "",
+            "should be a string or null, found bool",
+        );
+        test_tried_error(
+            try_modifier(&Value::test_int(123), &[]),
+            "",
+            "should be a string or null, found int",
+        );
+        test_tried_error(
+            try_modifier(&Value::test_string("x"), &[]),
+            "",
+            "should be the empty string, one of [italic, bold, underline, blink] or null, found x",
+        );
+
+        assert_eq!(
+            try_modifier(&Value::test_nothing(), &[]),
+            Ok(Some(Modifier::empty()))
+        );
+
+        let cases = vec![
+            ("", Modifier::empty()),
+            ("italic", Modifier::ITALIC),
+            ("bold", Modifier::BOLD),
+            ("underline", Modifier::UNDERLINED),
+            ("blink", Modifier::SLOW_BLINK),
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(
+                try_modifier(&Value::test_string(input), &[]),
+                Ok(Some(expected))
+            );
+        }
+    }
+
+    #[test]
+    fn trying_color() {
+        test_tried_error(
+            try_color(&Value::test_bool(true), &[]),
+            "",
+            "should be a string, found bool",
+        );
+        test_tried_error(
+            try_color(&Value::test_int(123), &[]),
+            "",
+            "should be a string, found int",
+        );
+        test_tried_error(
+            try_color(&Value::test_string("x"), &[]),
+            "",
+            "should be one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found x",
+        );
+
+        let cases = vec![
+            ("black", Color::Black),
+            ("red", Color::Red),
+            ("green", Color::Green),
+            ("blue", Color::Blue),
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(
+                try_color(&Value::test_string(input), &[]),
+                Ok(Some(expected))
+            );
+        }
+    }
+
+    #[test]
+    fn trying_fg_bg_colors() {
+        let default_color = BgFgColorConfig {
+            background: Color::Reset,
+            foreground: Color::Reset,
+        };
+
+        test_tried_error(
+            try_fg_bg_colors(&Value::test_bool(true), &[], &default_color),
+            "",
+            "should be a record, found bool",
+        );
+        test_tried_error(
+            try_fg_bg_colors(&Value::test_int(123), &[], &default_color),
+            "",
+            "should be a record, found int",
+        );
+        test_tried_error(
+            try_fg_bg_colors(&Value::test_string("x"), &[], &default_color),
+            "",
+            "should be a record, found string",
+        );
+        test_tried_error(
+            try_fg_bg_colors(
+                &Value::test_record(vec!["x"], vec![Value::test_nothing()]),
+                &[],
+                &default_color,
+            ),
+            "x",
+            "is not a valid config field",
+        );
+
+        let cases = vec![
+            (vec![], vec![], default_color.clone()),
+            (
+                vec!["foreground"],
+                vec![Value::test_string("green")],
+                BgFgColorConfig {
+                    foreground: Color::Green,
+                    background: Color::Reset,
+                },
+            ),
+            (
+                vec!["background"],
+                vec![Value::test_string("blue")],
+                BgFgColorConfig {
+                    foreground: Color::Reset,
+                    background: Color::Blue,
+                },
+            ),
+            (
+                vec!["foreground", "background"],
+                vec![Value::test_string("green"), Value::test_string("blue")],
+                BgFgColorConfig {
+                    foreground: Color::Green,
+                    background: Color::Blue,
+                },
+            ),
+        ];
+
+        for (cols, vals, expected) in cases {
+            assert_eq!(
+                try_fg_bg_colors(&Value::test_record(cols, vals), &[], &default_color),
+                Ok(Some(expected))
+            );
+        }
+    }
+}
