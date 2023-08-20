@@ -13,6 +13,8 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
 - [*configuration*](#configuration)
 - [*see the documentation locally*](#see-the-documentation-locally)
 - [*TODO*](#todo)
+  - [*features*](#features)
+  - [*internal*](#internal)
 
 # introduction
 ## the idea behind an *explorer*
@@ -107,20 +109,23 @@ cargo doc --document-private-items --no-deps --open
 ```
 
 # TODO
-- [ ] get rid of the `.clone`s
-- [ ] handle errors properly (`.unwrap`s and `panic!`s)
-- [ ] get the config from `$env.config` => can parse configuration from CLI
+## features
 - [x] support non-character bindings
-- [ ] add check for the config to make sure it's valid
 - [ ] when going into a file or URL, open it
 - [ ] give different colors to names and type
+- [ ] show true tables as such
+- [ ] get the config from `$env.config` => can parse configuration from CLI
+- [ ] add check for the config to make sure it's valid
+
+## internal
 - [x] add tests...
   - [x] to `navigation.rs` to make sure the navigation in the data is ok
   - [x] to `app.rs` to make sure the application state machine works
   - [x] to `parsing.rs` to make sure the parsing of the config works
   - [x] to `tui.rs` to make sure the rendering works as intended
+- [ ] get rid of the `.clone`s
+- [ ] handle errors properly (`.unwrap`s and `panic!`s)
 - [ ] restrict the visibility of objects when possible
-- [ ] show true tables as such
 
 [Nushell]: https://nushell.sh
 [`nu-explore`]: https://crates.io/crates/nu-explore
