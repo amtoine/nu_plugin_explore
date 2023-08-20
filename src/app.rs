@@ -110,7 +110,7 @@ pub(super) fn run(
     input: &Value,
     config: &Config,
 ) -> Result<Value> {
-    let mut state = State::from_value(&input);
+    let mut state = State::from_value(input);
 
     loop {
         terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
