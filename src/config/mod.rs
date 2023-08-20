@@ -434,3 +434,80 @@ pub(super) fn repr_keycode(keycode: &Key) -> String {
         _ => "??".into(),
     }
 }
+
+// TODO: add proper assert error messages
+#[cfg(test)]
+mod tests {
+    use console::Key;
+    use nu_protocol::Value;
+
+    use super::{repr_keycode, Config};
+
+    #[test]
+    fn keycode_representation() {
+        assert_eq!(repr_keycode(&Key::Char('x')), "x".to_string());
+        assert_eq!(repr_keycode(&Key::ArrowLeft), "←".to_string());
+        assert_eq!(repr_keycode(&Key::Escape), "<esc>".to_string());
+        assert_eq!(repr_keycode(&Key::Enter), "??".to_string());
+    }
+
+    #[test]
+    fn parse_invalid_config() {
+        assert_eq!(
+            Config::from_value(Value::test_string("x")),
+            Ok(Config::default())
+        );
+    }
+
+    #[test]
+    fn parse_empty_config() {
+        let cols: Vec<&str> = vec![];
+        assert_eq!(
+            Config::from_value(Value::test_record(cols, vec![])),
+            Ok(Config::default())
+        );
+    }
+
+    #[test]
+    fn parse_config_with_invalid_field() {
+        let value = Value::test_record(vec!["x"], vec![Value::test_nothing()]);
+        let result = Config::from_value(value);
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert!(error.msg.contains("not a valid config field"));
+
+        let value = Value::test_record(
+            vec!["colors"],
+            vec![Value::test_record(vec!["foo"], vec![Value::test_nothing()])],
+        );
+        let result = Config::from_value(value);
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert!(error.msg.contains("not a valid config field"));
+    }
+
+    #[test]
+    fn parse_config() {
+        let value = Value::test_record(vec!["show_cell_path"], vec![Value::test_bool(true)]);
+        assert_eq!(Config::from_value(value), Ok(Config::default()));
+
+        let value = Value::test_record(vec!["show_cell_path"], vec![Value::test_bool(false)]);
+        let mut expected = Config::default();
+        expected.show_cell_path = false;
+        assert_eq!(Config::from_value(value), Ok(expected));
+
+        let value = Value::test_record(
+            vec!["keybindings"],
+            vec![Value::test_record(
+                vec!["navigation"],
+                vec![Value::test_record(
+                    vec!["up"],
+                    vec![Value::test_string("x")],
+                )],
+            )],
+        );
+        let mut expected = Config::default();
+        expected.keybindings.navigation.up = Key::Char('x');
+        assert_eq!(Config::from_value(value), Ok(expected));
+    }
+}
