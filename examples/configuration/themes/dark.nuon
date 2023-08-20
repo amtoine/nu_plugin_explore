@@ -1,7 +1,17 @@
 {
     normal: {  # the colors for a normal row
-        background: reset, # "black" is not pure *black*
-        foreground: white,
+        name: {
+            background: reset, # "black" is not pure *black*
+            foreground: green,
+        },
+        data: {
+            background: reset, # "black" is not pure *black*
+            foreground: white,
+        },
+        shape: {
+            background: reset, # "black" is not pure *black*
+            foreground: red,
+        },
     },
     selected: {  # the colors for the row under the cursor
         background: white,

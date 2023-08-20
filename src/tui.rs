@@ -1,7 +1,7 @@
 //! the module responsible for rendering the TUI
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
-    style::{Color, Style},
+    style::Style,
     widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
 };
@@ -196,8 +196,8 @@ fn render_data(
     let current = if !state.bottom { data_path.pop() } else { None };
 
     let normal_style = Style::default()
-        .fg(config.colors.normal.foreground)
-        .bg(config.colors.normal.background);
+        .fg(config.colors.normal.data.foreground)
+        .bg(config.colors.normal.data.background);
     let highlight_style = Style::default()
         .fg(config.colors.selected.foreground)
         .bg(config.colors.selected.background)
@@ -239,12 +239,21 @@ fn render_data(
                 .iter()
                 .map(|row| {
                     Row::new(vec![
-                        Cell::from(row[0].clone())
-                            .style(Style::default().fg(Color::Green).bg(Color::Reset)),
-                        Cell::from(row[1].clone())
-                            .style(Style::default().fg(Color::Reset).bg(Color::Reset)),
-                        Cell::from(row[2].clone())
-                            .style(Style::default().fg(Color::Red).bg(Color::Reset)),
+                        Cell::from(row[0].clone()).style(
+                            Style::default()
+                                .fg(config.colors.normal.name.foreground)
+                                .bg(config.colors.normal.name.background),
+                        ),
+                        Cell::from(row[1].clone()).style(
+                            Style::default()
+                                .fg(config.colors.normal.data.foreground)
+                                .bg(config.colors.normal.data.background),
+                        ),
+                        Cell::from(row[2].clone()).style(
+                            Style::default()
+                                .fg(config.colors.normal.shape.foreground)
+                                .bg(config.colors.normal.shape.background),
+                        ),
                     ])
                 })
                 .collect();
