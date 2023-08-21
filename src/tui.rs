@@ -27,150 +27,107 @@ pub(super) fn render_ui(
     render_status_bar(frame, state, config);
 }
 
+/// a common representation for an explore row
+#[derive(Clone, Debug, PartialEq)]
+struct DataRowRepr {
+    name: Option<String>,
+    shape: String,
+    data: String,
+}
+
 /// compute the preview representation of a list
 ///
 /// > see the tests for detailed examples
-fn repr_list(vals: &[Value], config: &Config) -> Vec<String> {
-    if vals.len() <= 1 {
-        match config.layout {
-            Layout::Compact => vec![format!("[list {} item]", vals.len())],
-            Layout::Table => vec![format!("[{} item]", vals.len()), "list".to_string()],
-        }
+fn repr_list(vals: &[Value]) -> DataRowRepr {
+    let data = if vals.len() <= 1 {
+        format!("[{} item]", vals.len())
     } else {
-        match config.layout {
-            Layout::Compact => vec![format!("[list {} items]", vals.len())],
-            Layout::Table => vec![format!("[{} items]", vals.len()), "list".to_string()],
-        }
+        format!("[{} items]", vals.len())
+    };
+
+    DataRowRepr {
+        name: None,
+        shape: "list".into(),
+        data,
     }
 }
 
 /// compute the preview representation of a record
 ///
 /// > see the tests for detailed examples
-fn repr_record(cols: &[String], config: &Config) -> Vec<String> {
-    if cols.len() <= 1 {
-        match config.layout {
-            Layout::Compact => vec![format!("{{record {} field}}", cols.len())],
-            Layout::Table => {
-                vec![format!("{{{} field}}", cols.len()), "record".to_string()]
-            }
-        }
+fn repr_record(cols: &[String]) -> DataRowRepr {
+    let data = if cols.len() <= 1 {
+        format!("{{{} field}}", cols.len())
     } else {
-        match config.layout {
-            Layout::Compact => vec![format!("{{record {} fields}}", cols.len())],
-            Layout::Table => {
-                vec![format!("{{{} fields}}", cols.len()), "record".to_string()]
-            }
-        }
+        format!("{{{} fields}}", cols.len())
+    };
+
+    DataRowRepr {
+        name: None,
+        shape: "record".into(),
+        data,
     }
 }
 
 /// compute the preview representation of a simple value
 ///
 /// > see the tests for detailed examples
-fn repr_simple_value(value: &Value, config: &Config) -> Vec<String> {
-    // FIXME: use a real config
-    match config.layout {
-        Layout::Compact => vec![format!(
-            "({}) {}",
-            value.get_type(),
-            value.into_string(" ", &nu_protocol::Config::default())
-        )],
-        Layout::Table => vec![
-            value.into_string(" ", &nu_protocol::Config::default()),
-            value.get_type().to_string(),
-        ],
+fn repr_simple_value(value: &Value) -> DataRowRepr {
+    DataRowRepr {
+        name: None,
+        shape: value.get_type().to_string(),
+        // FIXME: use a real config
+        data: value.into_string(" ", &nu_protocol::Config::default()),
     }
 }
 
 /// compute the preview representation of a value
 ///
 /// > see the tests for detailed examples
-fn repr_value(value: &Value, config: &Config) -> Vec<String> {
+fn repr_value(value: &Value) -> DataRowRepr {
     match value {
-        Value::List { vals, .. } => repr_list(vals, config),
-        Value::Record { cols, .. } => repr_record(cols, config),
-        x => repr_simple_value(x, config),
+        Value::List { vals, .. } => repr_list(vals),
+        Value::Record { cols, .. } => repr_record(cols),
+        x => repr_simple_value(x),
     }
 }
 
 /// compute the row / item representation of a complete Nushell Value
 ///
 /// > see the tests for detailed examples
-fn repr_data(data: &Value, cell_path: &[PathMember], config: &Config) -> Vec<Vec<String>> {
+fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
     match data.clone().follow_cell_path(cell_path, false) {
         Err(_) => panic!("unexpected error when following cell path during rendering"),
-        Ok(Value::List { vals, .. }) => match config.layout {
-            Layout::Compact => {
-                vec![if vals.is_empty() {
-                    vec!["[list 0 item]".to_string()]
-                } else {
-                    vals.iter()
-                        .map(|v| repr_value(v, config)[0].clone())
-                        .collect::<Vec<String>>()
+        Ok(Value::List { vals, .. }) => {
+            if vals.is_empty() {
+                vec![DataRowRepr {
+                    name: None,
+                    shape: "list".into(),
+                    data: "[0 item]".into(),
                 }]
+            } else {
+                vals.iter().map(repr_value).collect::<Vec<DataRowRepr>>()
             }
-            Layout::Table => {
-                if vals.is_empty() {
-                    vec![vec!["".into(), "[0 item]".into(), "list".into()]]
-                } else {
-                    vals.iter()
-                        .map(|val| {
-                            let mut value = repr_value(val, config);
-                            if value.len() < 3 {
-                                let mut base = vec![];
-                                for _ in 0..(3 - value.len()) {
-                                    base.push("".into())
-                                }
-                                base.append(&mut value);
-                                base
-                            } else {
-                                value
-                            }
-                        })
-                        .collect::<Vec<Vec<String>>>()
-                }
-            }
-        },
-        Ok(Value::Record { cols, vals, .. }) => match config.layout {
-            Layout::Compact => {
-                vec![if cols.is_empty() {
-                    vec!["{record 0 field}".to_string()]
-                } else {
-                    cols.iter()
-                        .zip(vals)
-                        .map(|(col, val)| format!("{}: {}", col, repr_value(&val, config)[0]))
-                        .collect::<Vec<String>>()
+        }
+        Ok(Value::Record { cols, vals, .. }) => {
+            if cols.is_empty() {
+                vec![DataRowRepr {
+                    name: None,
+                    shape: "record".into(),
+                    data: "{0 field}".into(),
                 }]
+            } else {
+                cols.iter()
+                    .zip(vals)
+                    .map(|(col, val)| {
+                        let mut repr = repr_value(&val);
+                        repr.name = Some(col.to_string());
+                        repr
+                    })
+                    .collect::<Vec<DataRowRepr>>()
             }
-            Layout::Table => {
-                if cols.is_empty() {
-                    vec![vec!["".into(), "{0 field}".into(), "record".into()]]
-                } else {
-                    cols.iter()
-                        .zip(vals)
-                        .map(|(col, val)| {
-                            let mut res = vec![col.clone()];
-                            res.append(&mut repr_value(&val, config));
-                            res
-                        })
-                        .collect::<Vec<Vec<String>>>()
-                }
-            }
-        },
-        // FIXME: use a real config
-        Ok(value) => match config.layout {
-            Layout::Compact => vec![vec![format!(
-                "({}) {}",
-                value.get_type(),
-                value.into_string(" ", &nu_protocol::Config::default())
-            )]],
-            Layout::Table => vec![vec![
-                "".into(),
-                value.into_string(" ", &nu_protocol::Config::default()),
-                value.get_type().to_string(),
-            ]],
-        },
+        }
+        Ok(value) => vec![repr_simple_value(&value)],
     }
 }
 
@@ -216,27 +173,27 @@ fn render_data(
 
     match config.layout {
         Layout::Compact => {
-            let items: Vec<ListItem> = repr_data(data, &data_path, config)[0]
-                .clone()
+            let items: Vec<ListItem> = repr_data(data, &data_path)
                 .iter()
-                .map(|_line| {
+                .map(|row| {
+                    let row = row.clone();
                     ListItem::new(Line::from(vec![
                         Span::styled(
-                            "name",
+                            row.name.unwrap_or("".into()),
                             Style::default()
                                 .fg(config.colors.normal.name.foreground)
                                 .bg(config.colors.normal.name.background),
                         ),
                         ": (".into(),
                         Span::styled(
-                            "shape",
+                            row.shape,
                             Style::default()
                                 .fg(config.colors.normal.shape.foreground)
                                 .bg(config.colors.normal.shape.background),
                         ),
                         ") ".into(),
                         Span::styled(
-                            "data",
+                            row.data,
                             Style::default()
                                 .fg(config.colors.normal.data.foreground)
                                 .bg(config.colors.normal.data.background),
@@ -256,21 +213,22 @@ fn render_data(
             )
         }
         Layout::Table => {
-            let rows: Vec<Row> = repr_data(data, &data_path, config)
+            let rows: Vec<Row> = repr_data(data, &data_path)
                 .iter()
                 .map(|row| {
+                    let row = row.clone();
                     Row::new(vec![
-                        Cell::from(row[0].clone()).style(
+                        Cell::from(row.name.unwrap_or("".into())).style(
                             Style::default()
                                 .fg(config.colors.normal.name.foreground)
                                 .bg(config.colors.normal.name.background),
                         ),
-                        Cell::from(row[1].clone()).style(
+                        Cell::from(row.data).style(
                             Style::default()
                                 .fg(config.colors.normal.data.foreground)
                                 .bg(config.colors.normal.data.background),
                         ),
-                        Cell::from(row[2].clone()).style(
+                        Cell::from(row.shape).style(
                             Style::default()
                                 .fg(config.colors.normal.shape.foreground)
                                 .bg(config.colors.normal.shape.background),
