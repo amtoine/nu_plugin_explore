@@ -1,3 +1,4 @@
+use nu_protocol::Value;
 use ratatui::{
     prelude::{Constraint, CrosstermBackend, Direction, Layout, Rect},
     style::Style,
@@ -20,6 +21,13 @@ impl Default for Editor {
 }
 
 impl Editor {
+    pub(super) fn from_value(value: &Value) -> Self {
+        Self {
+            buffer: value.into_string(" ", &nu_protocol::Config::default()),
+            cursor_position: 0,
+        }
+    }
+
     fn move_cursor_left(&mut self) {
         self.cursor_position = self
             .cursor_position

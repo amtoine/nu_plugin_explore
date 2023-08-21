@@ -100,9 +100,9 @@ impl State {
         self.mode = Mode::Bottom;
     }
 
-    fn enter_editor(&mut self) {
+    fn enter_editor(&mut self, value: &Value) {
         self.mode = Mode::Insert;
-        self.editor = Editor::default();
+        self.editor = Editor::from_value(value);
     }
 }
 
@@ -184,7 +184,12 @@ fn transition_state(
         return Ok(TransitionResult::quit());
     } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
-            state.enter_editor();
+            state.enter_editor(
+                &value
+                    .clone()
+                    .follow_cell_path(&state.cell_path.members, false)
+                    .unwrap(),
+            );
             return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.normal {
