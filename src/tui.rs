@@ -1,7 +1,7 @@
 //! the module responsible for rendering the TUI
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
-    style::Style,
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
@@ -238,6 +238,28 @@ fn render_data(
             )
         }
         Layout::Table => {
+            let header = Row::new(vec![
+                Cell::from("name").style(
+                    Style::default()
+                        .fg(config.colors.normal.name.foreground)
+                        .bg(config.colors.normal.name.background)
+                        .add_modifier(Modifier::REVERSED),
+                ),
+                Cell::from("data").style(
+                    Style::default()
+                        .fg(config.colors.normal.data.foreground)
+                        .bg(config.colors.normal.data.background)
+                        .add_modifier(Modifier::REVERSED),
+                ),
+                Cell::from("shape").style(
+                    Style::default()
+                        .fg(config.colors.normal.shape.foreground)
+                        .bg(config.colors.normal.shape.background)
+                        .add_modifier(Modifier::REVERSED),
+                ),
+            ])
+            .height(1);
+
             let rows: Vec<Row> = repr_data(data, &data_path)
                 .iter()
                 .map(|row| {
@@ -263,6 +285,7 @@ fn render_data(
                 .collect();
 
             let table = Table::new(rows)
+                .header(header)
                 .block(Block::default().borders(Borders::ALL))
                 .highlight_style(highlight_style)
                 .highlight_symbol(&config.colors.selected_symbol)
