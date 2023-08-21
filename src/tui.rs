@@ -187,7 +187,7 @@ fn render_data(
             .columns()
             .iter()
             .position(|x| x == &val)
-            .unwrap(),
+            .unwrap_or(0),
         None => 0,
     };
 
