@@ -12,6 +12,7 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
 - [*usage*](#usage)
 - [*configuration*](#configuration)
 - [*see the documentation locally*](#see-the-documentation-locally)
+- [*contributing*](#contributing)
 - [*TODO*](#todo)
   - [*features*](#features)
   - [*internal*](#internal)
@@ -107,6 +108,12 @@ $nu | explore (
 ```nushell
 cargo doc --document-private-items --no-deps --open
 ```
+
+# contributing
+in order to help, you can have a look at
+- the [todo](#todo) list down below, there might be unticked tasks to tackle
+- the issues and bugs in the [issue tracker](https://github.com/amtoine/nu_plugin_explore/issues)
+- the `FIXME` and `TODO` comments in the source base
 
 # TODO
 ## features
