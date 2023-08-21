@@ -143,36 +143,68 @@ fn transition_state(
     } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
             state.mode = Mode::Insert;
+            return Ok(TransitionResult {
+                exit: false,
+                result: None,
+            });
         }
     } else if key == &config.keybindings.normal {
         if state.mode == Mode::Insert {
             state.mode = Mode::Normal;
+            return Ok(TransitionResult {
+                exit: false,
+                result: None,
+            });
         }
     } else if key == &config.keybindings.navigation.down {
         if state.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(state, value, Direction::Down);
+            return Ok(TransitionResult {
+                exit: false,
+                result: None,
+            });
         }
     } else if key == &config.keybindings.navigation.up {
         if state.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(state, value, Direction::Up);
+            return Ok(TransitionResult {
+                exit: false,
+                result: None,
+            });
         }
     } else if key == &config.keybindings.navigation.right {
         if state.mode == Mode::Normal {
             navigation::go_deeper_in_data(state, value);
+            return Ok(TransitionResult {
+                exit: false,
+                result: None,
+            });
         }
     } else if key == &config.keybindings.navigation.left {
         if state.mode == Mode::Normal {
             navigation::go_back_in_data(state);
+            return Ok(TransitionResult {
+                exit: false,
+                result: None,
+            });
         }
     } else if key == &config.keybindings.peek {
         if state.mode == Mode::Normal {
             state.mode = Mode::Peeking;
+            return Ok(TransitionResult {
+                exit: false,
+                result: None,
+            });
         }
     }
 
     if state.mode == Mode::Peeking {
         if key == &config.keybindings.normal {
             state.mode = Mode::Normal;
+            return Ok(TransitionResult {
+                exit: false,
+                result: None,
+            });
         } else if key == &config.keybindings.peeking.all {
             return Ok(TransitionResult {
                 exit: true,
