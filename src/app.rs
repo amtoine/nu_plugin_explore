@@ -14,6 +14,8 @@ use nu_protocol::{
     ShellError, Span, Value,
 };
 
+use crate::edit::Editor;
+
 use super::navigation::Direction;
 use super::{config::Config, navigation, tui};
 
@@ -54,6 +56,8 @@ pub(super) struct State {
     pub cell_path: CellPath,
     /// the current [`Mode`]
     pub mode: Mode,
+    /// the editor to modify the cells of the data
+    pub editor: Editor,
 }
 
 impl Default for State {
@@ -61,6 +65,7 @@ impl Default for State {
         Self {
             cell_path: CellPath { members: vec![] },
             mode: Mode::default(),
+            editor: Editor::default(),
         }
     }
 }
