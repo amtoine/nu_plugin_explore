@@ -256,6 +256,89 @@ fn render_data(
         None => 0,
     };
 
+    if is_table(&data, &data_path).expect("cell path is invalid when checking for table") {
+        let (header, rows) = match data
+            .clone()
+            .follow_cell_path(&data_path, false)
+            .expect("cell path invalid when rendering table")
+        {
+            Value::List { vals, .. } => {
+                let cols_with_type = vals[0]
+                    .columns()
+                    .iter()
+                    .map(|c| {
+                        let spans = vec![
+                            Span::styled(
+                                c.clone(),
+                                Style::default()
+                                    .fg(config.colors.normal.name.foreground)
+                                    .bg(config.colors.normal.name.background),
+                            ),
+                            " (".into(),
+                            Span::styled(
+                                vals[0].get_data_by_key(c).unwrap().get_type().to_string(),
+                                Style::default()
+                                    .fg(config.colors.normal.shape.foreground)
+                                    .bg(config.colors.normal.shape.background),
+                            ),
+                            ")".into(),
+                        ];
+
+                        Cell::from(Line::from(spans))
+                    })
+                    .collect::<Vec<Cell>>();
+
+                let rows = vals
+                    .iter()
+                    .map(|v| {
+                        v.columns()
+                            .iter()
+                            .map(|c| v.get_data_by_key(c).unwrap())
+                            .collect()
+                    })
+                    .collect::<Vec<Vec<Value>>>();
+
+                (cols_with_type, rows)
+            }
+            _ => panic!("value is a table but is not a list"),
+        };
+
+        let widths = header
+            .iter()
+            // FIXME: use an appropriate constraint here
+            .map(|_| Constraint::Min(25))
+            .collect::<Vec<Constraint>>();
+
+        let header = Row::new(header).height(1);
+
+        let rows: Vec<Row> = rows
+            .iter()
+            .map(|r| {
+                let cells = r
+                    .iter()
+                    .map(|v| Cell::from(repr_value(v).data))
+                    .collect::<Vec<Cell>>();
+
+                Row::new(cells)
+            })
+            .collect();
+
+        let table = Table::new(rows)
+            .header(header)
+            .block(Block::default().borders(Borders::ALL))
+            .highlight_style(highlight_style)
+            .highlight_symbol(&config.colors.selected_symbol)
+            .widths(&widths);
+
+        frame.render_stateful_widget(
+            table,
+            rect_without_bottom_bar,
+            &mut TableState::default().with_selected(Some(selected)),
+        );
+
+        return;
+    }
+
     match config.layout {
         Layout::Compact => {
             let items: Vec<ListItem> = repr_data(data, &data_path)
