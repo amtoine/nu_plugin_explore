@@ -145,20 +145,20 @@ impl Config {
                 selected_symbol: "".into(),
                 status_bar: StatusBarColorConfig {
                     normal: BgFgColorConfig {
-                        background: Color::White,
-                        foreground: Color::Reset,
+                        background: Color::Reset,
+                        foreground: Color::White,
                     },
                     insert: BgFgColorConfig {
-                        background: Color::LightYellow,
-                        foreground: Color::Reset,
+                        background: Color::Reset,
+                        foreground: Color::LightYellow,
                     },
                     peek: BgFgColorConfig {
-                        background: Color::LightGreen,
-                        foreground: Color::Reset,
+                        background: Color::Reset,
+                        foreground: Color::LightGreen,
                     },
                     bottom: BgFgColorConfig {
-                        background: Color::LightMagenta,
-                        foreground: Color::Reset,
+                        background: Color::Reset,
+                        foreground: Color::LightMagenta,
                     },
                 },
             },
