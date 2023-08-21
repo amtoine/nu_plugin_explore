@@ -559,19 +559,19 @@ mod tests {
 
         let value = test_value();
 
-        let transitions = vec![
+        let peek_all_from_top = vec![
             (&keybindings.peek, false, None),
             (&keybindings.peeking.all, true, Some(value.clone())),
         ];
-        run_peeking_scenario(transitions, &config, &value);
+        run_peeking_scenario(peek_all_from_top, &config, &value);
 
-        let transitions = vec![
+        let peek_current_from_top = vec![
             (&keybindings.peek, false, None),
             (&keybindings.peeking.current, true, Some(value.clone())),
         ];
-        run_peeking_scenario(transitions, &config, &value);
+        run_peeking_scenario(peek_current_from_top, &config, &value);
 
-        let transitions = vec![
+        let go_in_the_data_and_peek_all_and_current = vec![
             (&keybindings.navigation.down, false, None),
             (&keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
             (&keybindings.peek, false, None),
@@ -585,23 +585,23 @@ mod tests {
                 )),
             ),
         ];
-        run_peeking_scenario(transitions, &config, &value);
+        run_peeking_scenario(go_in_the_data_and_peek_all_and_current, &config, &value);
 
-        let transitions = vec![
+        let go_in_the_data_and_peek_under = vec![
             (&keybindings.navigation.down, false, None),
             (&keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
             (&keybindings.peek, false, None),
             (&keybindings.peeking.all, true, Some(value.clone())),
             (&keybindings.peeking.under, true, Some(Value::test_int(1))),
         ];
-        run_peeking_scenario(transitions, &config, &value);
+        run_peeking_scenario(go_in_the_data_and_peek_under, &config, &value);
 
-        let transitions = vec![
+        let peek_at_the_bottom = vec![
             (&keybindings.navigation.right, false, None), // on l: ["my", "list", "elements"],
             (&keybindings.navigation.right, false, None), // on "my"
             (&keybindings.peek, true, Some(Value::test_string("my"))),
         ];
-        run_peeking_scenario(transitions, &config, &value);
+        run_peeking_scenario(peek_at_the_bottom, &config, &value);
     }
 
     #[ignore = "data edition is not implemented for now"]
