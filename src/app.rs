@@ -99,6 +99,11 @@ impl State {
     pub(super) fn hit_bottom(&mut self) {
         self.mode = Mode::Bottom;
     }
+
+    fn enter_editor(&mut self) {
+        self.mode = Mode::Insert;
+        self.editor = Editor::default();
+    }
 }
 
 /// the result of a state transition
@@ -179,7 +184,7 @@ fn transition_state(
         return Ok(TransitionResult::quit());
     } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
-            state.mode = Mode::Insert;
+            state.enter_editor();
             return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.normal {
