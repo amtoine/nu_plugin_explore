@@ -120,7 +120,7 @@ in order to help, you can have a look at
 - [x] support non-character bindings
 - [ ] when going into a file or URL, open it
 - [x] give different colors to names and type
-- [ ] show true tables as such
+- [x] show true tables as such
 - [ ] get the config from `$env.config` => can parse configuration from CLI
 - [ ] add check for the config to make sure it's valid
 - [ ] support for editing cells in INSERT mode
