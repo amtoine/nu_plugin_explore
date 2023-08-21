@@ -197,28 +197,33 @@ fn render_data(
                 .iter()
                 .map(|row| {
                     let row = row.clone();
-                    ListItem::new(Line::from(vec![
-                        Span::styled(
-                            row.name.unwrap_or("".into()),
+
+                    let mut spans = vec![];
+                    if let Some(name) = row.name {
+                        spans.push(Span::styled(
+                            name,
                             Style::default()
                                 .fg(config.colors.normal.name.foreground)
                                 .bg(config.colors.normal.name.background),
-                        ),
-                        ": (".into(),
-                        Span::styled(
-                            row.shape,
-                            Style::default()
-                                .fg(config.colors.normal.shape.foreground)
-                                .bg(config.colors.normal.shape.background),
-                        ),
-                        ") ".into(),
-                        Span::styled(
-                            row.data,
-                            Style::default()
-                                .fg(config.colors.normal.data.foreground)
-                                .bg(config.colors.normal.data.background),
-                        ),
-                    ]))
+                        ));
+                        spans.push(": ".into());
+                    }
+                    spans.push("(".into());
+                    spans.push(Span::styled(
+                        row.shape,
+                        Style::default()
+                            .fg(config.colors.normal.shape.foreground)
+                            .bg(config.colors.normal.shape.background),
+                    ));
+                    spans.push(") ".into());
+                    spans.push(Span::styled(
+                        row.data,
+                        Style::default()
+                            .fg(config.colors.normal.data.foreground)
+                            .bg(config.colors.normal.data.background),
+                    ));
+
+                    ListItem::new(Line::from(spans))
                 })
                 .collect();
 
