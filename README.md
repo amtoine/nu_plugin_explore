@@ -112,7 +112,7 @@ cargo doc --document-private-items --no-deps --open
 ## features
 - [x] support non-character bindings
 - [ ] when going into a file or URL, open it
-- [ ] give different colors to names and type
+- [x] give different colors to names and type
 - [ ] show true tables as such
 - [ ] get the config from `$env.config` => can parse configuration from CLI
 - [ ] add check for the config to make sure it's valid
