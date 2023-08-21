@@ -193,7 +193,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
 
 /// TODO: documentation
 fn is_table(value: &Value, cell_path: &[PathMember]) -> Option<bool> {
-    match value.clone().follow_cell_path(&cell_path, false) {
+    match value.clone().follow_cell_path(cell_path, false) {
         Ok(Value::List { vals, .. }) => {
             if vals.is_empty() {
                 Some(false)
@@ -256,7 +256,7 @@ fn render_data(
         None => 0,
     };
 
-    if is_table(&data, &data_path).expect("cell path is invalid when checking for table") {
+    if is_table(data, &data_path).expect("cell path is invalid when checking for table") {
         let (header, rows) = match data
             .clone()
             .follow_cell_path(&data_path, false)
