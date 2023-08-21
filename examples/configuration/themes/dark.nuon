@@ -10,7 +10,7 @@
         },
         shape: {
             background: reset, # "black" is not pure *black*
-            foreground: red,
+            foreground: blue,
         },
     },
     selected: {  # the colors for the row under the cursor

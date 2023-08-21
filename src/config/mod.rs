@@ -130,7 +130,7 @@ impl Config {
                     },
                     shape: BgFgColorConfig {
                         background: Color::Reset, // "Black" is not pure *black*
-                        foreground: Color::Red,
+                        foreground: Color::Blue,
                     },
                 },
                 selected: BgFgColorConfig {
