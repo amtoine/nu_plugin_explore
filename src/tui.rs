@@ -284,16 +284,19 @@ fn render_data(
                 })
                 .collect();
 
-            let table = Table::new(rows)
-                .header(header)
-                .block(Block::default().borders(Borders::ALL))
-                .highlight_style(highlight_style)
-                .highlight_symbol(&config.colors.selected_symbol)
-                .widths(&[
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(70),
-                    Constraint::Percentage(10),
-                ]);
+            let table = if config.show_table_header {
+                Table::new(rows).header(header)
+            } else {
+                Table::new(rows)
+            }
+            .block(Block::default().borders(Borders::ALL))
+            .highlight_style(highlight_style)
+            .highlight_symbol(&config.colors.selected_symbol)
+            .widths(&[
+                Constraint::Percentage(20),
+                Constraint::Percentage(70),
+                Constraint::Percentage(10),
+            ]);
 
             frame.render_stateful_widget(
                 table,

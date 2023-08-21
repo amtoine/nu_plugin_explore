@@ -111,12 +111,14 @@ pub(super) struct Config {
     pub keybindings: KeyBindingsMap,
     pub show_cell_path: bool,
     pub layout: Layout,
+    pub show_table_header: bool,
 }
 
 impl Config {
     pub(super) fn default() -> Self {
         Self {
             show_cell_path: true,
+            show_table_header: true,
             layout: Layout::Table,
             colors: ColorConfig {
                 normal: TableRowColorConfig {
@@ -183,6 +185,11 @@ impl Config {
                 "show_cell_path" => {
                     if let Some(val) = try_bool(&value, &["show_cell_path"])? {
                         config.show_cell_path = val
+                    }
+                }
+                "show_table_header" => {
+                    if let Some(val) = try_bool(&value, &["show_table_header"])? {
+                        config.show_table_header = val
                     }
                 }
                 "layout" => {
