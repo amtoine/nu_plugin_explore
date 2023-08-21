@@ -1,11 +1,11 @@
 use ratatui::{
-    prelude::{CrosstermBackend, Rect, Layout, Constraint, Direction},
+    prelude::{Constraint, CrosstermBackend, Direction, Layout, Rect},
     style::Style,
     widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
 
-struct Editor {
+pub(super) struct Editor {
     buffer: String,
     cursor_position: usize,
 }
@@ -62,7 +62,7 @@ impl Editor {
         }
     }
 
-    fn render(&self, frame: &mut Frame<CrosstermBackend<console::Term>>) {
+    pub(super) fn render(&self, frame: &mut Frame<CrosstermBackend<console::Term>>) {
         let block = Paragraph::new(self.buffer.as_str())
             .style(Style::default())
             .block(Block::default().borders(Borders::ALL).title("Editor"));

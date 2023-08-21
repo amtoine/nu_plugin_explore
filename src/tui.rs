@@ -25,6 +25,10 @@ pub(super) fn render_ui(
         render_cell_path(frame, state);
     }
     render_status_bar(frame, state, config);
+
+    if state.mode == Mode::Insert {
+        state.editor.render(frame);
+    }
 }
 
 /// a common representation for an explore row
