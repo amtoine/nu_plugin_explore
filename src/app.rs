@@ -84,6 +84,16 @@ impl State {
 
         state
     }
+
+    /// TODO: documentation
+    pub(super) fn is_at_bottom(&self) -> bool {
+        matches!(self.mode, Mode::Bottom)
+    }
+
+    /// TODO: documentation
+    pub(super) fn hit_bottom(&mut self) {
+        self.mode = Mode::Bottom;
+    }
 }
 
 /// the result of a state transition
@@ -390,7 +400,7 @@ mod tests {
         let value = test_value();
         let mut state = State::from_value(&value);
 
-        assert_ne!(state.mode, Mode::Bottom);
+        assert!(!state.is_at_bottom());
         assert_eq!(
             state.cell_path.members,
             to_path_member_vec(vec![PM::S("l")])
@@ -456,16 +466,14 @@ mod tests {
             transition_state(key, &config, &mut state, &value).unwrap();
 
             if bottom {
-                assert_eq!(
-                    state.mode,
-                    Mode::Bottom,
+                assert!(
+                    state.is_at_bottom(),
                     "expected to be at the bottom after pressing {}",
                     repr_keycode(key)
                 );
             } else {
-                assert_ne!(
-                    state.mode,
-                    Mode::Bottom,
+                assert!(
+                    !state.is_at_bottom(),
                     "expected NOT to be at the bottom after pressing {}",
                     repr_keycode(key)
                 );

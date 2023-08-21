@@ -211,7 +211,7 @@ fn render_data(
     let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
     let mut data_path = state.cell_path.members.clone();
-    let current = if state.mode != Mode::Bottom {
+    let current = if !state.is_at_bottom() {
         data_path.pop()
     } else {
         None
