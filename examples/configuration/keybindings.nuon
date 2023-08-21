@@ -13,6 +13,5 @@
         all: 'a',  # peek the whole data, from the top level
         current: 'c',  # peek the current data, i.e. what is visible
         under: 'u',  # peek only what's under the cursor
-        quit: "escape",  # go back to NORMAL mode to navigate through the data
     },
 }

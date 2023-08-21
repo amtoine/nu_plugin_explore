@@ -171,7 +171,7 @@ fn transition_state(
     }
 
     if state.mode == Mode::Peeking {
-        if key == &config.keybindings.peeking.quit {
+        if key == &config.keybindings.normal {
             state.mode = Mode::Normal;
         } else if key == &config.keybindings.peeking.all {
             return Ok(TransitionResult {

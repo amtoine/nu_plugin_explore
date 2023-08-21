@@ -78,7 +78,6 @@ pub(super) struct PeekingBindingsMap {
     pub current: Key,
     /// peek the current level, but only the row under the cursor
     pub under: Key,
-    pub quit: Key,
 }
 
 /// the keybindings mapping
@@ -171,7 +170,6 @@ impl Config {
                     all: Key::Char('a'),
                     current: Key::Char('c'),
                     under: Key::Char('u'),
-                    quit: Key::Escape,
                 },
             },
         }
@@ -465,14 +463,6 @@ impl Config {
                                                 &["keybindings", "peeking", "under"],
                                             )? {
                                                 config.keybindings.peeking.under = val
-                                            }
-                                        }
-                                        "quit" => {
-                                            if let Some(val) = try_key(
-                                                &value,
-                                                &["keybindings", "peeking", "quit"],
-                                            )? {
-                                                config.keybindings.peeking.quit = val
                                             }
                                         }
                                         x => {
