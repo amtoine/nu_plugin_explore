@@ -74,7 +74,7 @@ impl Editor {
         let block = Paragraph::new(self.buffer.as_str())
             .style(Style::default())
             .block(Block::default().borders(Borders::ALL).title("Editor"));
-        let area = centered_rect(60, 20, frame.size());
+        let area = centered_rect(50, 20, frame.size());
 
         frame.render_widget(Clear, area); //this clears out the background
         frame.render_widget(block, area);
