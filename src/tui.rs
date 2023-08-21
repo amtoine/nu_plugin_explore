@@ -35,6 +35,26 @@ struct DataRowRepr {
     data: String,
 }
 
+impl DataRowRepr {
+    #[allow(dead_code)]
+    fn unnamed(data: impl Into<String>, shape: impl Into<String>) -> Self {
+        Self {
+            name: None,
+            shape: shape.into(),
+            data: data.into(),
+        }
+    }
+
+    #[allow(dead_code)]
+    fn named(name: impl Into<String>, data: impl Into<String>, shape: impl Into<String>) -> Self {
+        Self {
+            name: Some(name.into()),
+            shape: shape.into(),
+            data: data.into(),
+        }
+    }
+}
+
 /// compute the preview representation of a list
 ///
 /// > see the tests for detailed examples
@@ -388,38 +408,25 @@ fn render_status_bar(
 mod tests {
     use nu_protocol::Value;
 
-    use crate::config::{Config, Layout};
-
-    use super::{repr_data, repr_list, repr_record, repr_simple_value};
+    use super::{repr_data, repr_list, repr_record, repr_simple_value, DataRowRepr};
 
     #[test]
     fn simple_value() {
-        let mut config = Config::default();
-
         #[rustfmt::skip]
         let cases = vec![
-            (Layout::Table, Value::test_string("foo"), vec!["foo", "string"]),
-            (Layout::Compact, Value::test_string("foo"), vec!["(string) foo"]),
-            (Layout::Table, Value::test_int(1), vec!["1", "int"]),
-            (Layout::Compact, Value::test_int(1), vec!["(int) 1"]),
-            (Layout::Table, Value::test_bool(true), vec!["true", "bool"]),
-            (Layout::Compact, Value::test_bool(true), vec!["(bool) true"]),
-            (Layout::Table, Value::test_nothing(), vec!["", "nothing"]),
-            (Layout::Compact, Value::test_nothing(), vec!["(nothing) "]),
+            (Value::test_string("foo"), DataRowRepr::unnamed("foo", "string")),
+            (Value::test_int(1), DataRowRepr::unnamed("1", "int")),
+            (Value::test_bool(true), DataRowRepr::unnamed("true", "bool")),
+            (Value::test_nothing(), DataRowRepr::unnamed("", "nothing")),
         ];
 
-        for (layout, value, expected) in cases {
-            config.layout = layout;
-            let result = repr_simple_value(&value, &config);
-            let expected: Vec<String> = expected.iter().map(|x| x.to_string()).collect();
-            assert_eq!(result, expected);
+        for (value, expected) in cases {
+            assert_eq!(repr_simple_value(&value), expected);
         }
     }
 
     #[test]
     fn list() {
-        let mut config = Config::default();
-
         let list = vec![
             Value::test_string("a"),
             Value::test_int(1),
@@ -428,44 +435,35 @@ mod tests {
 
         #[rustfmt::skip]
         let cases = vec![
-            (Layout::Table, list.clone(), vec!["[3 items]", "list"]),
-            (Layout::Compact, list.clone(), vec!["[list 3 items]"]),
-            (Layout::Table, vec![], vec!["[0 item]", "list"]),
-            (Layout::Compact, vec![], vec!["[list 0 item]"]),
-            (Layout::Table, vec![Value::test_nothing()], vec!["[1 item]", "list"]),
-            (Layout::Compact, vec![Value::test_nothing()], vec!["[list 1 item]"]),
+            (list, DataRowRepr::unnamed("[3 items]", "list")),
+            (vec![], DataRowRepr::unnamed("[0 item]", "list")),
+            (vec![Value::test_nothing()], DataRowRepr::unnamed("[1 item]", "list")),
         ];
 
-        for (layout, list, expected) in cases {
-            config.layout = layout;
-            let result = repr_list(&list, &config);
-            let expected: Vec<String> = expected.iter().map(|x| x.to_string()).collect();
-            assert_eq!(result, expected);
+        for (list, expected) in cases {
+            assert_eq!(repr_list(&list), expected);
         }
     }
 
     #[test]
     fn record() {
-        let mut config = Config::default();
-
         #[rustfmt::skip]
         let cases = vec![
-            (Layout::Table, vec!["a", "b", "c"], vec!["{3 fields}", "record"]),
-            (Layout::Compact, vec!["a", "b", "c"], vec!["{record 3 fields}"]),
-            (Layout::Table, vec![], vec!["{0 field}", "record"]),
-            (Layout::Compact, vec![], vec!["{record 0 field}"]),
-            (Layout::Table, vec!["a"], vec!["{1 field}", "record"]),
-            (Layout::Compact, vec!["a"], vec!["{record 1 field}"]),
+            (vec!["a", "b", "c"], DataRowRepr::unnamed("{3 fields}", "record")),
+            (vec![], DataRowRepr::unnamed("{0 field}", "record")),
+            (vec!["a"], DataRowRepr::unnamed("{1 field}", "record")),
         ];
 
-        for (layout, record, expected) in cases {
-            config.layout = layout;
-            let result = repr_record(
-                &record.iter().map(|x| x.to_string()).collect::<Vec<_>>(),
-                &config,
+        for (record, expected) in cases {
+            assert_eq!(
+                repr_record(
+                    &record
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                ),
+                expected
             );
-            let expected: Vec<String> = expected.iter().map(|x| x.to_string()).collect();
-            assert_eq!(result, expected);
         }
     }
 
@@ -475,8 +473,6 @@ mod tests {
 
     #[test]
     fn data() {
-        let mut config = Config::default();
-
         let data = Value::test_record(
             vec!["l", "r", "s", "i"],
             vec![
@@ -491,24 +487,13 @@ mod tests {
             ],
         );
 
-        config.layout = Layout::Table;
-        let result = repr_data(&data, &[], &config);
-        let expected: Vec<Vec<String>> = vec![
-            vec!["l".into(), "[3 items]".into(), "list".into()],
-            vec!["r".into(), "{2 fields}".into(), "record".into()],
-            vec!["s".into(), "some string".into(), "string".into()],
-            vec!["i".into(), "123".into(), "int".into()],
+        let result = repr_data(&data, &[]);
+        let expected: Vec<DataRowRepr> = vec![
+            DataRowRepr::named("l", "[3 items]", "list"),
+            DataRowRepr::named("r", "{2 fields}", "record"),
+            DataRowRepr::named("s", "some string", "string"),
+            DataRowRepr::named("i", "123", "int"),
         ];
-        assert_eq!(result, expected);
-
-        config.layout = Layout::Compact;
-        let result = repr_data(&data, &[], &config);
-        let expected: Vec<Vec<String>> = vec![vec![
-            "l: [list 3 items]".into(),
-            "r: {record 2 fields}".into(),
-            "s: (string) some string".into(),
-            "i: (int) 123".into(),
-        ]];
         assert_eq!(result, expected);
     }
 }
