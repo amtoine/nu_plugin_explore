@@ -169,7 +169,7 @@ impl Config {
                 peeking: PeekingBindingsMap {
                     all: Key::Char('a'),
                     current: Key::Char('c'),
-                    under: Key::Char('u'),
+                    under: Key::Char('p'),
                 },
             },
         }

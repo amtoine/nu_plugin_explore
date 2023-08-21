@@ -257,7 +257,6 @@ mod tests {
             (&keybindings.insert, Mode::Insert),
             (&keybindings.normal, Mode::Normal),
             (&keybindings.peek, Mode::Peeking),
-            (&keybindings.peek, Mode::Peeking),
             (&keybindings.normal, Mode::Normal),
         ];
 
