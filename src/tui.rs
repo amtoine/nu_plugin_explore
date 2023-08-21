@@ -211,7 +211,11 @@ fn render_data(
     let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
     let mut data_path = state.cell_path.members.clone();
-    let current = if !state.bottom { data_path.pop() } else { None };
+    let current = if state.mode != Mode::Bottom {
+        data_path.pop()
+    } else {
+        None
+    };
 
     let highlight_style = Style::default()
         .fg(config.colors.selected.foreground)
@@ -431,6 +435,9 @@ fn render_status_bar(
         Mode::Peeking => Style::default()
             .fg(config.colors.status_bar.peek.foreground)
             .bg(config.colors.status_bar.peek.background),
+        Mode::Bottom => Style::default()
+            .fg(config.colors.status_bar.bottom.foreground)
+            .bg(config.colors.status_bar.bottom.background),
     };
 
     frame.render_widget(
@@ -463,6 +470,11 @@ fn render_status_bar(
             repr_keycode(&config.keybindings.peeking.all),
             repr_keycode(&config.keybindings.peeking.current),
             repr_keycode(&config.keybindings.peeking.under),
+        ),
+        Mode::Bottom => format!(
+            "{} to {}",
+            repr_keycode(&config.keybindings.navigation.left),
+            Mode::Normal
         ),
     };
 

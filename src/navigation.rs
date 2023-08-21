@@ -1,7 +1,7 @@
 //! navigate in the data in all directions
 use nu_protocol::{ast::PathMember, Span, Value};
 
-use super::app::State;
+use super::app::{Mode, State};
 
 /// specify a vertical direction in which to go in the data
 pub(super) enum Direction {
@@ -24,7 +24,7 @@ pub(super) enum Direction {
 /// > - not doing anything
 /// > - poping the last element to know where we are and then pushing back the new element
 pub(super) fn go_up_or_down_in_data(state: &mut State, input: &Value, direction: Direction) {
-    if state.bottom {
+    if state.mode == Mode::Bottom {
         return;
     }
 
@@ -113,7 +113,7 @@ pub(super) fn go_deeper_in_data(state: &mut State, input: &Value) {
             optional: cols.is_empty(),
         }),
         Err(_) => panic!("unexpected error when following cell path"),
-        _ => state.bottom = true,
+        _ => state.mode = Mode::Bottom,
     }
 }
 
@@ -123,10 +123,10 @@ pub(super) fn go_deeper_in_data(state: &mut State, input: &Value) {
 /// > - the state is always marked as *not at the bottom*
 /// > - the state *cell path* can have it's last member popped if possible
 pub(super) fn go_back_in_data(state: &mut State) {
-    if !state.bottom & (state.cell_path.members.len() > 1) {
+    if (state.mode != Mode::Bottom) & (state.cell_path.members.len() > 1) {
         state.cell_path.members.pop();
     }
-    state.bottom = false;
+    state.mode = Mode::Normal;
 }
 
 // TODO: add proper assert error messages
@@ -135,7 +135,7 @@ mod tests {
     use nu_protocol::{ast::PathMember, Span, Value};
 
     use super::{go_back_in_data, go_deeper_in_data, go_up_or_down_in_data, Direction};
-    use crate::app::State;
+    use crate::app::{Mode, State};
 
     fn test_string_pathmember(val: impl Into<String>) -> PathMember {
         PathMember::String {
@@ -229,10 +229,10 @@ mod tests {
         let value = Value::test_nothing();
         let mut state = State::from_value(&value);
 
-        assert!(!state.bottom);
+        assert_ne!(state.mode, Mode::Bottom);
 
         go_deeper_in_data(&mut state, &value);
-        assert!(state.bottom);
+        assert_eq!(state.mode, Mode::Bottom);
     }
 
     #[test]
@@ -247,7 +247,7 @@ mod tests {
             test_string_pathmember("a"),
             test_int_pathmember(0),
         ];
-        state.bottom = true;
+        state.mode = Mode::Bottom;
 
         let mut expected = state.cell_path.members.clone();
 

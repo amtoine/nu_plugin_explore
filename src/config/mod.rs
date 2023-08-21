@@ -22,6 +22,7 @@ pub(super) struct StatusBarColorConfig {
     pub normal: BgFgColorConfig,
     pub insert: BgFgColorConfig,
     pub peek: BgFgColorConfig,
+    pub bottom: BgFgColorConfig,
 }
 
 /// the configuration for a row of the data rendering table
@@ -151,6 +152,10 @@ impl Config {
                     },
                     peek: BgFgColorConfig {
                         background: Color::LightGreen,
+                        foreground: Color::Black,
+                    },
+                    bottom: BgFgColorConfig {
+                        background: Color::LightMagenta,
                         foreground: Color::Black,
                     },
                 },

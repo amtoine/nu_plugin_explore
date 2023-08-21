@@ -18,7 +18,7 @@ use super::navigation::Direction;
 use super::{config::Config, navigation, tui};
 
 /// the mode in which the application is
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(super) enum Mode {
     /// the NORMAL mode is the *navigation* mode, where the user can move around in the data
     Normal,
@@ -26,6 +26,8 @@ pub(super) enum Mode {
     Insert,
     /// the PEEKING mode lets the user *peek* data out of the application, to be reused later
     Peeking,
+    /// TODO: documentation
+    Bottom,
 }
 
 impl Default for Mode {
@@ -40,6 +42,7 @@ impl std::fmt::Display for Mode {
             Self::Normal => "NORMAL",
             Self::Insert => "INSERT",
             Self::Peeking => "PEEKING",
+            Self::Bottom => "BOTTOM",
         };
         write!(f, "{}", repr)
     }
@@ -49,9 +52,6 @@ impl std::fmt::Display for Mode {
 pub(super) struct State {
     /// the full current path in the data
     pub cell_path: CellPath,
-    /// tells whether or not the user is at the bottom of the data or not, used for rendering in
-    /// [`tui`]
-    pub bottom: bool,
     /// the current [`Mode`]
     pub mode: Mode,
 }
@@ -60,7 +60,6 @@ impl Default for State {
     fn default() -> Self {
         Self {
             cell_path: CellPath { members: vec![] },
-            bottom: false,
             mode: Mode::default(),
         }
     }
@@ -391,7 +390,7 @@ mod tests {
         let value = test_value();
         let mut state = State::from_value(&value);
 
-        assert_eq!(state.bottom, false);
+        assert_ne!(state.mode, Mode::Bottom);
         assert_eq!(
             state.cell_path.members,
             to_path_member_vec(vec![PM::S("l")])
@@ -457,14 +456,16 @@ mod tests {
             transition_state(key, &config, &mut state, &value).unwrap();
 
             if bottom {
-                assert!(
-                    state.bottom,
+                assert_eq!(
+                    state.mode,
+                    Mode::Bottom,
                     "expected to be at the bottom after pressing {}",
                     repr_keycode(key)
                 );
             } else {
-                assert!(
-                    !state.bottom,
+                assert_ne!(
+                    state.mode,
+                    Mode::Bottom,
                     "expected NOT to be at the bottom after pressing {}",
                     repr_keycode(key)
                 );

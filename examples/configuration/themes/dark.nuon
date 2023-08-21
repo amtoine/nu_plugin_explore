@@ -32,5 +32,9 @@
             background: lightgreen,
             foreground: black,
         }
+        bottom: {  # the colors for the status bar in BOTTOM mode
+            background: lightmagenta,
+            foreground: black,
+        }
     }
 }
