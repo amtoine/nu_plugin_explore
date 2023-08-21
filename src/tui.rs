@@ -2,7 +2,8 @@
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
     style::Style,
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Row, Table, TableState},
+    text::{Line, Span},
+    widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
 };
 
@@ -195,9 +196,6 @@ fn render_data(
     let mut data_path = state.cell_path.members.clone();
     let current = if !state.bottom { data_path.pop() } else { None };
 
-    let normal_style = Style::default()
-        .fg(config.colors.normal.foreground)
-        .bg(config.colors.normal.background);
     let highlight_style = Style::default()
         .fg(config.colors.selected.foreground)
         .bg(config.colors.selected.background)
@@ -221,7 +219,30 @@ fn render_data(
             let items: Vec<ListItem> = repr_data(data, &data_path, config)[0]
                 .clone()
                 .iter()
-                .map(|line| ListItem::new(line.clone()).style(normal_style))
+                .map(|_line| {
+                    ListItem::new(Line::from(vec![
+                        Span::styled(
+                            "name",
+                            Style::default()
+                                .fg(config.colors.normal.name.foreground)
+                                .bg(config.colors.normal.name.background),
+                        ),
+                        ": (".into(),
+                        Span::styled(
+                            "shape",
+                            Style::default()
+                                .fg(config.colors.normal.shape.foreground)
+                                .bg(config.colors.normal.shape.background),
+                        ),
+                        ") ".into(),
+                        Span::styled(
+                            "data",
+                            Style::default()
+                                .fg(config.colors.normal.data.foreground)
+                                .bg(config.colors.normal.data.background),
+                        ),
+                    ]))
+                })
                 .collect();
 
             let items = List::new(items)
@@ -237,7 +258,25 @@ fn render_data(
         Layout::Table => {
             let rows: Vec<Row> = repr_data(data, &data_path, config)
                 .iter()
-                .map(|row| Row::new(row.clone()).style(normal_style))
+                .map(|row| {
+                    Row::new(vec![
+                        Cell::from(row[0].clone()).style(
+                            Style::default()
+                                .fg(config.colors.normal.name.foreground)
+                                .bg(config.colors.normal.name.background),
+                        ),
+                        Cell::from(row[1].clone()).style(
+                            Style::default()
+                                .fg(config.colors.normal.data.foreground)
+                                .bg(config.colors.normal.data.background),
+                        ),
+                        Cell::from(row[2].clone()).style(
+                            Style::default()
+                                .fg(config.colors.normal.shape.foreground)
+                                .bg(config.colors.normal.shape.background),
+                        ),
+                    ])
+                })
                 .collect();
 
             let table = Table::new(rows)

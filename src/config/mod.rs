@@ -24,11 +24,22 @@ pub(super) struct StatusBarColorConfig {
     pub peek: BgFgColorConfig,
 }
 
+/// the configuration for a row of the data rendering table
+#[derive(Clone, PartialEq, Debug)]
+pub(super) struct TableRowColorConfig {
+    // the name of the data, i.e. the key on the left
+    pub name: BgFgColorConfig,
+    // the data itself,
+    pub data: BgFgColorConfig,
+    // the type of the data, e.g. `string` or `int`
+    pub shape: BgFgColorConfig,
+}
+
 /// the colors of the application
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct ColorConfig {
     /// the color when a row is NOT selected
-    pub normal: BgFgColorConfig,
+    pub normal: TableRowColorConfig,
     /// the color when a row is selected
     pub selected: BgFgColorConfig,
     /// the modifier to apply to the row under the cursor
@@ -108,9 +119,19 @@ impl Config {
             show_cell_path: true,
             layout: Layout::Table,
             colors: ColorConfig {
-                normal: BgFgColorConfig {
-                    background: Color::Reset, // "Black" is not pure *black*
-                    foreground: Color::White,
+                normal: TableRowColorConfig {
+                    name: BgFgColorConfig {
+                        background: Color::Reset, // "Black" is not pure *black*
+                        foreground: Color::Green,
+                    },
+                    data: BgFgColorConfig {
+                        background: Color::Reset, // "Black" is not pure *black*
+                        foreground: Color::White,
+                    },
+                    shape: BgFgColorConfig {
+                        background: Color::Reset, // "Black" is not pure *black*
+                        foreground: Color::Blue,
+                    },
                 },
                 selected: BgFgColorConfig {
                     background: Color::White,
@@ -178,12 +199,58 @@ impl Config {
                     for column in columns {
                         match column.as_str() {
                             "normal" => {
-                                if let Some(val) = try_fg_bg_colors(
+                                let (columns, span) = match follow_cell_path(
                                     &value,
                                     &["colors", "normal"],
-                                    &config.colors.normal,
-                                )? {
-                                    config.colors.normal = val
+                                )
+                                .unwrap()
+                                {
+                                    Value::Record { cols, span, .. } => (cols, span),
+                                    x => {
+                                        return Err(invalid_type(
+                                            &x,
+                                            &["colors", "normal"],
+                                            "record",
+                                        ))
+                                    }
+                                };
+
+                                for column in columns {
+                                    match column.as_str() {
+                                        "name" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "normal", "name"],
+                                                &config.colors.normal.name,
+                                            )? {
+                                                config.colors.normal.name = val
+                                            }
+                                        }
+                                        "data" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "normal", "data"],
+                                                &config.colors.normal.data,
+                                            )? {
+                                                config.colors.normal.data = val
+                                            }
+                                        }
+                                        "shape" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "normal", "shape"],
+                                                &config.colors.normal.shape,
+                                            )? {
+                                                config.colors.normal.shape = val
+                                            }
+                                        }
+                                        x => {
+                                            return Err(invalid_field(
+                                                &["colors", "normal", x],
+                                                Some(span),
+                                            ))
+                                        }
+                                    }
                                 }
                             }
                             "selected" => {
