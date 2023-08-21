@@ -96,6 +96,32 @@ struct TransitionResult {
     result: Option<Value>,
 }
 
+impl TransitionResult {
+    /// TODO: documentation
+    fn quit() -> Self {
+        TransitionResult {
+            exit: true,
+            result: None,
+        }
+    }
+
+    /// TODO: documentation
+    fn next() -> Self {
+        TransitionResult {
+            exit: false,
+            result: None,
+        }
+    }
+
+    /// TODO: documentation
+    fn output(value: &Value) -> Self {
+        TransitionResult {
+            exit: true,
+            result: Some(value.clone()),
+        }
+    }
+}
+
 /// run the application
 ///
 /// this function
@@ -136,106 +162,67 @@ fn transition_state(
     value: &Value,
 ) -> Result<TransitionResult, ShellError> {
     if key == &config.keybindings.quit {
-        return Ok(TransitionResult {
-            exit: true,
-            result: None,
-        });
+        return Ok(TransitionResult::quit());
     } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
             state.mode = Mode::Insert;
-            return Ok(TransitionResult {
-                exit: false,
-                result: None,
-            });
+            return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.normal {
         if state.mode == Mode::Insert {
             state.mode = Mode::Normal;
-            return Ok(TransitionResult {
-                exit: false,
-                result: None,
-            });
+            return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.navigation.down {
         if state.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(state, value, Direction::Down);
-            return Ok(TransitionResult {
-                exit: false,
-                result: None,
-            });
+            return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.navigation.up {
         if state.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(state, value, Direction::Up);
-            return Ok(TransitionResult {
-                exit: false,
-                result: None,
-            });
+            return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.navigation.right {
         if state.mode == Mode::Normal {
             navigation::go_deeper_in_data(state, value);
-            return Ok(TransitionResult {
-                exit: false,
-                result: None,
-            });
+            return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.navigation.left {
         if state.mode == Mode::Normal {
             navigation::go_back_in_data(state);
-            return Ok(TransitionResult {
-                exit: false,
-                result: None,
-            });
+            return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.peek {
         if state.mode == Mode::Normal {
             state.mode = Mode::Peeking;
-            return Ok(TransitionResult {
-                exit: false,
-                result: None,
-            });
+            return Ok(TransitionResult::next());
         }
     }
 
     if state.mode == Mode::Peeking {
         if key == &config.keybindings.normal {
             state.mode = Mode::Normal;
-            return Ok(TransitionResult {
-                exit: false,
-                result: None,
-            });
+            return Ok(TransitionResult::next());
         } else if key == &config.keybindings.peeking.all {
-            return Ok(TransitionResult {
-                exit: true,
-                result: Some(value.clone()),
-            });
+            return Ok(TransitionResult::output(value));
         } else if key == &config.keybindings.peeking.current {
             state.cell_path.members.pop();
-            return Ok(TransitionResult {
-                exit: true,
-                result: Some(
-                    value
-                        .clone()
-                        .follow_cell_path(&state.cell_path.members, false)?,
-                ),
-            });
+            return Ok(TransitionResult::output(
+                &value
+                    .clone()
+                    .follow_cell_path(&state.cell_path.members, false)?,
+            ));
         } else if key == &config.keybindings.peeking.under {
-            return Ok(TransitionResult {
-                exit: true,
-                result: Some(
-                    value
-                        .clone()
-                        .follow_cell_path(&state.cell_path.members, false)?,
-                ),
-            });
+            return Ok(TransitionResult::output(
+                &value
+                    .clone()
+                    .follow_cell_path(&state.cell_path.members, false)?,
+            ));
         }
     }
 
-    Ok(TransitionResult {
-        exit: false,
-        result: None,
-    })
+    Ok(TransitionResult::next())
 }
 
 #[cfg(test)]
