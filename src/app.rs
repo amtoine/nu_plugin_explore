@@ -201,6 +201,9 @@ fn transition_state(
         if state.mode == Mode::Normal {
             navigation::go_back_in_data(state);
             return Ok(TransitionResult::next());
+        } else if state.is_at_bottom() {
+            state.mode = Mode::Normal;
+            return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.peek {
         if state.mode == Mode::Normal {
