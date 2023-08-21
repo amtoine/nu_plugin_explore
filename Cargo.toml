@@ -9,6 +9,7 @@ crossterm = "0.27.0"
 nu-plugin = { version = "0.83.1" }
 nu-protocol = { version = "0.83.1", features = ["plugin"] }
 ratatui = "0.22.0"
+url = "2.4.0"
 
 [lib]
 bench = false

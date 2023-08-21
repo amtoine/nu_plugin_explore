@@ -89,13 +89,53 @@ fn repr_record(cols: &[String]) -> DataRowRepr {
     }
 }
 
+/// TODO: documentation
+enum SpecialString {
+    Url,
+    Path,
+}
+
+impl std::fmt::Display for SpecialString {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let repr = match self {
+            Self::Url => "url".to_string(),
+            Self::Path => "path".to_string(),
+        };
+        write!(f, "{}", repr)
+    }
+}
+
+/// TODO: documentation
+impl SpecialString {
+    fn parse(input: &str) -> Option<Self> {
+        if let Ok(url) = url::Url::parse(input) {
+            if url.scheme() == "file" {
+                Some(Self::Path)
+            } else {
+                Some(Self::Url)
+            }
+        } else if input.contains('/') {
+            Some(Self::Path)
+        } else {
+            None
+        }
+    }
+}
+
 /// compute the preview representation of a simple value
 ///
 /// > see the tests for detailed examples
 fn repr_simple_value(value: &Value) -> DataRowRepr {
+    let shape = match value {
+        Value::String { val, .. } => match SpecialString::parse(val) {
+            Some(x) => x.to_string(),
+            None => value.get_type().to_string(),
+        },
+        x => x.get_type().to_string(),
+    };
     DataRowRepr {
         name: None,
-        shape: value.get_type().to_string(),
+        shape,
         // FIXME: use a real config
         data: value.into_string(" ", &nu_protocol::Config::default()),
     }
@@ -449,6 +489,18 @@ mod tests {
             (Value::test_int(1), DataRowRepr::unnamed("1", "int")),
             (Value::test_bool(true), DataRowRepr::unnamed("true", "bool")),
             (Value::test_nothing(), DataRowRepr::unnamed("", "nothing")),
+            (Value::test_string("foo"), DataRowRepr::unnamed("foo", "string")),
+            (Value::test_string("https://google.com"), DataRowRepr::unnamed("https://google.com", "url")),
+            (Value::test_string("file:///some/file"), DataRowRepr::unnamed("file:///some/file", "path")),
+            (Value::test_string("/path/to/something"), DataRowRepr::unnamed("/path/to/something", "path")),
+            (Value::test_string("relative/path/"), DataRowRepr::unnamed("relative/path/", "path")),
+            (Value::test_string("./relative/path/"), DataRowRepr::unnamed("./relative/path/", "path")),
+            (Value::test_string("../../relative/path/"), DataRowRepr::unnamed("../../relative/path/", "path")),
+            (Value::test_string("file:"), DataRowRepr::unnamed("file:", "path")),
+            (
+                Value::test_string("normal string with a / inside"),
+                DataRowRepr::unnamed("normal string with a / inside", "path")
+            ),
         ];
 
         for (value, expected) in cases {
