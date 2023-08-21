@@ -116,6 +116,8 @@ pub(super) struct Config {
 
 impl Config {
     pub(super) fn default() -> Self {
+        // "reset" is used instead of "black" in a dark terminal because, when the terminal is actually
+        // black, "black" is not really black which is ugly, whereas "reset" is really black.
         Self {
             show_cell_path: true,
             show_table_header: true,
@@ -123,15 +125,15 @@ impl Config {
             colors: ColorConfig {
                 normal: TableRowColorConfig {
                     name: BgFgColorConfig {
-                        background: Color::Reset, // "Black" is not pure *black*
+                        background: Color::Reset,
                         foreground: Color::Green,
                     },
                     data: BgFgColorConfig {
-                        background: Color::Reset, // "Black" is not pure *black*
+                        background: Color::Reset,
                         foreground: Color::White,
                     },
                     shape: BgFgColorConfig {
-                        background: Color::Reset, // "Black" is not pure *black*
+                        background: Color::Reset,
                         foreground: Color::Blue,
                     },
                 },
@@ -144,19 +146,19 @@ impl Config {
                 status_bar: StatusBarColorConfig {
                     normal: BgFgColorConfig {
                         background: Color::White,
-                        foreground: Color::Black,
+                        foreground: Color::Reset,
                     },
                     insert: BgFgColorConfig {
                         background: Color::LightYellow,
-                        foreground: Color::Black,
+                        foreground: Color::Reset,
                     },
                     peek: BgFgColorConfig {
                         background: Color::LightGreen,
-                        foreground: Color::Black,
+                        foreground: Color::Reset,
                     },
                     bottom: BgFgColorConfig {
                         background: Color::LightMagenta,
-                        foreground: Color::Black,
+                        foreground: Color::Reset,
                     },
                 },
             },
