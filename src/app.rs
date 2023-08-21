@@ -209,6 +209,12 @@ fn transition_state(
         if state.mode == Mode::Normal {
             state.mode = Mode::Peeking;
             return Ok(TransitionResult::next());
+        } else if state.is_at_bottom() {
+            return Ok(TransitionResult::output(
+                &value
+                    .clone()
+                    .follow_cell_path(&state.cell_path.members, false)?,
+            ));
         }
     }
 
@@ -587,6 +593,13 @@ mod tests {
             (&keybindings.peek, false, None),
             (&keybindings.peeking.all, true, Some(value.clone())),
             (&keybindings.peeking.under, true, Some(Value::test_int(1))),
+        ];
+        run_peeking_scenario(transitions, &config, &value);
+
+        let transitions = vec![
+            (&keybindings.navigation.right, false, None), // on l: ["my", "list", "elements"],
+            (&keybindings.navigation.right, false, None), // on "my"
+            (&keybindings.peek, true, Some(Value::test_string("my"))),
         ];
         run_peeking_scenario(transitions, &config, &value);
     }

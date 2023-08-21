@@ -472,9 +472,10 @@ fn render_status_bar(
             repr_keycode(&config.keybindings.peeking.under),
         ),
         Mode::Bottom => format!(
-            "{} to {}",
+            "{} to {} | {} to peek",
             repr_keycode(&config.keybindings.navigation.left),
-            Mode::Normal
+            Mode::Normal,
+            repr_keycode(&config.keybindings.peek),
         ),
     };
 
