@@ -544,13 +544,6 @@ fn render_status_bar(
             .bg(config.colors.status_bar.bottom.background),
     };
 
-    frame.render_widget(
-        Paragraph::new(state.mode.to_string())
-            .style(style)
-            .alignment(Alignment::Left),
-        bottom_bar_rect,
-    );
-
     let hints = match state.mode {
         Mode::Normal => format!(
             "{} to {} | {}{}{}{} to move around | {} to peek",
@@ -583,10 +576,21 @@ fn render_status_bar(
         ),
     };
 
+    let left = Line::from(Span::styled(
+        state.mode.to_string(),
+        style.add_modifier(Modifier::REVERSED),
+    ));
+    let right = Line::from(Span::styled(
+        hints + &format!(" | {} to quit", repr_keycode(&config.keybindings.quit)),
+        style,
+    ));
+
     frame.render_widget(
-        Paragraph::new(hints + &format!(" | {} to quit", repr_keycode(&config.keybindings.quit)))
-            .style(style)
-            .alignment(Alignment::Right),
+        Paragraph::new(left).alignment(Alignment::Left),
+        bottom_bar_rect,
+    );
+    frame.render_widget(
+        Paragraph::new(right).alignment(Alignment::Right),
         bottom_bar_rect,
     );
 }
