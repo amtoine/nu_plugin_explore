@@ -2,6 +2,7 @@
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
     style::Style,
+    text::{Line, Span},
     widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
 };
@@ -195,9 +196,6 @@ fn render_data(
     let mut data_path = state.cell_path.members.clone();
     let current = if !state.bottom { data_path.pop() } else { None };
 
-    let normal_style = Style::default()
-        .fg(config.colors.normal.data.foreground)
-        .bg(config.colors.normal.data.background);
     let highlight_style = Style::default()
         .fg(config.colors.selected.foreground)
         .bg(config.colors.selected.background)
@@ -221,7 +219,30 @@ fn render_data(
             let items: Vec<ListItem> = repr_data(data, &data_path, config)[0]
                 .clone()
                 .iter()
-                .map(|line| ListItem::new(line.clone()).style(normal_style))
+                .map(|_line| {
+                    ListItem::new(Line::from(vec![
+                        Span::styled(
+                            "name",
+                            Style::default()
+                                .fg(config.colors.normal.name.foreground)
+                                .bg(config.colors.normal.name.background),
+                        ),
+                        ": (".into(),
+                        Span::styled(
+                            "shape",
+                            Style::default()
+                                .fg(config.colors.normal.shape.foreground)
+                                .bg(config.colors.normal.shape.background),
+                        ),
+                        ") ".into(),
+                        Span::styled(
+                            "data",
+                            Style::default()
+                                .fg(config.colors.normal.data.foreground)
+                                .bg(config.colors.normal.data.background),
+                        ),
+                    ]))
+                })
                 .collect();
 
             let items = List::new(items)
