@@ -188,8 +188,7 @@ pub(super) fn run(
                 result: Some(val),
                 ..
             } => {
-                // FIXME: set the value@cell_path to val, not the whole value
-                value = val;
+                value = mutate_value_cell(&value, &state.cell_path, &val);
                 state = State::from_value(&value);
             }
             TransitionResult {
@@ -200,6 +199,12 @@ pub(super) fn run(
         }
     }
     Ok(Value::nothing(Span::unknown()))
+}
+
+// FIXME: set the value@cell_path to val, not the whole value
+/// TODO: documentation
+fn mutate_value_cell(_value: &Value, _cell_path: &CellPath, val: &Value) -> Value {
+    val.clone()
 }
 
 /// perform the state transition based on the key pressed and the previous state
