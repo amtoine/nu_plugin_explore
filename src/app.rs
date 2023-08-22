@@ -187,10 +187,7 @@ pub(super) fn run(
                 exit: false,
                 result: Some(val),
                 ..
-            } => {
-                value = mutate_value_cell(&value, &state.cell_path, &val);
-                state = State::from_value(&value);
-            }
+            } => value = mutate_value_cell(&value, &state.cell_path, &val),
             TransitionResult {
                 exit: false,
                 result: None,
