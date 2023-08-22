@@ -207,6 +207,14 @@ fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value) -> Value 
         return val.clone();
     }
 
+    if value
+        .clone()
+        .follow_cell_path(&cell_path.members, false)
+        .is_err()
+    {
+        return value.clone();
+    }
+
     let mut cell_path = cell_path.clone();
 
     // NOTE: cell_path.members cannot be empty thanks to the guard above
