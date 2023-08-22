@@ -135,6 +135,7 @@ in order to help, you can have a look at
 - [ ] get rid of the `.clone`s
 - [ ] handle errors properly (`.unwrap`s and `panic!`s)
 - [ ] restrict the visibility of objects when possible
+- [ ] write better error messages when some test fails
 
 [Nushell]: https://nushell.sh
 [`nu-explore`]: https://crates.io/crates/nu-explore
