@@ -66,6 +66,16 @@ impl Editor {
         }
     }
 
+    fn delete_char_backward(&mut self) {
+        // NOTE: work on the chars and do not use remove which works on bytes
+        self.buffer = self
+            .buffer
+            .chars()
+            .take(self.cursor_position)
+            .chain(self.buffer.chars().skip(self.cursor_position + 1))
+            .collect();
+    }
+
     /// TODO: documentation
     pub(super) fn handle_key(&mut self, key: &Key) -> Option<(Mode, Option<Value>)> {
         match key {
@@ -73,6 +83,7 @@ impl Editor {
             Key::ArrowRight => self.move_cursor_right(),
             Key::Char(c) => self.enter_char(*c),
             Key::Backspace => self.delete_char(),
+            Key::Del => self.delete_char_backward(),
             Key::Enter => {
                 let val = Value::String {
                     val: self.buffer.clone(),
