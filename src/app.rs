@@ -339,42 +339,22 @@ fn transition_state(
     }
 
     if state.mode == Mode::Insert {
-        match key {
-            Key::ArrowLeft => {
-                state.editor.move_cursor_left();
-                return Ok(TransitionResult::next());
-            }
-            Key::ArrowRight => {
-                state.editor.move_cursor_right();
-                return Ok(TransitionResult::next());
-            }
-            Key::Char(c) => {
-                state.editor.enter_char(*c);
-                return Ok(TransitionResult::next());
-            }
-            Key::Backspace => {
-                state.editor.delete_char();
-                return Ok(TransitionResult::next());
-            }
-            Key::Enter => {
-                state.mode = Mode::Normal;
+        match state.editor.handle_key(key) {
+            Some((mode, val)) => {
+                state.mode = mode;
 
-                let edited_cell = Value::String {
-                    val: state.editor.buffer.clone(),
-                    span: Span::unknown(),
-                };
-
-                return Ok(TransitionResult {
-                    exit: false,
-                    result: Some(edited_cell),
-                    error: None,
-                });
+                match val {
+                    Some(v) => {
+                        return Ok(TransitionResult {
+                            exit: false,
+                            result: Some(v),
+                            error: None,
+                        });
+                    }
+                    None => return Ok(TransitionResult::next()),
+                }
             }
-            Key::Escape => {
-                state.mode = Mode::Normal;
-                return Ok(TransitionResult::next());
-            }
-            _ => {}
+            None => return Ok(TransitionResult::next()),
         }
     }
 

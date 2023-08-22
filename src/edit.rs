@@ -1,10 +1,13 @@
-use nu_protocol::Value;
+use console::Key;
+use nu_protocol::{Span, Value};
 use ratatui::{
     prelude::{Constraint, CrosstermBackend, Direction, Layout, Rect},
     style::Style,
     widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
+
+use crate::app::Mode;
 
 pub(super) struct Editor {
     pub buffer: String,
@@ -29,26 +32,26 @@ impl Editor {
         }
     }
 
-    pub(super) fn move_cursor_left(&mut self) {
+    fn move_cursor_left(&mut self) {
         self.cursor_position = self
             .cursor_position
             .saturating_sub(1)
             .clamp(0, self.buffer.len());
     }
 
-    pub(super) fn move_cursor_right(&mut self) {
+    fn move_cursor_right(&mut self) {
         self.cursor_position = self
             .cursor_position
             .saturating_add(1)
             .clamp(0, self.buffer.len());
     }
 
-    pub(super) fn enter_char(&mut self, c: char) {
+    fn enter_char(&mut self, c: char) {
         self.buffer.insert(self.cursor_position, c);
         self.move_cursor_right();
     }
 
-    pub(super) fn delete_char(&mut self) {
+    fn delete_char(&mut self) {
         let is_not_cursor_leftmost = self.cursor_position != 0;
 
         if is_not_cursor_leftmost {
@@ -69,6 +72,27 @@ impl Editor {
             self.buffer = before_char_to_delete.chain(after_char_to_delete).collect();
             self.move_cursor_left();
         }
+    }
+
+    /// TODO: documentation
+    pub(super) fn handle_key(&mut self, key: &Key) -> Option<(Mode, Option<Value>)> {
+        match key {
+            Key::ArrowLeft => self.move_cursor_left(),
+            Key::ArrowRight => self.move_cursor_right(),
+            Key::Char(c) => self.enter_char(*c),
+            Key::Backspace => self.delete_char(),
+            Key::Enter => {
+                let val = Value::String {
+                    val: self.buffer.clone(),
+                    span: Span::unknown(),
+                };
+                return Some((Mode::Normal, Some(val)));
+            }
+            Key::Escape => return Some((Mode::Normal, None)),
+            _ => {}
+        }
+
+        None
     }
 
     pub(super) fn render(&self, frame: &mut Frame<CrosstermBackend<console::Term>>) {
