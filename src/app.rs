@@ -255,6 +255,36 @@ fn transition_state(
         }
     }
 
+    if state.mode == Mode::Insert {
+        match key {
+            Key::ArrowLeft => {
+                state.editor.move_cursor_left();
+                return Ok(TransitionResult::next());
+            }
+            Key::ArrowRight => {
+                state.editor.move_cursor_right();
+                return Ok(TransitionResult::next());
+            }
+            Key::Char(c) => {
+                state.editor.enter_char(*c);
+                return Ok(TransitionResult::next());
+            }
+            Key::Backspace => {
+                state.editor.delete_char();
+                return Ok(TransitionResult::next());
+            }
+            Key::Enter => {
+                state.mode = Mode::Normal;
+                return Ok(TransitionResult::next());
+            }
+            Key::Escape => {
+                state.mode = Mode::Normal;
+                return Ok(TransitionResult::next());
+            }
+            _ => {}
+        }
+    }
+
     Ok(TransitionResult::next())
 }
 

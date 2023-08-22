@@ -28,26 +28,26 @@ impl Editor {
         }
     }
 
-    fn move_cursor_left(&mut self) {
+    pub(super) fn move_cursor_left(&mut self) {
         self.cursor_position = self
             .cursor_position
             .saturating_sub(1)
             .clamp(0, self.buffer.len());
     }
 
-    fn move_cursor_right(&mut self) {
+    pub(super) fn move_cursor_right(&mut self) {
         self.cursor_position = self
             .cursor_position
             .saturating_add(1)
             .clamp(0, self.buffer.len());
     }
 
-    fn enter_char(&mut self, c: char) {
+    pub(super) fn enter_char(&mut self, c: char) {
         self.buffer.insert(self.cursor_position, c);
         self.move_cursor_right();
     }
 
-    fn delete_char(&mut self) {
+    pub(super) fn delete_char(&mut self) {
         let is_not_cursor_leftmost = self.cursor_position != 0;
 
         if is_not_cursor_leftmost {
