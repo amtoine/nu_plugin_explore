@@ -11,6 +11,7 @@ pub(super) struct Editor {
     cursor_position: usize,
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for Editor {
     fn default() -> Self {
         Self {
