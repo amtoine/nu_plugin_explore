@@ -879,9 +879,8 @@ mod tests {
         }
     }
 
-    #[ignore = "data edition is not implemented for now"]
     #[test]
     fn edit_cells() {
-        /**/
+        todo!()
     }
 }
