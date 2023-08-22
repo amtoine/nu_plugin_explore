@@ -51,29 +51,30 @@ impl Editor {
         self.move_cursor_right();
     }
 
-    fn delete_char(&mut self) {
-        let is_not_cursor_leftmost = self.cursor_position != 0;
+    /// TODO: documentation
+    fn delete_char(&mut self, offset: i32) {
+        let position = self.cursor_position + (offset as usize);
 
-        if is_not_cursor_leftmost {
-            // NOTE: work on the chars and do not use remove which works on bytes
-            self.buffer = self
-                .buffer
-                .chars()
-                .take(self.cursor_position - 1)
-                .chain(self.buffer.chars().skip(self.cursor_position))
-                .collect();
-            self.move_cursor_left();
-        }
-    }
-
-    fn delete_char_backward(&mut self) {
         // NOTE: work on the chars and do not use remove which works on bytes
         self.buffer = self
             .buffer
             .chars()
-            .take(self.cursor_position)
-            .chain(self.buffer.chars().skip(self.cursor_position + 1))
+            .take(position)
+            .chain(self.buffer.chars().skip(position + 1))
             .collect();
+    }
+
+    fn delete_char_before_cursor(&mut self) {
+        let is_not_cursor_leftmost = self.cursor_position != 0;
+
+        if is_not_cursor_leftmost {
+            self.delete_char(-1);
+            self.move_cursor_left();
+        }
+    }
+
+    fn delete_char_under_cursor(&mut self) {
+        self.delete_char(0);
     }
 
     /// TODO: documentation
@@ -82,8 +83,8 @@ impl Editor {
             Key::ArrowLeft => self.move_cursor_left(),
             Key::ArrowRight => self.move_cursor_right(),
             Key::Char(c) => self.enter_char(*c),
-            Key::Backspace => self.delete_char(),
-            Key::Del => self.delete_char_backward(),
+            Key::Backspace => self.delete_char_before_cursor(),
+            Key::Del => self.delete_char_under_cursor(),
             Key::Enter => {
                 let val = Value::String {
                     val: self.buffer.clone(),
