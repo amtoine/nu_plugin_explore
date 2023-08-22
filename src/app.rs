@@ -170,19 +170,33 @@ pub(super) fn run(
     config: &Config,
 ) -> Result<Value> {
     let mut state = State::from_value(input);
+    let mut value = input.clone();
 
     loop {
-        terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
+        terminal.draw(|frame| tui::render_ui(frame, &value, &state, config))?;
 
         let key = console::Term::stderr().read_key()?;
-        match transition_state(&key, config, &mut state, input)? {
+        match transition_state(&key, config, &mut state, &value)? {
             TransitionResult {
                 exit: true, result, ..
             } => match result {
                 None => break,
                 Some(value) => return Ok(value),
             },
-            TransitionResult { exit: false, .. } => {}
+            TransitionResult {
+                exit: false,
+                result: Some(val),
+                ..
+            } => {
+                // FIXME: set the value@cell_path to val, not the whole value
+                value = val;
+                state = State::from_value(&value);
+            }
+            TransitionResult {
+                exit: false,
+                result: None,
+                ..
+            } => {}
         }
     }
     Ok(Value::nothing(Span::unknown()))
@@ -296,7 +310,17 @@ fn transition_state(
             }
             Key::Enter => {
                 state.mode = Mode::Normal;
-                return Ok(TransitionResult::next());
+
+                let edited_cell = Value::String {
+                    val: state.editor.buffer.clone(),
+                    span: Span::unknown(),
+                };
+
+                return Ok(TransitionResult {
+                    exit: false,
+                    result: Some(edited_cell),
+                    error: None,
+                });
             }
             Key::Escape => {
                 state.mode = Mode::Normal;

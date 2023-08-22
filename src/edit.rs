@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 pub(super) struct Editor {
-    buffer: String,
+    pub buffer: String,
     cursor_position: usize,
 }
 
