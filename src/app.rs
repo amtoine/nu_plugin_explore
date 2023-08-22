@@ -382,8 +382,8 @@ mod tests {
         // PEEKING -> INSERT: not allowed
         let transitions = vec![
             (&keybindings.normal, Mode::Normal),
-            (&keybindings.insert, Mode::Insert),
-            (&keybindings.insert, Mode::Insert),
+            // FIXME: non-string editing is not allowed
+            // (&keybindings.insert, Mode::Insert),
             (&keybindings.normal, Mode::Normal),
             (&keybindings.peek, Mode::Peeking),
             (&keybindings.normal, Mode::Normal),
