@@ -577,7 +577,7 @@ fn render_status_bar(
     };
 
     let left = Line::from(Span::styled(
-        format!(" {} ", state.mode.to_string()),
+        format!(" {} ", state.mode),
         style.add_modifier(Modifier::REVERSED),
     ));
     let right = Line::from(Span::styled(
