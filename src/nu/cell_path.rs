@@ -1,6 +1,5 @@
 use nu_protocol::{ast::PathMember, Span};
 
-#[allow(dead_code)]
 /// a simplified [`PathMember`] that can be put in a single vector, without being too long
 pub(crate) enum PM<'a> {
     // the [`PathMember::String`] variant
@@ -9,7 +8,6 @@ pub(crate) enum PM<'a> {
     I(usize),
 }
 
-#[allow(dead_code)]
 pub(crate) fn to_path_member_vec(cell_path: Vec<PM>) -> Vec<PathMember> {
     cell_path
         .iter()
