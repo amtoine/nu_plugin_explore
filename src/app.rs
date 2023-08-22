@@ -184,12 +184,17 @@ fn transition_state(
         return Ok(TransitionResult::quit());
     } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
-            state.enter_editor(
-                &value
-                    .clone()
-                    .follow_cell_path(&state.cell_path.members, false)
-                    .unwrap(),
-            );
+            let value = &value
+                .clone()
+                .follow_cell_path(&state.cell_path.members, false)
+                .unwrap();
+
+            match value {
+                Value::String { .. } => state.enter_editor(&value),
+                // TODO: return an error here to be shown in red somewhere
+                _ => {}
+            }
+
             return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.normal {
