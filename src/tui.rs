@@ -550,7 +550,7 @@ fn render_status_bar(
 
     let hints = match state.mode {
         Mode::Normal => format!(
-            "{} to {} | {}{}{}{} to move around | {} to peek",
+            "{} to {} | {}{}{}{} to move around | {} to peek | {} to quit",
             repr_keycode(&config.keybindings.insert),
             Mode::Insert,
             repr_keycode(&config.keybindings.navigation.left),
@@ -558,6 +558,7 @@ fn render_status_bar(
             repr_keycode(&config.keybindings.navigation.up),
             repr_keycode(&config.keybindings.navigation.right),
             repr_keycode(&config.keybindings.peek),
+            repr_keycode(&config.keybindings.quit),
         ),
         Mode::Insert => format!(
             "{} to {} | COMING SOON",
@@ -565,18 +566,20 @@ fn render_status_bar(
             Mode::Normal
         ),
         Mode::Peeking => format!(
-            "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor",
+            "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to quit",
             repr_keycode(&config.keybindings.normal),
             Mode::Normal,
             repr_keycode(&config.keybindings.peeking.all),
             repr_keycode(&config.keybindings.peeking.current),
             repr_keycode(&config.keybindings.peeking.under),
+            repr_keycode(&config.keybindings.quit),
         ),
         Mode::Bottom => format!(
-            "{} to {} | {} to peek",
+            "{} to {} | {} to peek | {} to quit",
             repr_keycode(&config.keybindings.navigation.left),
             Mode::Normal,
             repr_keycode(&config.keybindings.peek),
+            repr_keycode(&config.keybindings.quit),
         ),
     };
 
@@ -584,10 +587,7 @@ fn render_status_bar(
         state.mode.to_string(),
         style.add_modifier(Modifier::REVERSED),
     ));
-    let right = Line::from(Span::styled(
-        hints + &format!(" | {} to quit", repr_keycode(&config.keybindings.quit)),
-        style,
-    ));
+    let right = Line::from(Span::styled(hints, style));
 
     frame.render_widget(
         Paragraph::new(left).alignment(Alignment::Left),

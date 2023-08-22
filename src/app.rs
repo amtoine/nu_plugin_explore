@@ -211,7 +211,9 @@ fn transition_state(
     value: &Value,
 ) -> Result<TransitionResult, ShellError> {
     if key == &config.keybindings.quit {
-        return Ok(TransitionResult::quit());
+        if state.mode != Mode::Insert {
+            return Ok(TransitionResult::quit());
+        }
     } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
             let value = &value
