@@ -201,10 +201,46 @@ pub(super) fn run(
     Ok(Value::nothing(Span::unknown()))
 }
 
-// FIXME: set the value@cell_path to val, not the whole value
 /// TODO: documentation
-fn mutate_value_cell(_value: &Value, _cell_path: &CellPath, val: &Value) -> Value {
-    val.clone()
+fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value) -> Value {
+    if cell_path.members.is_empty() {
+        return val.clone();
+    }
+
+    let mut cell_path = cell_path.clone();
+
+    // NOTE: cell_path.members cannot be empty thanks to the guard above
+    let first = cell_path.members.first().unwrap();
+
+    match value {
+        Value::List { vals, .. } => {
+            let id = match first {
+                PathMember::Int { val, .. } => *val,
+                _ => return value.clone(),
+            };
+            cell_path.members.remove(0);
+
+            let mut vals = vals.clone();
+            vals[id] = mutate_value_cell(&vals[id], &cell_path, val);
+
+            Value::list(vals, Span::unknown())
+        }
+        Value::Record { cols, vals, .. } => {
+            let col = match first {
+                PathMember::String { val, .. } => val.clone(),
+                _ => return value.clone(),
+            };
+            cell_path.members.remove(0);
+
+            let id = cols.iter().position(|x| *x == col).unwrap_or(0);
+
+            let mut vals = vals.clone();
+            vals[id] = mutate_value_cell(&vals[id], &cell_path, val);
+
+            Value::record(cols.to_vec(), vals, Span::unknown())
+        }
+        _ => val.clone(),
+    }
 }
 
 /// perform the state transition based on the key pressed and the previous state
