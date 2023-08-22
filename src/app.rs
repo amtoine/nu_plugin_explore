@@ -113,6 +113,8 @@ struct TransitionResult {
     exit: bool,
     /// a potential value to return
     result: Option<Value>,
+    /// a potential error to show
+    error: Option<String>,
 }
 
 impl TransitionResult {
@@ -121,6 +123,7 @@ impl TransitionResult {
         TransitionResult {
             exit: true,
             result: None,
+            error: None,
         }
     }
 
@@ -129,6 +132,7 @@ impl TransitionResult {
         TransitionResult {
             exit: false,
             result: None,
+            error: None,
         }
     }
 
@@ -137,6 +141,16 @@ impl TransitionResult {
         TransitionResult {
             exit: true,
             result: Some(value.clone()),
+            error: None,
+        }
+    }
+
+    /// TODO: documentation
+    fn error(msg: &str) -> Self {
+        TransitionResult {
+            exit: false,
+            result: None,
+            error: Some(msg.to_string()),
         }
     }
 }
@@ -162,7 +176,9 @@ pub(super) fn run(
 
         let key = console::Term::stderr().read_key()?;
         match transition_state(&key, config, &mut state, input)? {
-            TransitionResult { exit: true, result } => match result {
+            TransitionResult {
+                exit: true, result, ..
+            } => match result {
                 None => break,
                 Some(value) => return Ok(value),
             },
@@ -190,12 +206,12 @@ fn transition_state(
                 .unwrap();
 
             match value {
-                Value::String { .. } => state.enter_editor(&value),
-                // TODO: return an error here to be shown in red somewhere
-                _ => {}
+                Value::String { .. } => {
+                    state.enter_editor(value);
+                    return Ok(TransitionResult::next());
+                }
+                _ => return Ok(TransitionResult::error("cannot edit non-string cells")),
             }
-
-            return Ok(TransitionResult::next());
         }
     } else if key == &config.keybindings.normal {
         if state.mode == Mode::Insert {
