@@ -216,7 +216,7 @@ fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value) -> Value 
         Value::List { vals, .. } => {
             let id = match first {
                 PathMember::Int { val, .. } => *val,
-                _ => return value.clone(),
+                _ => panic!("first cell path element should be an int"),
             };
             cell_path.members.remove(0);
 
@@ -228,7 +228,7 @@ fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value) -> Value 
         Value::Record { cols, vals, .. } => {
             let col = match first {
                 PathMember::String { val, .. } => val.clone(),
-                _ => return value.clone(),
+                _ => panic!("first cell path element should be an string"),
             };
             cell_path.members.remove(0);
 
