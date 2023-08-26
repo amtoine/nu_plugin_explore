@@ -1,6 +1,6 @@
 //! utilities to parse a [`Value`](https://docs.rs/nu-protocol/0.83.1/nu_protocol/enum.Value.html)
 //! into a configuration
-use console::Key;
+use crossterm::event::KeyCode;
 use ratatui::style::{Color, Modifier};
 
 use nu_plugin::LabeledError;
@@ -184,14 +184,14 @@ pub(super) fn try_fg_bg_colors(
 }
 
 /// try to parse a key in the *value* at the given *cell path*
-pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, LabeledError> {
+pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCode>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
-            "up" => Ok(Some(Key::ArrowUp)),
-            "down" => Ok(Some(Key::ArrowDown)),
-            "left" => Ok(Some(Key::ArrowLeft)),
-            "right" => Ok(Some(Key::ArrowRight)),
-            "escape" => Ok(Some(Key::Escape)),
+            "up" => Ok(Some(KeyCode::Up)),
+            "down" => Ok(Some(KeyCode::Down)),
+            "left" => Ok(Some(KeyCode::Left)),
+            "right" => Ok(Some(KeyCode::Right)),
+            "escape" => Ok(Some(KeyCode::Esc)),
             x => {
                 if x.len() != 1 {
                     return Err(LabeledError {
@@ -206,7 +206,7 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, 
                 }
 
                 #[allow(clippy::iter_nth_zero)]
-                Ok(Some(Key::Char(x.to_string().chars().nth(0).unwrap())))
+                Ok(Some(KeyCode::Char(x.to_string().chars().nth(0).unwrap())))
             }
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
@@ -270,7 +270,7 @@ pub(super) fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Valu
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
-    use console::Key;
+    use crossterm::event::KeyCode;
     use nu_plugin::LabeledError;
     use nu_protocol::Value;
     use ratatui::style::{Color, Modifier};
@@ -378,14 +378,14 @@ mod tests {
         );
 
         let cases = vec![
-            ("up", Key::ArrowUp),
-            ("down", Key::ArrowDown),
-            ("left", Key::ArrowLeft),
-            ("right", Key::ArrowRight),
-            ("escape", Key::Escape),
-            ("a", Key::Char('a')),
-            ("b", Key::Char('b')),
-            ("x", Key::Char('x')),
+            ("up", KeyCode::Up),
+            ("down", KeyCode::Down),
+            ("left", KeyCode::Left),
+            ("right", KeyCode::Right),
+            ("escape", KeyCode::Esc),
+            ("a", KeyCode::Char('a')),
+            ("b", KeyCode::Char('b')),
+            ("x", KeyCode::Char('x')),
         ];
 
         for (input, expected) in cases {

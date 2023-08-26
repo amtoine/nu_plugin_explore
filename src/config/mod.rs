@@ -4,7 +4,7 @@
 //! 1. holds the data structure of the [`Config`]
 //! 1. gives default values to a [`Config`] with [`Config::default`]
 //! 1. parses a Nushell [`Value`](https://docs.rs/nu-protocol/0.83.1/nu_protocol/enum.Value.html) into a valid [`Config`]
-use console::Key;
+use crossterm::event::KeyCode;
 use ratatui::style::{Color, Modifier};
 
 use nu_plugin::LabeledError;
@@ -61,37 +61,37 @@ pub(super) struct BgFgColorConfig {
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct NavigationBindingsMap {
     /// go one row up in the data
-    pub up: Key,
+    pub up: KeyCode,
     /// go one row down in the data
-    pub down: Key,
+    pub down: KeyCode,
     /// go one level higher in the data
-    pub left: Key,
+    pub left: KeyCode,
     /// go one level deeper in the data
-    pub right: Key,
+    pub right: KeyCode,
 }
 
 /// the bindings in PEEKING mode (see [crate::app::Mode::Peeking])
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct PeekingBindingsMap {
     /// peek the whole data structure
-    pub all: Key,
+    pub all: KeyCode,
     /// peek the current level
-    pub current: Key,
+    pub current: KeyCode,
     /// peek the current level, but only the row under the cursor
-    pub under: Key,
+    pub under: KeyCode,
 }
 
 /// the keybindings mapping
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct KeyBindingsMap {
-    pub quit: Key,
+pub(super) struct KeyCodeBindingsMap {
+    pub quit: KeyCode,
     /// go into INSERT mode (see [crate::app::Mode::Insert])
-    pub insert: Key,
+    pub insert: KeyCode,
     /// go back into NORMAL mode (see [crate::app::Mode::Normal])
-    pub normal: Key,
+    pub normal: KeyCode,
     pub navigation: NavigationBindingsMap,
     /// go into PEEKING mode (see [crate::app::Mode::Peeking])
-    pub peek: Key,
+    pub peek: KeyCode,
     pub peeking: PeekingBindingsMap,
 }
 
@@ -108,7 +108,7 @@ pub(super) enum Layout {
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct Config {
     pub colors: ColorConfig,
-    pub keybindings: KeyBindingsMap,
+    pub keybindings: KeyCodeBindingsMap,
     pub show_cell_path: bool,
     pub layout: Layout,
     pub show_table_header: bool,
@@ -162,21 +162,21 @@ impl Config {
                     },
                 },
             },
-            keybindings: KeyBindingsMap {
-                quit: Key::Char('q'),
-                insert: Key::Char('i'),
-                normal: Key::Escape,
+            keybindings: KeyCodeBindingsMap {
+                quit: KeyCode::Char('q'),
+                insert: KeyCode::Char('i'),
+                normal: KeyCode::Esc,
                 navigation: NavigationBindingsMap {
-                    left: Key::Char('h'),
-                    down: Key::Char('j'),
-                    up: Key::Char('k'),
-                    right: Key::Char('l'),
+                    left: KeyCode::Char('h'),
+                    down: KeyCode::Char('j'),
+                    up: KeyCode::Char('k'),
+                    right: KeyCode::Char('l'),
                 },
-                peek: Key::Char('p'),
+                peek: KeyCode::Char('p'),
                 peeking: PeekingBindingsMap {
-                    all: Key::Char('a'),
-                    current: Key::Char('c'),
-                    under: Key::Char('p'),
+                    all: KeyCode::Char('a'),
+                    current: KeyCode::Char('c'),
+                    under: KeyCode::Char('p'),
                 },
             },
         }
@@ -493,15 +493,15 @@ impl Config {
     }
 }
 
-/// represent a [`Key`] as a simple string
-pub(super) fn repr_keycode(keycode: &Key) -> String {
+/// represent a [`KeyCode`] as a simple string
+pub(super) fn repr_keycode(keycode: &KeyCode) -> String {
     match keycode {
-        Key::Char(c) => c.to_string(),
-        Key::ArrowLeft => "←".into(),
-        Key::ArrowUp => "↑".into(),
-        Key::ArrowRight => "→".into(),
-        Key::ArrowDown => "↓".into(),
-        Key::Escape => "<esc>".into(),
+        KeyCode::Char(c) => c.to_string(),
+        KeyCode::Left => "←".into(),
+        KeyCode::Up => "↑".into(),
+        KeyCode::Right => "→".into(),
+        KeyCode::Down => "↓".into(),
+        KeyCode::Esc => "<esc>".into(),
         _ => "??".into(),
     }
 }
@@ -509,17 +509,17 @@ pub(super) fn repr_keycode(keycode: &Key) -> String {
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
-    use console::Key;
+    use crossterm::event::KeyCode;
     use nu_protocol::Value;
 
     use super::{repr_keycode, Config};
 
     #[test]
     fn keycode_representation() {
-        assert_eq!(repr_keycode(&Key::Char('x')), "x".to_string());
-        assert_eq!(repr_keycode(&Key::ArrowLeft), "←".to_string());
-        assert_eq!(repr_keycode(&Key::Escape), "<esc>".to_string());
-        assert_eq!(repr_keycode(&Key::Enter), "??".to_string());
+        assert_eq!(repr_keycode(&KeyCode::Char('x')), "x".to_string());
+        assert_eq!(repr_keycode(&KeyCode::Left), "←".to_string());
+        assert_eq!(repr_keycode(&KeyCode::Esc), "<esc>".to_string());
+        assert_eq!(repr_keycode(&KeyCode::Enter), "??".to_string());
     }
 
     #[test]
@@ -578,7 +578,7 @@ mod tests {
             )],
         );
         let mut expected = Config::default();
-        expected.keybindings.navigation.up = Key::Char('x');
+        expected.keybindings.navigation.up = KeyCode::Char('x');
         assert_eq!(Config::from_value(value), Ok(expected));
     }
 }
