@@ -49,34 +49,34 @@ pub fn handle_key_events(
     config: &Config,
     value: &Value,
 ) -> AppResult<TransitionResult> {
-    if key_event.code == &config.keybindings.quit {
+    if key_event.code == config.keybindings.quit {
         return Ok(TransitionResult::quit());
-    } else if key_event.code == &config.keybindings.insert {
+    } else if key_event.code == config.keybindings.insert {
         if app.mode == Mode::Normal {
             app.mode = Mode::Insert;
             return Ok(TransitionResult::next());
         }
-    } else if key_event.code == &config.keybindings.normal {
+    } else if key_event.code == config.keybindings.normal {
         if app.mode == Mode::Insert {
             app.mode = Mode::Normal;
             return Ok(TransitionResult::next());
         }
-    } else if key_event.code == &config.keybindings.navigation.down {
+    } else if key_event.code == config.keybindings.navigation.down {
         if app.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(app, value, Direction::Down);
             return Ok(TransitionResult::next());
         }
-    } else if key_event.code == &config.keybindings.navigation.up {
+    } else if key_event.code == config.keybindings.navigation.up {
         if app.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(app, value, Direction::Up);
             return Ok(TransitionResult::next());
         }
-    } else if key_event.code == &config.keybindings.navigation.right {
+    } else if key_event.code == config.keybindings.navigation.right {
         if app.mode == Mode::Normal {
             navigation::go_deeper_in_data(app, value);
             return Ok(TransitionResult::next());
         }
-    } else if key_event.code == &config.keybindings.navigation.left {
+    } else if key_event.code == config.keybindings.navigation.left {
         if app.mode == Mode::Normal {
             navigation::go_back_in_data(app);
             return Ok(TransitionResult::next());
@@ -84,7 +84,7 @@ pub fn handle_key_events(
             app.mode = Mode::Normal;
             return Ok(TransitionResult::next());
         }
-    } else if key_event.code == &config.keybindings.peek {
+    } else if key_event.code == config.keybindings.peek {
         if app.mode == Mode::Normal {
             app.mode = Mode::Peeking;
             return Ok(TransitionResult::next());
@@ -98,19 +98,19 @@ pub fn handle_key_events(
     }
 
     if app.mode == Mode::Peeking {
-        if key_event.code == &config.keybindings.normal {
+        if key_event.code == config.keybindings.normal {
             app.mode = Mode::Normal;
             return Ok(TransitionResult::next());
-        } else if key_event.code == &config.keybindings.peeking.all {
+        } else if key_event.code == config.keybindings.peeking.all {
             return Ok(TransitionResult::output(value));
-        } else if key_event.code == &config.keybindings.peeking.current {
+        } else if key_event.code == config.keybindings.peeking.current {
             app.cell_path.members.pop();
             return Ok(TransitionResult::output(
                 &value
                     .clone()
                     .follow_cell_path(&app.cell_path.members, false)?,
             ));
-        } else if key_event.code == &config.keybindings.peeking.under {
+        } else if key_event.code == config.keybindings.peeking.under {
             return Ok(TransitionResult::output(
                 &value
                     .clone()
