@@ -1,7 +1,7 @@
 //! navigate in the data in all directions
 use nu_protocol::{ast::PathMember, Span, Value};
 
-use super::app::{Mode, State};
+use super::app::{Mode, App};
 
 /// specify a vertical direction in which to go in the data
 pub(super) enum Direction {
@@ -23,7 +23,7 @@ pub(super) enum Direction {
 /// > this function will only modify the last element of the state's *cell path* either by
 /// > - not doing anything
 /// > - poping the last element to know where we are and then pushing back the new element
-pub(super) fn go_up_or_down_in_data(state: &mut State, input: &Value, direction: Direction) {
+pub(super) fn go_up_or_down_in_data(state: &mut App, input: &Value, direction: Direction) {
     if state.is_at_bottom() {
         return;
     }
@@ -97,7 +97,7 @@ pub(super) fn go_up_or_down_in_data(state: &mut State, input: &Value, direction:
 /// > this function will
 /// > - push a new *cell path* member to the state if there is more depth ahead
 /// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
-pub(super) fn go_deeper_in_data(state: &mut State, input: &Value) {
+pub(super) fn go_deeper_in_data(state: &mut App, input: &Value) {
     match input
         .clone()
         .follow_cell_path(&state.cell_path.members, false)
@@ -122,7 +122,7 @@ pub(super) fn go_deeper_in_data(state: &mut State, input: &Value) {
 /// > :bulb: **Note**
 /// > - the state is always marked as *not at the bottom*
 /// > - the state *cell path* can have it's last member popped if possible
-pub(super) fn go_back_in_data(state: &mut State) {
+pub(super) fn go_back_in_data(state: &mut App) {
     if !state.is_at_bottom() & (state.cell_path.members.len() > 1) {
         state.cell_path.members.pop();
     }
@@ -135,7 +135,7 @@ mod tests {
     use nu_protocol::{ast::PathMember, Span, Value};
 
     use super::{go_back_in_data, go_deeper_in_data, go_up_or_down_in_data, Direction};
-    use crate::app::State;
+    use crate::app::App;
 
     fn test_string_pathmember(val: impl Into<String>) -> PathMember {
         PathMember::String {
@@ -160,7 +160,7 @@ mod tests {
             Value::test_nothing(),
             Value::test_nothing(),
         ]);
-        let mut state = State::from_value(&value);
+        let mut state = App::from_value(&value);
 
         let sequence = vec![
             (Direction::Down, 1),
@@ -187,7 +187,7 @@ mod tests {
                 Value::test_nothing(),
             ],
         );
-        let mut state = State::from_value(&value);
+        let mut state = App::from_value(&value);
 
         let sequence = vec![
             (Direction::Down, "b"),
@@ -210,7 +210,7 @@ mod tests {
             vec!["a"],
             vec![Value::test_list(vec![Value::test_nothing()])],
         )]);
-        let mut state = State::from_value(&value);
+        let mut state = App::from_value(&value);
 
         let mut expected = vec![test_int_pathmember(0)];
         assert_eq!(state.cell_path.members, expected);
@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn hit_bottom() {
         let value = Value::test_nothing();
-        let mut state = State::from_value(&value);
+        let mut state = App::from_value(&value);
 
         assert!(!state.is_at_bottom());
 
@@ -241,7 +241,7 @@ mod tests {
             vec!["a"],
             vec![Value::test_list(vec![Value::test_nothing()])],
         )]);
-        let mut state = State::from_value(&value);
+        let mut state = App::from_value(&value);
         state.cell_path.members = vec![
             test_int_pathmember(0),
             test_string_pathmember("a"),
