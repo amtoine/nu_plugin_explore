@@ -238,6 +238,15 @@ fn render_data(
         None
     };
 
+    let normal_name_style = Style::default()
+        .fg(config.colors.normal.name.foreground)
+        .bg(config.colors.normal.name.background);
+    let normal_data_style = Style::default()
+        .fg(config.colors.normal.data.foreground)
+        .bg(config.colors.normal.data.background);
+    let normal_shape_style = Style::default()
+        .fg(config.colors.normal.shape.foreground)
+        .bg(config.colors.normal.shape.background);
     let highlight_style = Style::default()
         .fg(config.colors.selected.foreground)
         .bg(config.colors.selected.background)
@@ -268,18 +277,11 @@ fn render_data(
                     .iter()
                     .map(|c| {
                         let spans = vec![
-                            Span::styled(
-                                c.clone(),
-                                Style::default()
-                                    .fg(config.colors.normal.name.foreground)
-                                    .bg(config.colors.normal.name.background),
-                            ),
+                            Span::styled(c.clone(), normal_name_style),
                             " (".into(),
                             Span::styled(
                                 vals[0].get_data_by_key(c).unwrap().get_type().to_string(),
-                                Style::default()
-                                    .fg(config.colors.normal.shape.foreground)
-                                    .bg(config.colors.normal.shape.background),
+                                normal_shape_style,
                             ),
                             ")".into(),
                         ];
@@ -348,28 +350,13 @@ fn render_data(
 
                     let mut spans = vec![];
                     if let Some(name) = row.name {
-                        spans.push(Span::styled(
-                            name,
-                            Style::default()
-                                .fg(config.colors.normal.name.foreground)
-                                .bg(config.colors.normal.name.background),
-                        ));
+                        spans.push(Span::styled(name, normal_name_style));
                         spans.push(": ".into());
                     }
                     spans.push("(".into());
-                    spans.push(Span::styled(
-                        row.shape,
-                        Style::default()
-                            .fg(config.colors.normal.shape.foreground)
-                            .bg(config.colors.normal.shape.background),
-                    ));
+                    spans.push(Span::styled(row.shape, normal_shape_style));
                     spans.push(") ".into());
-                    spans.push(Span::styled(
-                        row.data,
-                        Style::default()
-                            .fg(config.colors.normal.data.foreground)
-                            .bg(config.colors.normal.data.background),
-                    ));
+                    spans.push(Span::styled(row.data, normal_data_style));
 
                     ListItem::new(Line::from(spans))
                 })
@@ -386,54 +373,56 @@ fn render_data(
             )
         }
         Layout::Table => {
-            let header = Row::new(vec![
-                Cell::from("name").style(
-                    Style::default()
-                        .fg(config.colors.normal.name.foreground)
-                        .bg(config.colors.normal.name.background)
-                        .add_modifier(Modifier::REVERSED),
-                ),
-                Cell::from("data").style(
-                    Style::default()
-                        .fg(config.colors.normal.data.foreground)
-                        .bg(config.colors.normal.data.background)
-                        .add_modifier(Modifier::REVERSED),
-                ),
-                Cell::from("shape").style(
-                    Style::default()
-                        .fg(config.colors.normal.shape.foreground)
-                        .bg(config.colors.normal.shape.background)
-                        .add_modifier(Modifier::REVERSED),
-                ),
-            ])
-            .height(1);
+            let (header, rows) = match data.clone().follow_cell_path(&data_path, false) {
+                Ok(Value::List { .. }) => {
+                    let header = Row::new(vec![
+                        Cell::from("data")
+                            .style(normal_data_style.add_modifier(Modifier::REVERSED)),
+                        Cell::from("shape")
+                            .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
+                    ]);
+                    let rows: Vec<Row> = repr_data(data, &data_path)
+                        .iter()
+                        .map(|row| {
+                            let row = row.clone();
+                            Row::new(vec![
+                                Cell::from(row.data).style(normal_data_style),
+                                Cell::from(row.shape).style(normal_shape_style),
+                            ])
+                        })
+                        .collect();
 
-            let rows: Vec<Row> = repr_data(data, &data_path)
-                .iter()
-                .map(|row| {
-                    let row = row.clone();
-                    Row::new(vec![
-                        Cell::from(row.name.unwrap_or("".into())).style(
-                            Style::default()
-                                .fg(config.colors.normal.name.foreground)
-                                .bg(config.colors.normal.name.background),
-                        ),
-                        Cell::from(row.data).style(
-                            Style::default()
-                                .fg(config.colors.normal.data.foreground)
-                                .bg(config.colors.normal.data.background),
-                        ),
-                        Cell::from(row.shape).style(
-                            Style::default()
-                                .fg(config.colors.normal.shape.foreground)
-                                .bg(config.colors.normal.shape.background),
-                        ),
-                    ])
-                })
-                .collect();
+                    (header, rows)
+                }
+                Ok(_) => {
+                    let header = Row::new(vec![
+                        Cell::from("name")
+                            .style(normal_name_style.add_modifier(Modifier::REVERSED)),
+                        Cell::from("data")
+                            .style(normal_data_style.add_modifier(Modifier::REVERSED)),
+                        Cell::from("shape")
+                            .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
+                    ]);
+
+                    let rows: Vec<Row> = repr_data(data, &data_path)
+                        .iter()
+                        .map(|row| {
+                            let row = row.clone();
+                            Row::new(vec![
+                                Cell::from(row.name.unwrap_or("".into())).style(normal_name_style),
+                                Cell::from(row.data).style(normal_data_style),
+                                Cell::from(row.shape).style(normal_shape_style),
+                            ])
+                        })
+                        .collect();
+
+                    (header, rows)
+                }
+                Err(_) => panic!("unexpected error when following cell path during rendering"),
+            };
 
             let table = if config.show_table_header {
-                Table::new(rows).header(header)
+                Table::new(rows).header(header.height(1))
             } else {
                 Table::new(rows)
             }
