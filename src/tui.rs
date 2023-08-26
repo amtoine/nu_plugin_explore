@@ -1,10 +1,11 @@
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
-use nu_protocol::Value;
 use ratatui::backend::Backend;
 use ratatui::Terminal;
 use std::io;
 use std::panic;
+
+use nu_protocol::Value;
 
 use crate::app::{App, AppResult};
 use crate::config::Config;
@@ -65,7 +66,7 @@ impl<B: Backend> Tui<B> {
     /// the terminal properties if unexpected errors occur.
     fn reset() -> AppResult<()> {
         terminal::disable_raw_mode()?;
-        crossterm::execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+        crossterm::execute!(io::stderr(), LeaveAlternateScreen, DisableMouseCapture)?;
         Ok(())
     }
 

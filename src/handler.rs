@@ -1,4 +1,5 @@
 use crossterm::event::KeyEvent;
+
 use nu_protocol::Value;
 
 use crate::{
