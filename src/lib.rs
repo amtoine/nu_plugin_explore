@@ -19,7 +19,7 @@ mod navigation;
 use app::{App, AppResult, Mode};
 use config::Config;
 use event::{Event, EventHandler};
-use handler::handle_key_events;
+use handler::{handle_key_events, TransitionResult};
 use tui::Tui;
 
 use ratatui::backend::CrosstermBackend;
@@ -65,7 +65,7 @@ impl Plugin for Explore {
         input: &Value,
     ) -> Result<Value, LabeledError> {
         match name {
-            "explore" => explore(call, input),
+            "explore" => Ok(explore(call, input).unwrap()),
             _ => Err(LabeledError {
                 label: "Plugin call with wrong name signature".into(),
                 msg: "the signature used to call the plugin does not match any name in the plugin signature vector".into(),
@@ -97,7 +97,8 @@ fn explore(call: &EvaluatedCall, input: &Value) -> AppResult<Value> {
         vec![],
         vec![],
         Span::unknown(),
-    )))?;
+    )))
+    .unwrap();
 
     // Create an application.
     let mut app = App::new();
@@ -110,36 +111,28 @@ fn explore(call: &EvaluatedCall, input: &Value) -> AppResult<Value> {
     tui.init()?;
 
     // Start the main loop.
-    while app.running {
+    loop {
         // Render the user interface.
-        tui.draw(&mut app)?;
+        tui.draw(&mut app, input, &config)?;
         // Handle events.
         match tui.events.next()? {
             Event::Tick => app.tick(),
-            Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
+            Event::Key(key_event) => {
+                match handle_key_events(key_event, &mut app, &config, input)? {
+                    TransitionResult { exit: true, result } => match result {
+                        None => break,
+                        Some(value) => return Ok(value),
+                    },
+                    TransitionResult { exit: false, .. } => {}
+                }
+            }
             Event::Mouse(_) => {}
             Event::Resize(_, _) => {}
         }
     }
 
-    // match transition_state(&key, config, &mut state, input)? {
-    //     TransitionResult { exit: true, result } => match result {
-    //         None => break,
-    //         Some(value) => return Ok(value),
-    //     },
-    //     TransitionResult { exit: false, .. } => {}
-    // }
-    // Ok(Value::nothing(Span::unknown()));
-
     // Exit the user interface.
     tui.exit()?;
 
-    // match result {
-    //     Ok(res) => Ok(res),
-    //     Err(err) => Err(LabeledError {
-    //         label: "unexpected error".into(),
-    //         msg: err.to_string(),
-    //         span: Some(call.head),
-    //     }),
-    // }
+    Ok(Value::nothing(Span::unknown()))
 }

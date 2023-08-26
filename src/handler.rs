@@ -8,11 +8,11 @@ use crate::{
 
 /// the result of a state transition
 #[derive(Debug, PartialEq)]
-struct TransitionResult {
+pub struct TransitionResult {
     /// whether or not to exit the application
-    exit: bool,
+    pub exit: bool,
     /// a potential value to return
-    result: Option<Value>,
+    pub result: Option<Value>,
 }
 
 impl TransitionResult {
