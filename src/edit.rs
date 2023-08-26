@@ -186,8 +186,85 @@ impl Editor {
 
 #[cfg(test)]
 mod tests {
+    use console::Key;
+    use nu_protocol::Value;
+
+    use crate::app::Mode;
+
+    use super::Editor;
+
     #[test]
     fn edit_cells() {
-        todo!()
+        let mut editor = Editor::default();
+        editor.set_width(10 + 2);
+
+        let strokes = vec![
+            (
+                Key::Enter,
+                "",
+                Some((Mode::Normal, Some(Value::test_string("")))),
+            ),
+            (Key::Char('a'), "a", None),
+            (Key::Char('b'), "ab", None),
+            (Key::Char('c'), "abc", None),
+            (Key::Char('d'), "abcd", None),
+            (Key::Char('e'), "abcde", None),
+            (Key::ArrowLeft, "abcde", None),
+            (Key::Char('f'), "abcdfe", None),
+            (Key::ArrowLeft, "abcdfe", None),
+            (Key::ArrowLeft, "abcdfe", None),
+            (Key::Char('g'), "abcgdfe", None),
+            (Key::ArrowRight, "abcgdfe", None),
+            (Key::ArrowRight, "abcgdfe", None),
+            (Key::ArrowRight, "abcgdfe", None),
+            (Key::ArrowUp, "abcgdfe", None),
+            (Key::ArrowDown, "abcgdfe", None),
+            (Key::Char('h'), "abcgdfeh", None),
+            (Key::Char('i'), "abcgdfehi", None),
+            (Key::Char('j'), "abcgdfehij", None),
+            (Key::Char('k'), "abcgdfehijk", None),
+            (Key::Char('l'), "abcgdfehijkl", None),
+            (Key::ArrowUp, "abcgdfehijkl", None),
+            (Key::Char('m'), "abmcgdfehijkl", None),
+            (Key::ArrowDown, "abmcgdfehijkl", None),
+            (Key::ArrowLeft, "abmcgdfehijkl", None),
+            (Key::Char('n'), "abmcgdfehijknl", None),
+            (Key::ArrowLeft, "abmcgdfehijknl", None),
+            (Key::ArrowLeft, "abmcgdfehijknl", None),
+            (Key::ArrowLeft, "abmcgdfehijknl", None),
+            (Key::ArrowLeft, "abmcgdfehijknl", None),
+            (Key::ArrowLeft, "abmcgdfehijknl", None),
+            (Key::Char('o'), "abmcgdfeohijknl", None),
+            (Key::ArrowRight, "abmcgdfeohijknl", None),
+            (Key::ArrowRight, "abmcgdfeohijknl", None),
+            (
+                Key::Enter,
+                "abmcgdfeohijknl",
+                Some((Mode::Normal, Some(Value::test_string("abmcgdfeohijknl")))),
+            ),
+            (Key::ArrowRight, "abmcgdfeohijknl", None),
+            (Key::ArrowRight, "abmcgdfeohijknl", None),
+            (Key::Char('p'), "abmcgdfeohijkpnl", None),
+            (Key::Backspace, "abmcgdfeohijknl", None),
+            (Key::Backspace, "abmcgdfeohijnl", None),
+            (Key::Backspace, "abmcgdfeohinl", None),
+            (Key::ArrowUp, "abmcgdfeohinl", None),
+            (Key::Del, "amcgdfeohinl", None),
+            (Key::Del, "acgdfeohinl", None),
+            (Key::Del, "agdfeohinl", None),
+            (Key::Escape, "agdfeohinl", Some((Mode::Normal, None))),
+            (
+                Key::Enter,
+                "agdfeohinl",
+                Some((Mode::Normal, Some(Value::test_string("agdfeohinl")))),
+            ),
+        ];
+
+        for (key, expected_buffer, expected) in strokes {
+            let result = editor.handle_key(&key);
+
+            assert_eq!(result, expected);
+            assert_eq!(editor.buffer, expected_buffer.to_string());
+        }
     }
 }
