@@ -162,10 +162,10 @@ mod tests {
         let config = Config::default();
         let keybindings = config.clone().keybindings;
 
-        let mut state = App::default();
+        let mut app = App::default();
         let value = test_value();
 
-        assert!(state.mode == Mode::Normal);
+        assert!(app.mode == Mode::Normal);
 
         // INSERT -> PEEKING: not allowed
         // PEEKING -> INSERT: not allowed
@@ -179,11 +179,11 @@ mod tests {
         ];
 
         for (key, expected_mode) in transitions {
-            let mode = state.mode.clone();
+            let mode = app.mode.clone();
 
             let result = handle_key_events(
                 KeyEvent::new(key, KeyModifiers::empty()),
-                &mut state,
+                &mut app,
                 &config,
                 &value,
             )
@@ -196,12 +196,12 @@ mod tests {
                 mode,
             );
             assert!(
-                state.mode == expected_mode,
+                app.mode == expected_mode,
                 "expected to be in {} after pressing {} in {}, found {}",
                 expected_mode,
                 repr_keycode(&key),
                 mode,
-                state.mode
+                app.mode
             );
         }
     }
@@ -211,7 +211,7 @@ mod tests {
         let config = Config::default();
         let keybindings = config.clone().keybindings;
 
-        let mut state = App::default();
+        let mut app = App::default();
         let value = test_value();
 
         let transitions = vec![
@@ -224,11 +224,11 @@ mod tests {
         ];
 
         for (key, exit) in transitions {
-            let mode = state.mode.clone();
+            let mode = app.mode.clone();
 
             let result = handle_key_events(
                 KeyEvent::new(key, KeyModifiers::empty()),
-                &mut state,
+                &mut app,
                 &config,
                 &value,
             )
@@ -300,11 +300,11 @@ mod tests {
         let nav = config.clone().keybindings.navigation;
 
         let value = test_value();
-        let mut state = App::from_value(&value);
+        let mut app = App::from_value(&value);
 
-        assert!(!state.is_at_bottom());
+        assert!(!app.is_at_bottom());
         assert_eq!(
-            state.cell_path.members,
+            app.cell_path.members,
             to_path_member_vec(vec![PM::S("l")])
         );
 
@@ -367,7 +367,7 @@ mod tests {
             let expected = to_path_member_vec(cell_path);
             handle_key_events(
                 KeyEvent::new(key, KeyModifiers::empty()),
-                &mut state,
+                &mut app,
                 &config,
                 &value,
             )
@@ -375,23 +375,23 @@ mod tests {
 
             if bottom {
                 assert!(
-                    state.is_at_bottom(),
+                    app.is_at_bottom(),
                     "expected to be at the bottom after pressing {}",
                     repr_keycode(&key)
                 );
             } else {
                 assert!(
-                    !state.is_at_bottom(),
+                    !app.is_at_bottom(),
                     "expected NOT to be at the bottom after pressing {}",
                     repr_keycode(&key)
                 );
             }
             assert_eq!(
-                state.cell_path.members,
+                app.cell_path.members,
                 expected,
                 "expected to be at {:?}, found {:?}",
                 repr_path_member_vec(&expected),
-                repr_path_member_vec(&state.cell_path.members)
+                repr_path_member_vec(&app.cell_path.members)
             );
         }
     }
@@ -401,14 +401,14 @@ mod tests {
         config: &Config,
         value: &Value,
     ) {
-        let mut state = App::from_value(&value);
+        let mut app = App::from_value(&value);
 
         for (key, exit, expected) in transitions {
-            let mode = state.mode.clone();
+            let mode = app.mode.clone();
 
             let result = handle_key_events(
                 KeyEvent::new(key, KeyModifiers::empty()),
-                &mut state,
+                &mut app,
                 &config,
                 &value,
             )

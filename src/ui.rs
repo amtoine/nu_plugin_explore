@@ -217,7 +217,7 @@ fn is_table(value: &Value, cell_path: &[PathMember]) -> Option<bool> {
 ///
 /// the data will be rendered on top of the bar, and on top of the cell path in case
 /// [`crate::config::Config::show_cell_path`] is set to `true`.
-fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, state: &App, config: &Config) {
+fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, config: &Config) {
     let data_frame_height = if config.show_cell_path {
         frame.size().height - 2
     } else {
@@ -225,8 +225,8 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, state: &App, 
     };
     let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
-    let mut data_path = state.cell_path.members.clone();
-    let current = if !state.is_at_bottom() {
+    let mut data_path = app.cell_path.members.clone();
+    let current = if !app.is_at_bottom() {
         data_path.pop()
     } else {
         None
@@ -466,11 +466,11 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, state: &App, 
 /// ```text
 /// ||cell path: $.foo.bar.2.baz    ...||
 /// ```
-fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, state: &App) {
+fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, app: &App) {
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
-        state
+        app
             .cell_path
             .members
             .iter()
@@ -516,10 +516,10 @@ fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, state: &App) {
 /// ```text
 /// ||PEEKING ... <esc> to NORMAL | a to peek all | c to peek current view | u to peek under cursor | q to quit||
 /// ```
-fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, state: &App, config: &Config) {
+fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
-    let style = match state.mode {
+    let style = match app.mode {
         Mode::Normal => Style::default()
             .fg(config.colors.status_bar.normal.foreground)
             .bg(config.colors.status_bar.normal.background),
@@ -534,7 +534,7 @@ fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, state: &App, config: 
             .bg(config.colors.status_bar.bottom.background),
     };
 
-    let hints = match state.mode {
+    let hints = match app.mode {
         Mode::Normal => format!(
             "{} to {} | {}{}{}{} to move around | {} to peek",
             repr_keycode(&config.keybindings.insert),
@@ -567,7 +567,7 @@ fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, state: &App, config: 
     };
 
     let left = Line::from(Span::styled(
-        format!(" {} ", state.mode),
+        format!(" {} ", app.mode),
         style.add_modifier(Modifier::REVERSED),
     ));
     let right = Line::from(Span::styled(

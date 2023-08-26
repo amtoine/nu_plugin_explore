@@ -63,14 +63,14 @@ impl App {
     pub fn tick(&self) {}
 
     pub fn from_value(value: &Value) -> Self {
-        let mut state = Self::default();
+        let mut app = Self::default();
         match value {
-            Value::List { vals, .. } => state.cell_path.members.push(PathMember::Int {
+            Value::List { vals, .. } => app.cell_path.members.push(PathMember::Int {
                 val: 0,
                 span: Span::unknown(),
                 optional: vals.is_empty(),
             }),
-            Value::Record { cols, .. } => state.cell_path.members.push(PathMember::String {
+            Value::Record { cols, .. } => app.cell_path.members.push(PathMember::String {
                 val: cols.get(0).unwrap_or(&"".to_string()).into(),
                 span: Span::unknown(),
                 optional: cols.is_empty(),
@@ -78,7 +78,7 @@ impl App {
             _ => {}
         }
 
-        state
+        app
     }
 
     /// TODO: documentation
