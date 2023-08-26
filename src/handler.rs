@@ -3,7 +3,8 @@ use nu_protocol::Value;
 
 use crate::{
     app::{App, AppResult, Mode},
-    config::Config, navigation::{self, Direction},
+    config::Config,
+    navigation::{self, Direction},
 };
 
 /// the result of a state transition

@@ -1,7 +1,7 @@
 //! navigate in the data in all directions
 use nu_protocol::{ast::PathMember, Span, Value};
 
-use crate::app::{Mode, App};
+use crate::app::{App, Mode};
 
 /// specify a vertical direction in which to go in the data
 pub enum Direction {
