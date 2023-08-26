@@ -20,8 +20,8 @@ use nu_plugin_explore::event::{Event, EventHandler};
 use nu_plugin_explore::handler::handle_key_events;
 use nu_plugin_explore::tui::Tui;
 use std::io;
-use tui::backend::CrosstermBackend;
-use tui::Terminal;
+use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
