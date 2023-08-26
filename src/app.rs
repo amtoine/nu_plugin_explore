@@ -227,6 +227,7 @@ fn transition_state(
                     state.enter_editor(value);
                     return Ok(TransitionResult::next());
                 }
+                // TODO: support more diverse cell edition
                 x => {
                     return Ok(TransitionResult::error(&format!(
                         "can only edit string cells, found {}",
