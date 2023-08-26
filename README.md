@@ -8,7 +8,7 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
 - [*installation*](#installation)
   - [*building from source*](#building-from-source)
   - [*installing manually*](#installing-manually)
-  - [*using `nupm install`*](#using-nupm-install)
+  - [*using `nupm install` (recommended)*](#using-nupm-install-recommended)
 - [*usage*](#usage)
 - [*configuration*](#configuration)
 - [*see the documentation locally*](#see-the-documentation-locally)
@@ -31,7 +31,7 @@ will come very handy in a day-to-day basis for me at least :)
 
 ## why not `nu-explore`?
 - it's a bit too complex for what it does to me
-- the bindings are 
+- the bindings are not configurable
 - the code was really hard to wrap my head around
 - i wanted to have fun learning about [Nushell] plugins and TUI applications in Rust
 
@@ -65,15 +65,11 @@ nu --commands $"register ($install_root | path join "bin" $name)"
 ```
 - do not forget to restart [Nushell]
 
-## using `nupm install`
+## using `nupm install` (recommended)
 > **Warning**  
-> this is a very alpha software and even requires to use the code from an unmerged PR :eyes:
+> this is a very alpha software
 
-> **Note**  
-> this method does not even require to change the [`Cargo.toml`](Cargo.toml) as advertised in
-> [*setup the Nushell dependencies*](#setup-the-nushell-dependencies)
-
-- pull down the `nupm` module from [nushell/nupm#12](https://github.com/nushell/nupm/pull/12)
+- download [nushell/nupm](https://github.com/nushell/nupm)
 - load the `nupm` module
 ```nushell
 use /path/to/nupm/
@@ -137,6 +133,7 @@ in order to help, you can have a look at
 - [ ] get rid of the `.clone`s
 - [ ] handle errors properly (`.unwrap`s and `panic!`s)
 - [ ] restrict the visibility of objects when possible
+- [ ] write better error messages when some test fails
 
 [Nushell]: https://nushell.sh
 [`nu-explore`]: https://crates.io/crates/nu-explore

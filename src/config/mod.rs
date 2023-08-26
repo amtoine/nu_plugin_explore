@@ -84,10 +84,12 @@ pub(super) struct NavigationBindingsMap {
 pub(super) struct PeekingBindingsMap {
     /// peek the whole data structure
     pub all: Key,
-    /// peek the current level
-    pub current: Key,
+    /// peek the current cell path
+    pub cell_path: Key,
     /// peek the current level, but only the row under the cursor
     pub under: Key,
+    /// peek the current view
+    pub view: Key,
 }
 
 /// the keybindings mapping
@@ -154,19 +156,19 @@ impl Config {
                 selected_symbol: "".into(),
                 status_bar: StatusBarColorConfig {
                     normal: BgFgColorConfig {
-                        background: Color::Reset,
+                        background: Color::Black,
                         foreground: Color::White,
                     },
                     insert: BgFgColorConfig {
-                        background: Color::Reset,
+                        background: Color::Black,
                         foreground: Color::LightYellow,
                     },
                     peek: BgFgColorConfig {
-                        background: Color::Reset,
+                        background: Color::Black,
                         foreground: Color::LightGreen,
                     },
                     bottom: BgFgColorConfig {
-                        background: Color::Reset,
+                        background: Color::Black,
                         foreground: Color::LightMagenta,
                     },
                 },
@@ -194,8 +196,9 @@ impl Config {
                 peek: Key::Char('p'),
                 peeking: PeekingBindingsMap {
                     all: Key::Char('a'),
-                    current: Key::Char('c'),
+                    cell_path: Key::Char('c'),
                     under: Key::Char('p'),
+                    view: Key::Char('v'),
                 },
             },
         }
@@ -349,6 +352,15 @@ impl Config {
                                                 &config.colors.status_bar.peek,
                                             )? {
                                                 config.colors.status_bar.peek = val
+                                            }
+                                        }
+                                        "bottom" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "status_bar", "bottom"],
+                                                &config.colors.status_bar.bottom,
+                                            )? {
+                                                config.colors.status_bar.bottom = val
                                             }
                                         }
                                         x => {
@@ -521,12 +533,12 @@ impl Config {
                                                 config.keybindings.peeking.all = val
                                             }
                                         }
-                                        "current" => {
+                                        "cell_path" => {
                                             if let Some(val) = try_key(
                                                 &value,
-                                                &["keybindings", "peeking", "current"],
+                                                &["keybindings", "peeking", "cell_path"],
                                             )? {
-                                                config.keybindings.peeking.current = val
+                                                config.keybindings.peeking.cell_path = val
                                             }
                                         }
                                         "under" => {
@@ -535,6 +547,14 @@ impl Config {
                                                 &["keybindings", "peeking", "under"],
                                             )? {
                                                 config.keybindings.peeking.under = val
+                                            }
+                                        }
+                                        "view" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "peeking", "view"],
+                                            )? {
+                                                config.keybindings.peeking.view = val
                                             }
                                         }
                                         x => {

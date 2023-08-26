@@ -11,7 +11,8 @@
     peek: 'p',  # go to PEEKING mode to peek a value
     peeking: {  # only in PEEKING mode
         all: 'a',  # peek the whole data, from the top level
-        current: 'c',  # peek the current data, i.e. what is visible
+        cell_path: 'c',  # peek the cell path under the cursor
         under: 'p',  # peek only what's under the cursor
+        view: 'v',  # peek the current view, i.e. what is visible
     },
 }

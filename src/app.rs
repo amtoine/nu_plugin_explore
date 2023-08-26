@@ -289,7 +289,7 @@ fn transition_state(
             return Ok(TransitionResult::next());
         } else if key == &config.keybindings.peeking.all {
             return Ok(TransitionResult::output(value));
-        } else if key == &config.keybindings.peeking.current {
+        } else if key == &config.keybindings.peeking.view {
             state.cell_path.members.pop();
             return Ok(TransitionResult::output(
                 &value
@@ -302,6 +302,11 @@ fn transition_state(
                     .clone()
                     .follow_cell_path(&state.cell_path.members, false)?,
             ));
+        } else if key == &config.keybindings.peeking.cell_path {
+            return Ok(TransitionResult::output(&Value::cell_path(
+                state.cell_path.clone(),
+                Span::unknown(),
+            )));
         }
     }
 
@@ -331,7 +336,10 @@ fn transition_state(
 #[cfg(test)]
 mod tests {
     use console::Key;
-    use nu_protocol::{ast::PathMember, Value};
+    use nu_protocol::{
+        ast::{CellPath, PathMember},
+        Span, Value,
+    };
 
     use super::{transition_state, State};
     use crate::{
@@ -627,7 +635,7 @@ mod tests {
 
         let peek_current_from_top = vec![
             (&keybindings.peek, false, None),
-            (&keybindings.peeking.current, true, Some(value.clone())),
+            (&keybindings.peeking.view, true, Some(value.clone())),
         ];
         run_peeking_scenario(peek_current_from_top, &config, &value);
 
@@ -637,7 +645,7 @@ mod tests {
             (&keybindings.peek, false, None),
             (&keybindings.peeking.all, true, Some(value.clone())),
             (
-                &keybindings.peeking.current,
+                &keybindings.peeking.view,
                 true,
                 Some(Value::test_record(
                     vec!["a", "b"],
@@ -655,6 +663,31 @@ mod tests {
             (&keybindings.peeking.under, true, Some(Value::test_int(1))),
         ];
         run_peeking_scenario(go_in_the_data_and_peek_under, &config, &value);
+
+        let go_in_the_data_and_peek_cell_path = vec![
+            (&keybindings.navigation.down, false, None), // on {r: {a: 1, b: 2}}
+            (&keybindings.navigation.right, false, None), // on {a: 1}
+            (&keybindings.peek, false, None),
+            (
+                &keybindings.peeking.cell_path,
+                true,
+                Some(Value::test_cell_path(CellPath {
+                    members: vec![
+                        PathMember::String {
+                            val: "r".into(),
+                            span: Span::test_data(),
+                            optional: false,
+                        },
+                        PathMember::String {
+                            val: "a".into(),
+                            span: Span::test_data(),
+                            optional: false,
+                        },
+                    ],
+                })),
+            ),
+        ];
+        run_peeking_scenario(go_in_the_data_and_peek_cell_path, &config, &value);
 
         let peek_at_the_bottom = vec![
             (&keybindings.navigation.right, false, None), // on l: ["my", "list", "elements"],

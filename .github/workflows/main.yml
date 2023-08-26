@@ -8,7 +8,7 @@ name: continuous-integration
 
 env:
   CLIPPY_OPTIONS: "-D warnings"
-  NU_VERSION: "0.83.1"
+  NU_VERSION: "0.84.0"
 
 jobs:
   fmt-clippy:

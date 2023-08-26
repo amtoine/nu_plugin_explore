@@ -4,7 +4,9 @@ use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
+    widgets::{
+        Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState, Wrap,
+    },
     Frame,
 };
 
@@ -91,10 +93,10 @@ impl DataRowRepr {
 ///
 /// > see the tests for detailed examples
 fn repr_list(vals: &[Value]) -> DataRowRepr {
-    let data = if vals.len() <= 1 {
-        format!("[{} item]", vals.len())
-    } else {
-        format!("[{} items]", vals.len())
+    let data = match vals.len() {
+        0 => "[]".into(),
+        1 => "[1 item]".into(),
+        x => format!("[{} items]", x),
     };
 
     DataRowRepr {
@@ -108,10 +110,10 @@ fn repr_list(vals: &[Value]) -> DataRowRepr {
 ///
 /// > see the tests for detailed examples
 fn repr_record(cols: &[String]) -> DataRowRepr {
-    let data = if cols.len() <= 1 {
-        format!("{{{} field}}", cols.len())
-    } else {
-        format!("{{{} fields}}", cols.len())
+    let data = match cols.len() {
+        0 => "{}".into(),
+        1 => "{1 field}".into(),
+        x => format!("{{{} fields}}", x),
     };
 
     DataRowRepr {
@@ -195,7 +197,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                 vec![DataRowRepr {
                     name: None,
                     shape: "list".into(),
-                    data: "[0 item]".into(),
+                    data: "[]".into(),
                 }]
             } else {
                 vals.iter().map(repr_value).collect::<Vec<DataRowRepr>>()
@@ -206,7 +208,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                 vec![DataRowRepr {
                     name: None,
                     shape: "record".into(),
-                    data: "{0 field}".into(),
+                    data: "{}".into(),
                 }]
             } else {
                 cols.iter()
@@ -244,6 +246,29 @@ fn is_table(value: &Value, cell_path: &[PathMember]) -> Option<bool> {
     }
 }
 
+/// compute the representation of a complete Nushell table
+///
+/// > see the tests for detailed examples
+fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
+    let shapes = table[0]
+        .columns()
+        .iter()
+        .map(|c| table[0].get_data_by_key(c).unwrap().get_type().to_string())
+        .collect();
+
+    let rows = table
+        .iter()
+        .map(|v| {
+            v.columns()
+                .iter()
+                .map(|c| repr_value(&v.get_data_by_key(c).unwrap()).data)
+                .collect::<Vec<String>>()
+        })
+        .collect::<Vec<Vec<String>>>();
+
+    (table[0].columns().to_vec(), shapes, rows)
+}
+
 /// render the whole data
 ///
 /// the layout can be changed from [`crate::config::Config::layout`].
@@ -270,6 +295,15 @@ fn render_data(
         None
     };
 
+    let normal_name_style = Style::default()
+        .fg(config.colors.normal.name.foreground)
+        .bg(config.colors.normal.name.background);
+    let normal_data_style = Style::default()
+        .fg(config.colors.normal.data.foreground)
+        .bg(config.colors.normal.data.background);
+    let normal_shape_style = Style::default()
+        .fg(config.colors.normal.shape.foreground)
+        .bg(config.colors.normal.shape.background);
     let highlight_style = Style::default()
         .fg(config.colors.selected.foreground)
         .bg(config.colors.selected.background)
@@ -289,51 +323,29 @@ fn render_data(
     };
 
     if is_table(data, &data_path).expect("cell path is invalid when checking for table") {
-        let (header, rows) = match data
+        let (columns, shapes, cells) = match data
             .clone()
             .follow_cell_path(&data_path, false)
             .expect("cell path invalid when rendering table")
         {
-            Value::List { vals, .. } => {
-                let cols_with_type = vals[0]
-                    .columns()
-                    .iter()
-                    .map(|c| {
-                        let spans = vec![
-                            Span::styled(
-                                c.clone(),
-                                Style::default()
-                                    .fg(config.colors.normal.name.foreground)
-                                    .bg(config.colors.normal.name.background),
-                            ),
-                            " (".into(),
-                            Span::styled(
-                                vals[0].get_data_by_key(c).unwrap().get_type().to_string(),
-                                Style::default()
-                                    .fg(config.colors.normal.shape.foreground)
-                                    .bg(config.colors.normal.shape.background),
-                            ),
-                            ")".into(),
-                        ];
-
-                        Cell::from(Line::from(spans))
-                    })
-                    .collect::<Vec<Cell>>();
-
-                let rows = vals
-                    .iter()
-                    .map(|v| {
-                        v.columns()
-                            .iter()
-                            .map(|c| v.get_data_by_key(c).unwrap())
-                            .collect()
-                    })
-                    .collect::<Vec<Vec<Value>>>();
-
-                (cols_with_type, rows)
-            }
+            Value::List { vals, .. } => repr_table(&vals),
             _ => panic!("value is a table but is not a list"),
         };
+
+        let header = columns
+            .iter()
+            .zip(shapes)
+            .map(|(c, s)| {
+                let spans = vec![
+                    Span::styled(c, normal_name_style),
+                    " (".into(),
+                    Span::styled(s, normal_shape_style),
+                    ")".into(),
+                ];
+
+                Cell::from(Line::from(spans))
+            })
+            .collect::<Vec<Cell>>();
 
         let widths = header
             .iter()
@@ -343,16 +355,9 @@ fn render_data(
 
         let header = Row::new(header).height(1);
 
-        let rows: Vec<Row> = rows
+        let rows: Vec<Row> = cells
             .iter()
-            .map(|r| {
-                let cells = r
-                    .iter()
-                    .map(|v| Cell::from(repr_value(v).data))
-                    .collect::<Vec<Cell>>();
-
-                Row::new(cells)
-            })
+            .map(|r| Row::new(r.iter().cloned().map(Cell::from).collect::<Vec<Cell>>()))
             .collect();
 
         let table = Table::new(rows)
@@ -375,33 +380,17 @@ fn render_data(
         Layout::Compact => {
             let items: Vec<ListItem> = repr_data(data, &data_path)
                 .iter()
+                .cloned()
                 .map(|row| {
-                    let row = row.clone();
-
                     let mut spans = vec![];
                     if let Some(name) = row.name {
-                        spans.push(Span::styled(
-                            name,
-                            Style::default()
-                                .fg(config.colors.normal.name.foreground)
-                                .bg(config.colors.normal.name.background),
-                        ));
+                        spans.push(Span::styled(name, normal_name_style));
                         spans.push(": ".into());
                     }
                     spans.push("(".into());
-                    spans.push(Span::styled(
-                        row.shape,
-                        Style::default()
-                            .fg(config.colors.normal.shape.foreground)
-                            .bg(config.colors.normal.shape.background),
-                    ));
+                    spans.push(Span::styled(row.shape, normal_shape_style));
                     spans.push(") ".into());
-                    spans.push(Span::styled(
-                        row.data,
-                        Style::default()
-                            .fg(config.colors.normal.data.foreground)
-                            .bg(config.colors.normal.data.background),
-                    ));
+                    spans.push(Span::styled(row.data, normal_data_style));
 
                     ListItem::new(Line::from(spans))
                 })
@@ -418,65 +407,97 @@ fn render_data(
             )
         }
         Layout::Table => {
-            let header = Row::new(vec![
-                Cell::from("name").style(
-                    Style::default()
-                        .fg(config.colors.normal.name.foreground)
-                        .bg(config.colors.normal.name.background)
-                        .add_modifier(Modifier::REVERSED),
-                ),
-                Cell::from("data").style(
-                    Style::default()
-                        .fg(config.colors.normal.data.foreground)
-                        .bg(config.colors.normal.data.background)
-                        .add_modifier(Modifier::REVERSED),
-                ),
-                Cell::from("shape").style(
-                    Style::default()
-                        .fg(config.colors.normal.shape.foreground)
-                        .bg(config.colors.normal.shape.background)
-                        .add_modifier(Modifier::REVERSED),
-                ),
-            ])
-            .height(1);
+            let (header, rows, constraints) = match data.clone().follow_cell_path(&data_path, false)
+            {
+                Ok(Value::List { .. }) => {
+                    let header = Row::new(vec![
+                        Cell::from("item")
+                            .style(normal_data_style.add_modifier(Modifier::REVERSED)),
+                        Cell::from("shape")
+                            .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
+                    ]);
+                    let rows: Vec<Row> = repr_data(data, &data_path)
+                        .iter()
+                        .cloned()
+                        .map(|row| {
+                            let data_style = match row.data.as_str() {
+                                "record" | "list" => normal_data_style.add_modifier(Modifier::DIM),
+                                _ => normal_data_style,
+                            };
 
-            let rows: Vec<Row> = repr_data(data, &data_path)
-                .iter()
-                .map(|row| {
-                    let row = row.clone();
-                    Row::new(vec![
-                        Cell::from(row.name.unwrap_or("".into())).style(
-                            Style::default()
-                                .fg(config.colors.normal.name.foreground)
-                                .bg(config.colors.normal.name.background),
-                        ),
-                        Cell::from(row.data).style(
-                            Style::default()
-                                .fg(config.colors.normal.data.foreground)
-                                .bg(config.colors.normal.data.background),
-                        ),
-                        Cell::from(row.shape).style(
-                            Style::default()
-                                .fg(config.colors.normal.shape.foreground)
-                                .bg(config.colors.normal.shape.background),
-                        ),
-                    ])
-                })
-                .collect();
+                            Row::new(vec![
+                                Cell::from(row.data).style(data_style),
+                                Cell::from(row.shape).style(normal_shape_style),
+                            ])
+                        })
+                        .collect();
+
+                    let constraints = vec![Constraint::Percentage(90), Constraint::Percentage(10)];
+
+                    (header, rows, constraints)
+                }
+                Ok(Value::Record { .. }) => {
+                    let header = Row::new(vec![
+                        Cell::from("key").style(normal_name_style.add_modifier(Modifier::REVERSED)),
+                        Cell::from("field")
+                            .style(normal_data_style.add_modifier(Modifier::REVERSED)),
+                        Cell::from("shape")
+                            .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
+                    ]);
+
+                    let rows: Vec<Row> = repr_data(data, &data_path)
+                        .iter()
+                        .cloned()
+                        .map(|row| {
+                            let data_style = match row.data.as_str() {
+                                "record" | "list" => normal_data_style.add_modifier(Modifier::DIM),
+                                _ => normal_data_style,
+                            };
+
+                            Row::new(vec![
+                                Cell::from(row.name.unwrap_or("".into())).style(normal_name_style),
+                                Cell::from(row.data).style(data_style),
+                                Cell::from(row.shape).style(normal_shape_style),
+                            ])
+                        })
+                        .collect();
+
+                    let constraints = vec![
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(70),
+                        Constraint::Percentage(10),
+                    ];
+
+                    (header, rows, constraints)
+                }
+                Ok(v) => {
+                    let repr = repr_simple_value(&v);
+                    let spans = vec![
+                        Span::styled(repr.data, normal_data_style),
+                        " is of shape ".into(),
+                        Span::styled(repr.shape, normal_shape_style),
+                    ];
+
+                    frame.render_widget(
+                        Paragraph::new(Line::from(spans))
+                            .block(Block::default().borders(Borders::ALL))
+                            .wrap(Wrap { trim: false }),
+                        rect_without_bottom_bar,
+                    );
+                    return;
+                }
+                Err(_) => panic!("unexpected error when following cell path during rendering"),
+            };
 
             let table = if config.show_table_header {
-                Table::new(rows).header(header)
+                Table::new(rows).header(header.height(1))
             } else {
                 Table::new(rows)
             }
             .block(Block::default().borders(Borders::ALL))
             .highlight_style(highlight_style)
             .highlight_symbol(&config.colors.selected_symbol)
-            .widths(&[
-                Constraint::Percentage(20),
-                Constraint::Percentage(70),
-                Constraint::Percentage(10),
-            ]);
+            .widths(&constraints);
 
             frame.render_stateful_widget(
                 table,
@@ -561,19 +582,18 @@ fn render_status_bar(
 ) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
+    let bg_style = match state.mode {
+        Mode::Normal => Style::default().bg(config.colors.status_bar.normal.background),
+        Mode::Insert => Style::default().bg(config.colors.status_bar.insert.background),
+        Mode::Peeking => Style::default().bg(config.colors.status_bar.peek.background),
+        Mode::Bottom => Style::default().bg(config.colors.status_bar.bottom.background),
+    };
+
     let style = match state.mode {
-        Mode::Normal => Style::default()
-            .fg(config.colors.status_bar.normal.foreground)
-            .bg(config.colors.status_bar.normal.background),
-        Mode::Insert => Style::default()
-            .fg(config.colors.status_bar.insert.foreground)
-            .bg(config.colors.status_bar.insert.background),
-        Mode::Peeking => Style::default()
-            .fg(config.colors.status_bar.peek.foreground)
-            .bg(config.colors.status_bar.peek.background),
-        Mode::Bottom => Style::default()
-            .fg(config.colors.status_bar.bottom.foreground)
-            .bg(config.colors.status_bar.bottom.background),
+        Mode::Normal => bg_style.fg(config.colors.status_bar.normal.foreground),
+        Mode::Insert => bg_style.fg(config.colors.status_bar.insert.foreground),
+        Mode::Peeking => bg_style.fg(config.colors.status_bar.peek.foreground),
+        Mode::Bottom => bg_style.fg(config.colors.status_bar.bottom.foreground),
     };
 
     let hints = match state.mode {
@@ -600,13 +620,13 @@ fn render_status_bar(
             repr_keycode(&Key::Enter),
         ),
         Mode::Peeking => format!(
-            "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to quit",
+            "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to peek the cell path",
             repr_keycode(&config.keybindings.normal),
             Mode::Normal,
             repr_keycode(&config.keybindings.peeking.all),
-            repr_keycode(&config.keybindings.peeking.current),
+            repr_keycode(&config.keybindings.peeking.view),
             repr_keycode(&config.keybindings.peeking.under),
-            repr_keycode(&config.keybindings.quit),
+            repr_keycode(&config.keybindings.peeking.cell_path),
         ),
         Mode::Bottom => format!(
             "{} to {} | {} to peek | {} to quit",
@@ -618,13 +638,15 @@ fn render_status_bar(
     };
 
     let left = Line::from(Span::styled(
-        state.mode.to_string(),
+        format!(" {} ", state.mode),
         style.add_modifier(Modifier::REVERSED),
     ));
     let right = Line::from(Span::styled(hints, style));
 
     frame.render_widget(
-        Paragraph::new(left).alignment(Alignment::Left),
+        Paragraph::new(left)
+            .alignment(Alignment::Left)
+            .style(bg_style),
         bottom_bar_rect,
     );
     frame.render_widget(
@@ -637,6 +659,8 @@ fn render_status_bar(
 #[cfg(test)]
 mod tests {
     use nu_protocol::Value;
+
+    use crate::tui::repr_table;
 
     use super::{is_table, repr_data, repr_list, repr_record, repr_simple_value, DataRowRepr};
 
@@ -678,7 +702,7 @@ mod tests {
         #[rustfmt::skip]
         let cases = vec![
             (list, DataRowRepr::unnamed("[3 items]", "list")),
-            (vec![], DataRowRepr::unnamed("[0 item]", "list")),
+            (vec![], DataRowRepr::unnamed("[]", "list")),
             (vec![Value::test_nothing()], DataRowRepr::unnamed("[1 item]", "list")),
         ];
 
@@ -692,7 +716,7 @@ mod tests {
         #[rustfmt::skip]
         let cases = vec![
             (vec!["a", "b", "c"], DataRowRepr::unnamed("{3 fields}", "record")),
-            (vec![], DataRowRepr::unnamed("{0 field}", "record")),
+            (vec![], DataRowRepr::unnamed("{}", "record")),
             (vec!["a"], DataRowRepr::unnamed("{1 field}", "record")),
         ];
 
@@ -756,5 +780,22 @@ mod tests {
         assert_eq!(is_table(&not_a_table, &[]), Some(false));
 
         assert_eq!(is_table(&Value::test_int(0), &[]), Some(false));
+    }
+
+    #[test]
+    fn table() {
+        #[rustfmt::skip]
+        let table = vec![
+            Value::test_record(vec!["a", "b"], vec![Value::test_string("x"), Value::test_int(1)]),
+            Value::test_record(vec!["a", "b"], vec![Value::test_string("y"), Value::test_int(2)]),
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["string".into(), "int".into()],
+            vec![vec!["x".into(), "1".into()], vec!["y".into(), "2".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
     }
 }

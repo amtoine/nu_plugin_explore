@@ -23,19 +23,19 @@
     selected_symbol: "",  # the symbol to show to the left of the row under the cursor
     status_bar: {
         normal: {  # the colors for the status bar in NORMAL mode
-            background: reset,
+            background: black,
             foreground: white,
         },
         insert: {  # the colors for the status bar in INSERT mode
-            background: reset,
+            background: black,
             foreground: lightyellow,
         },
         peek: {  # the colors for the status bar in PEEKING mode
-            background: reset,
+            background: black,
             foreground: lightgreen,
         }
         bottom: {  # the colors for the status bar in BOTTOM mode
-            background: reset,
+            background: black,
             foreground: lightmagenta,
         }
     }

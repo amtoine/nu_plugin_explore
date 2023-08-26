@@ -58,6 +58,18 @@ pub(super) fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) ->
     }
 }
 
+fn u8_out_of_range(value: i64, cell_path: &[&str], span: Option<Span>) -> LabeledError {
+    LabeledError {
+        label: "invalid config".into(),
+        msg: format!(
+            "`$.{}` should be an integer between 0 and 255, found {}",
+            cell_path.join("."),
+            value
+        ),
+        span,
+    }
+}
+
 /// try to parse a bool in the *value* at the given *cell path*
 pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>, LabeledError> {
     match follow_cell_path(value, cell_path) {
@@ -131,14 +143,56 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
             x => Err(LabeledError {
                 label: "invalid config".into(),
                 msg: format!(
-                    r#"`$.{}` should be one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found {}"#,
+                    r#"`$.{}` should be a u8, a list of three u8s or one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found {}"#,
                     cell_path.join("."),
                     x
                 ),
                 span: value.span().ok(),
             }),
         },
-        Some(x) => Err(invalid_type(&x, cell_path, "string")),
+        Some(Value::Int { val, .. }) => {
+            if !(0..=255).contains(&val) {
+                // FIXME: use a real span?
+                return Err(u8_out_of_range(val, cell_path, None));
+            }
+
+            Ok(Some(Color::Rgb(val as u8, val as u8, val as u8)))
+        }
+        Some(Value::List { vals, .. }) => {
+            if vals.len() != 3 {
+                return Err(LabeledError {
+                    label: "invalid config".into(),
+                    msg: format!("`$.{}` is not a valid config field, expected a list of three u8, found {} items", cell_path.join("."), vals.len()),
+                    // FIXME: use a real span?
+                    span: None,
+                });
+            }
+
+            let mut channels: Vec<u8> = vec![];
+
+            for (i, val) in vals.iter().enumerate() {
+                let mut cell_path = cell_path.to_vec().clone();
+
+                let tail = format!("{}", i);
+                cell_path.push(&tail);
+
+                match val {
+                    Value::Int { val: x, .. } => {
+                        if (*x < 0) | (*x > 255) {
+                            return Err(u8_out_of_range(*x, &cell_path, val.span().ok()));
+                        }
+
+                        channels.push(*x as u8);
+                    }
+                    x => {
+                        return Err(invalid_type(x, &cell_path, "u8"));
+                    }
+                }
+            }
+
+            Ok(Some(Color::Rgb(channels[0], channels[1], channels[2])))
+        }
+        Some(x) => Err(invalid_type(&x, cell_path, "string, u8 or [u8, u8, u8]")),
         _ => Ok(None),
     }
 }
@@ -465,31 +519,60 @@ mod tests {
         test_tried_error(
             try_color(&Value::test_bool(true), &[]),
             "",
-            "should be a string, found bool",
+            "should be a string, u8 or [u8, u8, u8], found bool",
         );
         test_tried_error(
-            try_color(&Value::test_int(123), &[]),
+            try_color(&Value::test_int(-1), &[]),
             "",
-            "should be a string, found int",
+            "should be an integer between 0 and 255, found -1",
+        );
+        test_tried_error(
+            try_color(&Value::test_int(256), &[]),
+            "",
+            "should be an integer between 0 and 255, found 256",
+        );
+        test_tried_error(
+            try_color(&Value::test_list(vec![]), &[]),
+            "",
+            "is not a valid config field, expected a list of three u8, found 0 items",
+        );
+        test_tried_error(
+            try_color(&Value::test_list(vec![Value::test_int(1)]), &[]),
+            "",
+            "is not a valid config field, expected a list of three u8, found 1 items",
+        );
+        test_tried_error(
+            try_color(
+                &Value::test_list(vec![Value::test_int(1), Value::test_int(2)]),
+                &[],
+            ),
+            "",
+            "is not a valid config field, expected a list of three u8, found 2 items",
         );
         test_tried_error(
             try_color(&Value::test_string("x"), &[]),
             "",
-            "should be one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found x",
+            "should be a u8, a list of three u8s or one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found x",
         );
 
         let cases = vec![
-            ("black", Color::Black),
-            ("red", Color::Red),
-            ("green", Color::Green),
-            ("blue", Color::Blue),
+            (Value::test_string("black"), Color::Black),
+            (Value::test_string("red"), Color::Red),
+            (Value::test_string("green"), Color::Green),
+            (Value::test_string("blue"), Color::Blue),
+            (Value::test_int(123), Color::Rgb(123, 123, 123)),
+            (
+                Value::test_list(vec![
+                    Value::test_int(1),
+                    Value::test_int(2),
+                    Value::test_int(3),
+                ]),
+                Color::Rgb(1, 2, 3),
+            ),
         ];
 
         for (input, expected) in cases {
-            assert_eq!(
-                try_color(&Value::test_string(input), &[]),
-                Ok(Some(expected))
-            );
+            assert_eq!(try_color(&input, &[]), Ok(Some(expected)));
         }
     }
 
