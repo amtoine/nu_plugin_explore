@@ -519,31 +519,60 @@ mod tests {
         test_tried_error(
             try_color(&Value::test_bool(true), &[]),
             "",
-            "should be a string, found bool",
+            "should be a string, u8 or [u8, u8, u8], found bool",
         );
         test_tried_error(
-            try_color(&Value::test_int(123), &[]),
+            try_color(&Value::test_int(-1), &[]),
             "",
-            "should be a string, found int",
+            "should be an integer between 0 and 255, found -1",
+        );
+        test_tried_error(
+            try_color(&Value::test_int(256), &[]),
+            "",
+            "should be an integer between 0 and 255, found 256",
+        );
+        test_tried_error(
+            try_color(&Value::test_list(vec![]), &[]),
+            "",
+            "is not a valid config field, expected a list of three u8, found 0 items",
+        );
+        test_tried_error(
+            try_color(&Value::test_list(vec![Value::test_int(1)]), &[]),
+            "",
+            "is not a valid config field, expected a list of three u8, found 1 items",
+        );
+        test_tried_error(
+            try_color(
+                &Value::test_list(vec![Value::test_int(1), Value::test_int(2)]),
+                &[],
+            ),
+            "",
+            "is not a valid config field, expected a list of three u8, found 2 items",
         );
         test_tried_error(
             try_color(&Value::test_string("x"), &[]),
             "",
-            "should be one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found x",
+            "should be a u8, a list of three u8s or one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found x",
         );
 
         let cases = vec![
-            ("black", Color::Black),
-            ("red", Color::Red),
-            ("green", Color::Green),
-            ("blue", Color::Blue),
+            (Value::test_string("black"), Color::Black),
+            (Value::test_string("red"), Color::Red),
+            (Value::test_string("green"), Color::Green),
+            (Value::test_string("blue"), Color::Blue),
+            (Value::test_int(123), Color::Rgb(123, 123, 123)),
+            (
+                Value::test_list(vec![
+                    Value::test_int(1),
+                    Value::test_int(2),
+                    Value::test_int(3),
+                ]),
+                Color::Rgb(1, 2, 3),
+            ),
         ];
 
         for (input, expected) in cases {
-            assert_eq!(
-                try_color(&Value::test_string(input), &[]),
-                Ok(Some(expected))
-            );
+            assert_eq!(try_color(&input, &[]), Ok(Some(expected)));
         }
     }
 
