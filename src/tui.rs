@@ -388,8 +388,13 @@ fn render_data(
                         .iter()
                         .map(|row| {
                             let row = row.clone();
+
+                            let data_style = match row.data.as_str() {
+                                "record" | "list" => normal_data_style.add_modifier(Modifier::DIM),
+                                _ => normal_data_style,
+                            };
                             Row::new(vec![
-                                Cell::from(row.data).style(normal_data_style),
+                                Cell::from(row.data).style(data_style),
                                 Cell::from(row.shape).style(normal_shape_style),
                             ])
                         })
@@ -412,9 +417,14 @@ fn render_data(
                         .iter()
                         .map(|row| {
                             let row = row.clone();
+
+                            let data_style = match row.data.as_str() {
+                                "record" | "list" => normal_data_style.add_modifier(Modifier::DIM),
+                                _ => normal_data_style,
+                            };
                             Row::new(vec![
                                 Cell::from(row.name.unwrap_or("".into())).style(normal_name_style),
-                                Cell::from(row.data).style(normal_data_style),
+                                Cell::from(row.data).style(data_style),
                                 Cell::from(row.shape).style(normal_shape_style),
                             ])
                         })
