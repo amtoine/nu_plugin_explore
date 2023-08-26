@@ -227,7 +227,12 @@ fn transition_state(
                     state.enter_editor(value);
                     return Ok(TransitionResult::next());
                 }
-                _ => return Ok(TransitionResult::error("cannot edit non-string cells")),
+                x => {
+                    return Ok(TransitionResult::error(&format!(
+                        "can only edit string cells, found {}",
+                        x.get_type()
+                    )))
+                }
             }
         }
     } else if key == &config.keybindings.normal {
