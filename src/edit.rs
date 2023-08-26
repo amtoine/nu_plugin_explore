@@ -183,3 +183,11 @@ impl Editor {
         frame.set_cursor(area.x + 1 + (x as u16), area.y + 1 + (y as u16))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn edit_cells() {
+        todo!()
+    }
+}

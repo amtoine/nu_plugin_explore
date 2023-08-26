@@ -663,9 +663,4 @@ mod tests {
         ];
         run_peeking_scenario(peek_at_the_bottom, &config, &value);
     }
-
-    #[test]
-    fn edit_cells() {
-        todo!()
-    }
 }
