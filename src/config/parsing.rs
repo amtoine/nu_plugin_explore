@@ -131,14 +131,72 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
             x => Err(LabeledError {
                 label: "invalid config".into(),
                 msg: format!(
-                    r#"`$.{}` should be one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found {}"#,
+                    r#"`$.{}` should be a u8, a list of three u8s or one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found {}"#,
                     cell_path.join("."),
                     x
                 ),
                 span: value.span().ok(),
             }),
         },
-        Some(x) => Err(invalid_type(&x, cell_path, "string")),
+        Some(Value::Int { val, .. }) => {
+            if (val < 0) | (val > 255) {
+                return Err(LabeledError {
+                    label: "invalid config".into(),
+                    msg: format!(
+                        "`$.{}` should be a integer between 0 and 255, found {}",
+                        cell_path.join("."),
+                        val
+                    ),
+                    // FIXME: use a real span?
+                    span: None,
+                });
+            }
+
+            Ok(Some(Color::Rgb(val as u8, val as u8, val as u8)))
+        }
+        Some(Value::List { vals, .. }) => {
+            if vals.len() != 3 {
+                return Err(LabeledError {
+                    label: "invalid config".into(),
+                    msg: format!("`$.{}` is not a valid config field, expected a list of three u8, found {} items", cell_path.join("."), vals.len()),
+                    // FIXME: use a real span?
+                    span: None,
+                });
+            }
+
+            let mut channels: Vec<u8> = vec![];
+
+            for (i, val) in vals.iter().enumerate() {
+                let mut cell_path = cell_path.to_vec().clone();
+
+                let tail = format!("{}", i);
+                cell_path.push(&tail);
+
+                match val {
+                    Value::Int { val: x, .. } => {
+                        if (*x < 0) | (*x > 255) {
+                            return Err(LabeledError {
+                                label: "invalid config".into(),
+                                msg: format!(
+                                    "`$.{}` should be a integer between 0 and 255, found {}",
+                                    cell_path.join("."),
+                                    x
+                                ),
+                                span: val.span().ok(),
+                            });
+                        }
+
+                        channels.push(*x as u8);
+                    }
+                    x => {
+                        return Err(invalid_type(&x, &cell_path, "u8"));
+                    }
+                }
+            }
+
+            Ok(Some(Color::Rgb(channels[0], channels[1], channels[2])))
+        }
+        Some(x) => Err(invalid_type(&x, cell_path, "string, u8 or [u8, u8, u8]")),
         _ => Ok(None),
     }
 }
