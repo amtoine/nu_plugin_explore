@@ -162,7 +162,9 @@ impl Editor {
                 ),
             );
 
-        let height = if (self.buffer.len() % self.width) == 0 {
+        let height = if self.buffer.is_empty() {
+            1
+        } else if (self.buffer.len() % self.width) == 0 {
             self.buffer.len() / self.width
         } else {
             self.buffer.len() / self.width + 1
