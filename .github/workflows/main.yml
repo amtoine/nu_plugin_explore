@@ -40,3 +40,28 @@ jobs:
           rustflags: ""
 
       - run: make test
+
+  default-config:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1.5.0
+        with:
+          rustflags: ""
+
+      - name: Install Nushell
+        uses: hustcer/setup-nu@main
+        with:
+          version: '*'
+
+      - name: Install nu_plugin_explore
+        run: make build register
+
+      - name: Test the default config
+        run: |
+          $env.config.plugins.explore = (open examples/config/default.nuon)
+          $nu | nu_plugin_explore
+        shell: nu {0}
