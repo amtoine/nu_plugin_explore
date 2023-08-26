@@ -497,11 +497,14 @@ impl Config {
 pub(super) fn repr_keycode(keycode: &Key) -> String {
     match keycode {
         Key::Char(c) => c.to_string(),
-        Key::ArrowLeft => "←".into(),
-        Key::ArrowUp => "↑".into(),
-        Key::ArrowRight => "→".into(),
-        Key::ArrowDown => "↓".into(),
+        Key::ArrowLeft => char::from_u32(0x2190).unwrap().into(),
+        Key::ArrowUp => char::from_u32(0x2191).unwrap().into(),
+        Key::ArrowRight => char::from_u32(0x2192).unwrap().into(),
+        Key::ArrowDown => char::from_u32(0x2193).unwrap().into(),
         Key::Escape => "<esc>".into(),
+        Key::Enter => char::from_u32(0x23ce).unwrap().into(),
+        Key::Backspace => char::from_u32(0x232b).unwrap().into(),
+        Key::Del => char::from_u32(0x2326).unwrap().into(),
         _ => "??".into(),
     }
 }
@@ -519,7 +522,8 @@ mod tests {
         assert_eq!(repr_keycode(&Key::Char('x')), "x".to_string());
         assert_eq!(repr_keycode(&Key::ArrowLeft), "←".to_string());
         assert_eq!(repr_keycode(&Key::Escape), "<esc>".to_string());
-        assert_eq!(repr_keycode(&Key::Enter), "??".to_string());
+        assert_eq!(repr_keycode(&Key::Enter), "⏎".to_string());
+        assert_eq!(repr_keycode(&Key::Home), "??".to_string());
     }
 
     #[test]
