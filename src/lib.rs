@@ -75,7 +75,7 @@ fn explore(call: &EvaluatedCall, input: &Value) -> AppResult<Value> {
     )))
     .unwrap();
 
-    let mut app = App::new();
+    let mut app = App::from_value(input);
 
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
