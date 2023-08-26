@@ -151,7 +151,7 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
             }),
         },
         Some(Value::Int { val, .. }) => {
-            if (val < 0) | (val > 255) {
+            if !(0..=255).contains(&val) {
                 // FIXME: use a real span?
                 return Err(u8_out_of_range(val, cell_path, None));
             }
@@ -185,7 +185,7 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
                         channels.push(*x as u8);
                     }
                     x => {
-                        return Err(invalid_type(&x, &cell_path, "u8"));
+                        return Err(invalid_type(x, &cell_path, "u8"));
                     }
                 }
             }
