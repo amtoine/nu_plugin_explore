@@ -58,6 +58,18 @@ pub(super) fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) ->
     }
 }
 
+fn u8_out_of_range(value: i64, cell_path: &[&str], span: Option<Span>) -> LabeledError {
+    LabeledError {
+        label: "invalid config".into(),
+        msg: format!(
+            "`$.{}` should be an integer between 0 and 255, found {}",
+            cell_path.join("."),
+            value
+        ),
+        span,
+    }
+}
+
 /// try to parse a bool in the *value* at the given *cell path*
 pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>, LabeledError> {
     match follow_cell_path(value, cell_path) {
@@ -140,16 +152,8 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
         },
         Some(Value::Int { val, .. }) => {
             if (val < 0) | (val > 255) {
-                return Err(LabeledError {
-                    label: "invalid config".into(),
-                    msg: format!(
-                        "`$.{}` should be a integer between 0 and 255, found {}",
-                        cell_path.join("."),
-                        val
-                    ),
-                    // FIXME: use a real span?
-                    span: None,
-                });
+                // FIXME: use a real span?
+                return Err(u8_out_of_range(val, cell_path, None));
             }
 
             Ok(Some(Color::Rgb(val as u8, val as u8, val as u8)))
@@ -175,15 +179,7 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
                 match val {
                     Value::Int { val: x, .. } => {
                         if (*x < 0) | (*x > 255) {
-                            return Err(LabeledError {
-                                label: "invalid config".into(),
-                                msg: format!(
-                                    "`$.{}` should be a integer between 0 and 255, found {}",
-                                    cell_path.join("."),
-                                    x
-                                ),
-                                span: val.span().ok(),
-                            });
+                            return Err(u8_out_of_range(*x, &cell_path, val.span().ok()));
                         }
 
                         channels.push(*x as u8);
