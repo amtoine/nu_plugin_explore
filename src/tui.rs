@@ -589,10 +589,12 @@ fn render_status_bar(
             repr_keycode(&config.keybindings.quit),
         ),
         Mode::Insert => format!(
-            "{} to quit | {}{} to move the cursor | {}{} to delete characters | {} to confirm",
+            "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",
             repr_keycode(&Key::Escape),
             repr_keycode(&Key::ArrowLeft),
             repr_keycode(&Key::ArrowRight),
+            repr_keycode(&Key::ArrowUp),
+            repr_keycode(&Key::ArrowDown),
             repr_keycode(&Key::Backspace),
             repr_keycode(&Key::Del),
             repr_keycode(&Key::Enter),

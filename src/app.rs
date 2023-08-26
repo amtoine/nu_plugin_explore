@@ -173,6 +173,13 @@ pub(super) fn run(
     let mut value = input.clone();
 
     loop {
+        match state.mode {
+            Mode::Insert => state
+                .editor
+                .set_width(terminal.size().unwrap().width as usize),
+            _ => {}
+        }
+
         terminal.draw(|frame| tui::render_ui(frame, &value, &state, config, None))?;
 
         let key = console::Term::stderr().read_key()?;
