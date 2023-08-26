@@ -373,7 +373,8 @@ fn render_data(
             )
         }
         Layout::Table => {
-            let (header, rows) = match data.clone().follow_cell_path(&data_path, false) {
+            let (header, rows, constraints) = match data.clone().follow_cell_path(&data_path, false)
+            {
                 Ok(Value::List { .. }) => {
                     let header = Row::new(vec![
                         Cell::from("item")
@@ -392,12 +393,13 @@ fn render_data(
                         })
                         .collect();
 
-                    (header, rows)
+                    let constraints = vec![Constraint::Percentage(90), Constraint::Percentage(10)];
+
+                    (header, rows, constraints)
                 }
                 Ok(_) => {
                     let header = Row::new(vec![
-                        Cell::from("key")
-                            .style(normal_name_style.add_modifier(Modifier::REVERSED)),
+                        Cell::from("key").style(normal_name_style.add_modifier(Modifier::REVERSED)),
                         Cell::from("field")
                             .style(normal_data_style.add_modifier(Modifier::REVERSED)),
                         Cell::from("shape")
@@ -416,7 +418,13 @@ fn render_data(
                         })
                         .collect();
 
-                    (header, rows)
+                    let constraints = vec![
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(70),
+                        Constraint::Percentage(10),
+                    ];
+
+                    (header, rows, constraints)
                 }
                 Err(_) => panic!("unexpected error when following cell path during rendering"),
             };
@@ -429,11 +437,7 @@ fn render_data(
             .block(Block::default().borders(Borders::ALL))
             .highlight_style(highlight_style)
             .highlight_symbol(&config.colors.selected_symbol)
-            .widths(&[
-                Constraint::Percentage(20),
-                Constraint::Percentage(70),
-                Constraint::Percentage(10),
-            ]);
+            .widths(&constraints);
 
             frame.render_stateful_widget(
                 table,
