@@ -33,7 +33,7 @@ pub(super) fn render_ui(
             render_status_bar(frame, state, config);
 
             if state.mode == Mode::Insert {
-                state.editor.render(frame);
+                state.editor.render(frame, config);
             }
         }
     }

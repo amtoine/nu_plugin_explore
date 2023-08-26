@@ -39,4 +39,14 @@
             foreground: lightmagenta,
         }
     }
+    editor: {  # the colors when editing a cell
+        frame: {
+            background: black,
+            foreground: lightcyan,
+        },
+        buffer: {
+            background: reset,
+            foreground: white,
+        },
+    },
 }

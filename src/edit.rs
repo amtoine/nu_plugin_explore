@@ -7,7 +7,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::Mode;
+use crate::{app::Mode, config::Config};
 
 pub(super) struct Editor {
     pub buffer: String,
@@ -99,10 +99,27 @@ impl Editor {
         None
     }
 
-    pub(super) fn render(&self, frame: &mut Frame<CrosstermBackend<console::Term>>) {
+    pub(super) fn render(
+        &self,
+        frame: &mut Frame<CrosstermBackend<console::Term>>,
+        config: &Config,
+    ) {
         let block = Paragraph::new(self.buffer.as_str())
-            .style(Style::default())
-            .block(Block::default().borders(Borders::ALL).title("Editor"));
+            .style(
+                Style::default()
+                    .fg(config.colors.editor.buffer.foreground)
+                    .bg(config.colors.editor.buffer.background),
+            )
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Editor")
+                    .style(
+                        Style::default()
+                            .fg(config.colors.editor.frame.foreground)
+                            .bg(config.colors.editor.frame.background),
+                    ),
+            );
         let area = centered_rect(50, 20, frame.size());
 
         frame.render_widget(Clear, area); //this clears out the background
