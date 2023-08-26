@@ -1,7 +1,7 @@
 //! the module responsible for rendering the TUI
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
-    style::{Modifier, Style},
+    style::{Modifier, Style, Color},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
@@ -19,16 +19,43 @@ pub(super) fn render_ui(
     input: &Value,
     state: &State,
     config: &Config,
+    error: Option<&str>,
 ) {
     render_data(frame, input, state, config);
     if config.show_cell_path {
         render_cell_path(frame, state);
     }
-    render_status_bar(frame, state, config);
 
-    if state.mode == Mode::Insert {
-        state.editor.render(frame);
+    match error {
+        Some(err) => render_error(frame, err),
+        None => {
+            render_status_bar(frame, state, config);
+
+            if state.mode == Mode::Insert {
+                state.editor.render(frame);
+            }
+        }
     }
+}
+
+pub(super) fn render_error(frame: &mut Frame<CrosstermBackend<console::Term>>, error: &str) {
+    let bottom_two_lines = Rect::new(0, frame.size().height - 2, frame.size().width, 2);
+
+    let lines = vec![
+        Line::from(Span::styled(
+            format!("Err: {error}"),
+            Style::default().fg(Color::Red),
+        )),
+        Line::from(Span::styled(
+            "Press any key to continue exploring the data.",
+            Style::default().fg(Color::Blue),
+        )),
+    ];
+
+    frame.render_widget(
+        Paragraph::new(lines).alignment(Alignment::Left),
+        bottom_two_lines,
+    );
 }
 
 /// a common representation for an explore row

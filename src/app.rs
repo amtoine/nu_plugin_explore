@@ -173,7 +173,7 @@ pub(super) fn run(
     let mut value = input.clone();
 
     loop {
-        terminal.draw(|frame| tui::render_ui(frame, &value, &state, config))?;
+        terminal.draw(|frame| tui::render_ui(frame, &value, &state, config, None))?;
 
         let key = console::Term::stderr().read_key()?;
         match transition_state(&key, config, &mut state, &value)? {
@@ -190,9 +190,14 @@ pub(super) fn run(
             } => value = crate::nu::value::mutate_value_cell(&value, &state.cell_path, &val),
             TransitionResult {
                 exit: false,
-                result: None,
+                error: Some(error),
                 ..
-            } => {}
+            } => {
+                terminal
+                    .draw(|frame| tui::render_ui(frame, &value, &state, config, Some(&error)))?;
+                let _ = console::Term::stderr().read_key()?;
+            }
+            _ => {}
         }
     }
     Ok(Value::nothing(Span::unknown()))
