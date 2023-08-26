@@ -17,7 +17,7 @@ use ratatui::Terminal;
 use std::io;
 
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
-use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
+use nu_protocol::{Category, PluginExample, PluginSignature, ShellError, Type, Value};
 use nu_protocol::{Span, SyntaxShape};
 
 /// the main structure of the [Nushell](https://nushell.sh) plugin
@@ -55,8 +55,19 @@ impl Plugin for Explore {
         input: &Value,
     ) -> Result<Value, LabeledError> {
         match name {
-            // FIXME: do not unwrap
-            "explore" => Ok(explore(call, input).unwrap()),
+            "explore" => match explore(call, input) {
+                Ok(value) => Ok(value),
+                Err(err) => {
+                    match err.downcast_ref::<ShellError>() {
+                        Some(shell_error) => Err(LabeledError::from(shell_error.clone())),
+                        None => Err(LabeledError {
+                            label: "unexpected internal error".into(),
+                            msg: "could not transform error into ShellError, there was another kind of crash...".into(),
+                            span: Some(call.head),
+                        }),
+                    }
+                }
+            },
             _ => Err(LabeledError {
                 label: "Plugin call with wrong name signature".into(),
                 msg: "the signature used to call the plugin does not match any name in the plugin signature vector".into(),
@@ -67,13 +78,11 @@ impl Plugin for Explore {
 }
 
 fn explore(call: &EvaluatedCall, input: &Value) -> AppResult<Value> {
-    // FIXME: do not unwrap
-    let config = Config::from_value(call.opt(0).unwrap().unwrap_or(Value::record(
-        vec![],
-        vec![],
-        Span::unknown(),
-    )))
-    .unwrap();
+    let empty_custom_config = Value::record(vec![], vec![], Span::unknown());
+    let config = match Config::from_value(call.opt(0).unwrap().unwrap_or(empty_custom_config)) {
+        Ok(cfg) => cfg,
+        Err(err) => return Err(Box::new(ShellError::from(err))),
+    };
 
     let mut app = App::from_value(input);
 
