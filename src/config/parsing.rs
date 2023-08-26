@@ -23,7 +23,7 @@ use super::{BgFgColorConfig, Layout};
 ///    ·              ╰── `$.foo` is not a valid config field
 ///    ╰────
 /// ```
-pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledError {
+pub fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledError {
     LabeledError {
         label: "invalid config".into(),
         msg: format!("`$.{}` is not a valid config field", cell_path.join("."),),
@@ -46,7 +46,7 @@ pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledEr
 ///    ·                   ╰── `$.layout` should be a string, found int
 ///    ╰────
 /// ```
-pub(super) fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) -> LabeledError {
+pub fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) -> LabeledError {
     LabeledError {
         label: "invalid config".into(),
         msg: format!(
@@ -59,7 +59,7 @@ pub(super) fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) ->
 }
 
 /// try to parse a bool in the *value* at the given *cell path*
-pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>, LabeledError> {
+pub fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::Bool { val, .. }) => Ok(Some(val)),
         Some(x) => Err(invalid_type(&x, cell_path, "bool")),
@@ -68,7 +68,7 @@ pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>
 }
 
 /// try to parse a string in the *value* at the given *cell path*
-pub(super) fn try_string(
+pub fn try_string(
     value: &Value,
     cell_path: &[&str],
 ) -> Result<Option<String>, LabeledError> {
@@ -80,7 +80,7 @@ pub(super) fn try_string(
 }
 
 /// try to parse an ANSI modifier in the *value* at the given *cell path*
-pub(super) fn try_modifier(
+pub fn try_modifier(
     value: &Value,
     cell_path: &[&str],
 ) -> Result<Option<Modifier>, LabeledError> {
@@ -108,7 +108,7 @@ pub(super) fn try_modifier(
 }
 
 /// try to parse a color in the *value* at the given *cell path*
-pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, LabeledError> {
+pub fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
             "reset" => Ok(Some(Color::Reset)),
@@ -144,7 +144,7 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
 }
 
 /// try to parse a background / foreground color pair in the *value* at the given *cell path*
-pub(super) fn try_fg_bg_colors(
+pub fn try_fg_bg_colors(
     value: &Value,
     cell_path: &[&str],
     default: &BgFgColorConfig,
@@ -184,7 +184,7 @@ pub(super) fn try_fg_bg_colors(
 }
 
 /// try to parse a key in the *value* at the given *cell path*
-pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCode>, LabeledError> {
+pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCode>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
             "up" => Ok(Some(KeyCode::Up)),
@@ -215,7 +215,7 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCod
 }
 
 /// try to parse a layout in the *value* at the given *cell path*
-pub(super) fn try_layout(
+pub fn try_layout(
     value: &Value,
     cell_path: &[&str],
 ) -> Result<Option<Layout>, LabeledError> {
@@ -254,7 +254,7 @@ pub(super) fn try_layout(
 ///     }
 /// }
 /// ```
-pub(super) fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Value> {
+pub fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Value> {
     let cell_path = cell_path
         .iter()
         .map(|cp| PathMember::String {

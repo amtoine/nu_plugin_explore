@@ -18,7 +18,7 @@ use parsing::{
 
 /// the configuration for the status bar colors in all [`crate::app::Mode`]s
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct StatusBarColorConfig {
+pub struct StatusBarColorConfig {
     pub normal: BgFgColorConfig,
     pub insert: BgFgColorConfig,
     pub peek: BgFgColorConfig,
@@ -27,7 +27,7 @@ pub(super) struct StatusBarColorConfig {
 
 /// the configuration for a row of the data rendering table
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct TableRowColorConfig {
+pub struct TableRowColorConfig {
     // the name of the data, i.e. the key on the left
     pub name: BgFgColorConfig,
     // the data itself,
@@ -38,7 +38,7 @@ pub(super) struct TableRowColorConfig {
 
 /// the colors of the application
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct ColorConfig {
+pub struct ColorConfig {
     /// the color when a row is NOT selected
     pub normal: TableRowColorConfig,
     /// the color when a row is selected
@@ -52,14 +52,14 @@ pub(super) struct ColorConfig {
 
 /// a pair of background / foreground colors
 #[derive(Clone, Debug, PartialEq)]
-pub(super) struct BgFgColorConfig {
+pub struct BgFgColorConfig {
     pub background: Color,
     pub foreground: Color,
 }
 
 /// the bindings in NORMAL mode (see [crate::app::Mode::Normal])
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct NavigationBindingsMap {
+pub struct NavigationBindingsMap {
     /// go one row up in the data
     pub up: KeyCode,
     /// go one row down in the data
@@ -72,7 +72,7 @@ pub(super) struct NavigationBindingsMap {
 
 /// the bindings in PEEKING mode (see [crate::app::Mode::Peeking])
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct PeekingBindingsMap {
+pub struct PeekingBindingsMap {
     /// peek the whole data structure
     pub all: KeyCode,
     /// peek the current level
@@ -83,7 +83,7 @@ pub(super) struct PeekingBindingsMap {
 
 /// the keybindings mapping
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct KeyCodeBindingsMap {
+pub struct KeyCodeBindingsMap {
     pub quit: KeyCode,
     /// go into INSERT mode (see [crate::app::Mode::Insert])
     pub insert: KeyCode,
@@ -97,7 +97,7 @@ pub(super) struct KeyCodeBindingsMap {
 
 /// the layout of the application
 #[derive(Clone, PartialEq, Debug)]
-pub(super) enum Layout {
+pub enum Layout {
     /// show each row in a `[name, data, type]` column
     Table,
     /// show each row in compact form, to the left, `"{name}: ({type}) {data}"`
@@ -106,7 +106,7 @@ pub(super) enum Layout {
 
 /// the configuration of the whole application
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct Config {
+pub struct Config {
     pub colors: ColorConfig,
     pub keybindings: KeyCodeBindingsMap,
     pub show_cell_path: bool,
@@ -115,7 +115,7 @@ pub(super) struct Config {
 }
 
 impl Config {
-    pub(super) fn default() -> Self {
+    pub fn default() -> Self {
         // "reset" is used instead of "black" in a dark terminal because, when the terminal is actually
         // black, "black" is not really black which is ugly, whereas "reset" is really black.
         Self {
@@ -182,7 +182,7 @@ impl Config {
         }
     }
 
-    pub(super) fn from_value(value: Value) -> Result<Self, LabeledError> {
+    pub fn from_value(value: Value) -> Result<Self, LabeledError> {
         let mut config = Config::default();
 
         for column in value.columns() {
@@ -494,7 +494,7 @@ impl Config {
 }
 
 /// represent a [`KeyCode`] as a simple string
-pub(super) fn repr_keycode(keycode: &KeyCode) -> String {
+pub fn repr_keycode(keycode: &KeyCode) -> String {
     match keycode {
         KeyCode::Char(c) => c.to_string(),
         KeyCode::Left => "←".into(),

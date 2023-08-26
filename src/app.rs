@@ -10,7 +10,7 @@ pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 /// the mode in which the application is
 #[derive(Clone, Debug, PartialEq)]
-pub(super) enum Mode {
+pub enum Mode {
     /// the NORMAL mode is the *navigation* mode, where the user can move around in the data
     Normal,
     /// the INSERT mode lets the user edit cells of the structured data
@@ -66,7 +66,7 @@ impl App {
     /// Handles the tick event of the terminal.
     pub fn tick(&self) {}
 
-    pub(super) fn from_value(value: &Value) -> Self {
+    pub fn from_value(value: &Value) -> Self {
         let mut state = Self::default();
         match value {
             Value::List { vals, .. } => state.cell_path.members.push(PathMember::Int {
@@ -86,12 +86,12 @@ impl App {
     }
 
     /// TODO: documentation
-    pub(super) fn is_at_bottom(&self) -> bool {
+    pub fn is_at_bottom(&self) -> bool {
         matches!(self.mode, Mode::Bottom)
     }
 
     /// TODO: documentation
-    pub(super) fn hit_bottom(&mut self) {
+    pub fn hit_bottom(&mut self) {
         self.mode = Mode::Bottom;
     }
 }
