@@ -114,8 +114,8 @@ pub struct Config {
     pub show_table_header: bool,
 }
 
-impl Config {
-    pub fn default() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         // "reset" is used instead of "black" in a dark terminal because, when the terminal is actually
         // black, "black" is not really black which is ugly, whereas "reset" is really black.
         Self {
@@ -181,7 +181,9 @@ impl Config {
             },
         }
     }
+}
 
+impl Config {
     pub fn from_value(value: Value) -> Result<Self, LabeledError> {
         let mut config = Config::default();
 
