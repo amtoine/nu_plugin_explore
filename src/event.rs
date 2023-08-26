@@ -1,8 +1,9 @@
-use crate::app::AppResult;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
+
+use crate::app::AppResult;
 
 /// Terminal events.
 #[derive(Clone, Copy, Debug)]
