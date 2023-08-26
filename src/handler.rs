@@ -125,7 +125,7 @@ pub fn handle_key_events(
 
 #[cfg(test)]
 mod tests {
-    use crossterm::event::{KeyEvent, KeyModifiers, KeyCode};
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use nu_protocol::{ast::PathMember, Span, Value};
 
     use super::{handle_key_events, App};
