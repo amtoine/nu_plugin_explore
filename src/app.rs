@@ -1,13 +1,7 @@
-use console::Key;
-use ratatui::{prelude::CrosstermBackend, Terminal};
-
 use nu_protocol::{
     ast::{CellPath, PathMember},
-    ShellError, Span, Value,
+    Span, Value,
 };
-
-use super::navigation::Direction;
-use super::{config::Config, navigation, tui};
 
 use std::error;
 
