@@ -581,12 +581,13 @@ fn render_status_bar(
             Mode::Normal
         ),
         Mode::Peeking => format!(
-            "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor",
+            "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to peek the cell path",
             repr_keycode(&config.keybindings.normal),
             Mode::Normal,
             repr_keycode(&config.keybindings.peeking.all),
-            repr_keycode(&config.keybindings.peeking.current),
+            repr_keycode(&config.keybindings.peeking.view),
             repr_keycode(&config.keybindings.peeking.under),
+            repr_keycode(&config.keybindings.peeking.cell_path),
         ),
         Mode::Bottom => format!(
             "{} to {} | {} to peek",
