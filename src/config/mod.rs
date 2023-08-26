@@ -332,6 +332,15 @@ impl Config {
                                                 config.colors.status_bar.peek = val
                                             }
                                         }
+                                        "bottom" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "status_bar", "bottom"],
+                                                &config.colors.status_bar.bottom,
+                                            )? {
+                                                config.colors.status_bar.bottom = val
+                                            }
+                                        }
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "status_bar", x],
