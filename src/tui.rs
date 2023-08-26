@@ -59,10 +59,10 @@ impl DataRowRepr {
 ///
 /// > see the tests for detailed examples
 fn repr_list(vals: &[Value]) -> DataRowRepr {
-    let data = if vals.len() <= 1 {
-        format!("[{} item]", vals.len())
-    } else {
-        format!("[{} items]", vals.len())
+    let data = match vals.len() {
+        0 => "[]".into(),
+        1 => "[1 item]".into(),
+        x => format!("[{} items]", x),
     };
 
     DataRowRepr {
@@ -76,10 +76,10 @@ fn repr_list(vals: &[Value]) -> DataRowRepr {
 ///
 /// > see the tests for detailed examples
 fn repr_record(cols: &[String]) -> DataRowRepr {
-    let data = if cols.len() <= 1 {
-        format!("{{{} field}}", cols.len())
-    } else {
-        format!("{{{} fields}}", cols.len())
+    let data = match cols.len() {
+        0 => "{}".into(),
+        1 => "{1 field}".into(),
+        x => format!("{{{} fields}}", x),
     };
 
     DataRowRepr {
@@ -163,7 +163,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                 vec![DataRowRepr {
                     name: None,
                     shape: "list".into(),
-                    data: "[0 item]".into(),
+                    data: "[]".into(),
                 }]
             } else {
                 vals.iter().map(repr_value).collect::<Vec<DataRowRepr>>()
@@ -174,7 +174,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                 vec![DataRowRepr {
                     name: None,
                     shape: "record".into(),
-                    data: "{0 field}".into(),
+                    data: "{}".into(),
                 }]
             } else {
                 cols.iter()
@@ -640,7 +640,7 @@ mod tests {
         #[rustfmt::skip]
         let cases = vec![
             (list, DataRowRepr::unnamed("[3 items]", "list")),
-            (vec![], DataRowRepr::unnamed("[0 item]", "list")),
+            (vec![], DataRowRepr::unnamed("[]", "list")),
             (vec![Value::test_nothing()], DataRowRepr::unnamed("[1 item]", "list")),
         ];
 
@@ -654,7 +654,7 @@ mod tests {
         #[rustfmt::skip]
         let cases = vec![
             (vec!["a", "b", "c"], DataRowRepr::unnamed("{3 fields}", "record")),
-            (vec![], DataRowRepr::unnamed("{0 field}", "record")),
+            (vec![], DataRowRepr::unnamed("{}", "record")),
             (vec!["a"], DataRowRepr::unnamed("{1 field}", "record")),
         ];
 
