@@ -234,7 +234,7 @@ fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
         })
         .collect::<Vec<Vec<String>>>();
 
-    (table[0].columns(), shapes, rows)
+    (table[0].columns().to_vec(), shapes, rows)
 }
 
 /// render the whole data
