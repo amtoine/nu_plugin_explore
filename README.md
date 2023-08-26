@@ -31,7 +31,7 @@ will come very handy in a day-to-day basis for me at least :)
 
 ## why not `nu-explore`?
 - it's a bit too complex for what it does to me
-- the bindings are 
+- the bindings are not configurable
 - the code was really hard to wrap my head around
 - i wanted to have fun learning about [Nushell] plugins and TUI applications in Rust
 
