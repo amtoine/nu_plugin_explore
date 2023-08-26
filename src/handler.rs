@@ -303,10 +303,7 @@ mod tests {
         let mut app = App::from_value(&value);
 
         assert!(!app.is_at_bottom());
-        assert_eq!(
-            app.cell_path.members,
-            to_path_member_vec(vec![PM::S("l")])
-        );
+        assert_eq!(app.cell_path.members, to_path_member_vec(vec![PM::S("l")]));
 
         let transitions = vec![
             (nav.up, vec![PM::S("i")], false),

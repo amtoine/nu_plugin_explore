@@ -470,8 +470,7 @@ fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, app: &App) {
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
-        app
-            .cell_path
+        app.cell_path
             .members
             .iter()
             .map(|m| {
