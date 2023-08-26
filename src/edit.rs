@@ -1,9 +1,9 @@
 use console::Key;
 use nu_protocol::{Span, Value};
 use ratatui::{
-    prelude::{Constraint, CrosstermBackend, Direction, Layout, Rect},
+    prelude::{CrosstermBackend, Rect},
     style::Style,
-    widgets::{Block, Borders, Clear, Paragraph},
+    widgets::{Block, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
 
@@ -104,6 +104,8 @@ impl Editor {
         frame: &mut Frame<CrosstermBackend<console::Term>>,
         config: &Config,
     ) {
+        let title = "Editor";
+
         let block = Paragraph::new(self.buffer.as_str())
             .style(
                 Style::default()
@@ -111,47 +113,32 @@ impl Editor {
                     .bg(config.colors.editor.buffer.background),
             )
             .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Editor")
-                    .style(
-                        Style::default()
-                            .fg(config.colors.editor.frame.foreground)
-                            .bg(config.colors.editor.frame.background),
-                    ),
+                Block::default().borders(Borders::ALL).title(title).style(
+                    Style::default()
+                        .fg(config.colors.editor.frame.foreground)
+                        .bg(config.colors.editor.frame.background),
+                ),
             );
-        let area = centered_rect(50, 20, frame.size());
+
+        let width = frame.size().width as usize - 2;
+        let height = if (self.buffer.len() % width) == 0 {
+            self.buffer.len() / width
+        } else {
+            self.buffer.len() / width + 1
+        } as u16;
+        let area = Rect {
+            x: 0,
+            y: frame.size().height - (height + 2) - 2,
+            width: frame.size().width,
+            height: height + 2,
+        };
 
         frame.render_widget(Clear, area); //this clears out the background
-        frame.render_widget(block, area);
+        frame.render_widget(block.wrap(Wrap { trim: false }), area);
 
-        frame.set_cursor(area.x + self.cursor_position as u16 + 1, area.y + 1)
+        frame.set_cursor(
+            area.x + 1 + (self.cursor_position as u16 % width as u16),
+            area.y + 1 + (self.cursor_position as u16 / width as u16),
+        )
     }
-}
-
-/// helper function to create a centered rect using up certain percentage of the available rect `r`
-fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Percentage((100 - percent_y) / 2),
-                Constraint::Percentage(percent_y),
-                Constraint::Percentage((100 - percent_y) / 2),
-            ]
-            .as_ref(),
-        )
-        .split(r);
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage((100 - percent_x) / 2),
-                Constraint::Percentage(percent_x),
-                Constraint::Percentage((100 - percent_x) / 2),
-            ]
-            .as_ref(),
-        )
-        .split(popup_layout[1])[1]
 }
