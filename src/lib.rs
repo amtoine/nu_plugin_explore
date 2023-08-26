@@ -15,10 +15,13 @@ pub mod handler;
 
 mod config;
 
-use nu_plugin_explore::app::{App, AppResult};
-use nu_plugin_explore::event::{Event, EventHandler};
-use nu_plugin_explore::handler::handle_key_events;
-use nu_plugin_explore::tui::Tui;
+use app::{App, AppResult};
+use app::{Mode, State};
+use config::Config;
+use event::{Event, EventHandler};
+use handler::handle_key_events;
+use tui::Tui;
+
 use std::io;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
@@ -26,9 +29,6 @@ use ratatui::Terminal;
 use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
 use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
 use nu_protocol::{Span, SyntaxShape};
-
-use app::{Mode, State};
-use config::Config;
 
 /// the main structure of the [Nushell](https://nushell.sh) plugin
 pub struct Explore;
