@@ -550,19 +550,18 @@ fn render_status_bar(
 ) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
+    let bg_style = match state.mode {
+        Mode::Normal => Style::default().bg(config.colors.status_bar.normal.background),
+        Mode::Insert => Style::default().bg(config.colors.status_bar.insert.background),
+        Mode::Peeking => Style::default().bg(config.colors.status_bar.peek.background),
+        Mode::Bottom => Style::default().bg(config.colors.status_bar.bottom.background),
+    };
+
     let style = match state.mode {
-        Mode::Normal => Style::default()
-            .fg(config.colors.status_bar.normal.foreground)
-            .bg(config.colors.status_bar.normal.background),
-        Mode::Insert => Style::default()
-            .fg(config.colors.status_bar.insert.foreground)
-            .bg(config.colors.status_bar.insert.background),
-        Mode::Peeking => Style::default()
-            .fg(config.colors.status_bar.peek.foreground)
-            .bg(config.colors.status_bar.peek.background),
-        Mode::Bottom => Style::default()
-            .fg(config.colors.status_bar.bottom.foreground)
-            .bg(config.colors.status_bar.bottom.background),
+        Mode::Normal => bg_style.fg(config.colors.status_bar.normal.foreground),
+        Mode::Insert => bg_style.fg(config.colors.status_bar.insert.foreground),
+        Mode::Peeking => bg_style.fg(config.colors.status_bar.peek.foreground),
+        Mode::Bottom => bg_style.fg(config.colors.status_bar.bottom.foreground),
     };
 
     let hints = match state.mode {
@@ -608,7 +607,9 @@ fn render_status_bar(
     ));
 
     frame.render_widget(
-        Paragraph::new(left).alignment(Alignment::Left),
+        Paragraph::new(left)
+            .alignment(Alignment::Left)
+            .style(bg_style),
         bottom_bar_rect,
     );
     frame.render_widget(
