@@ -58,3 +58,39 @@ jobs:
 
       - name: Tests
         run: cargo test --workspace
+
+  default-config:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1.5.0
+        with:
+          rustflags: ""
+
+      - name: Install Nushell
+        uses: hustcer/setup-nu@main
+        with:
+          version: '*'
+
+      - name: Setup dependencies
+        run: |
+          cargo add "nu-plugin@$NU_VERSION"
+          cargo add "nu-protocol@$NU_VERSION" --features plugin
+        shell: bash
+
+      - name: Install nu_plugin_explore
+        run: |
+          cargo install --path . --root /tmp/cargo-install/
+          nu --commands "register /tmp/cargo-install/bin/nu_plugin_explore"
+
+      - name: Test the default config
+        run: |
+          $nu | explore (
+              open examples/configuration/config.nuon
+                  | insert colors (open examples/configuration/themes/dark.nuon)
+                  | insert keybindings (open examples/configuration/keybindings.nuon)
+          )
+        shell: nu {0}
