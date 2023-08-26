@@ -1,18 +1,3 @@
-use nu_plugin_explore::app::{App, AppResult};
-use nu_plugin_explore::event::{Event, EventHandler};
-use nu_plugin_explore::handler::handle_key_events;
-use nu_plugin_explore::tui::Tui;
-use std::io;
-use tui::backend::CrosstermBackend;
-use tui::Terminal;
-
-use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
-use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
-use nu_protocol::{Span, SyntaxShape};
-
-use app::{Mode, State};
-use config::Config;
-
 /// Application.
 pub mod app;
 
@@ -29,6 +14,21 @@ pub mod tui;
 pub mod handler;
 
 mod config;
+
+use nu_plugin_explore::app::{App, AppResult};
+use nu_plugin_explore::event::{Event, EventHandler};
+use nu_plugin_explore::handler::handle_key_events;
+use nu_plugin_explore::tui::Tui;
+use std::io;
+use tui::backend::CrosstermBackend;
+use tui::Terminal;
+
+use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
+use nu_protocol::{Category, PluginExample, PluginSignature, Type, Value};
+use nu_protocol::{Span, SyntaxShape};
+
+use app::{Mode, State};
+use config::Config;
 
 /// the main structure of the [Nushell](https://nushell.sh) plugin
 pub struct Explore;
@@ -82,30 +82,13 @@ impl Plugin for Explore {
 /// 1. sets the terminal up (see [`terminal::setup`])
 /// 1. runs the application (see [`app::run`])
 /// 1. restores the terminal (see [`terminal::restore`])
-fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value, LabeledError> {
+fn explore(call: &EvaluatedCall, input: &Value) -> AppResult<Value> {
     let config = Config::from_value(call.opt(0).unwrap().unwrap_or(Value::record(
         vec![],
         vec![],
         Span::unknown(),
     )))?;
 
-    let mut terminal = setup_terminal().context("setup failed").unwrap();
-    let result = app::run(&mut terminal, input, &config).context("app loop failed");
-    restore_terminal(&mut terminal)
-        .context("restore terminal failed")
-        .unwrap();
-
-    match result {
-        Ok(res) => Ok(res),
-        Err(err) => Err(LabeledError {
-            label: "unexpected error".into(),
-            msg: err.to_string(),
-            span: Some(call.head),
-        }),
-    }
-}
-
-fn main() -> AppResult<()> {
     // Create an application.
     let mut app = App::new();
 
@@ -131,6 +114,14 @@ fn main() -> AppResult<()> {
 
     // Exit the user interface.
     tui.exit()?;
-    Ok(())
+
+    match result {
+        Ok(res) => Ok(res),
+        Err(err) => Err(LabeledError {
+            label: "unexpected error".into(),
+            msg: err.to_string(),
+            span: Some(call.head),
+        }),
+    }
 }
 
