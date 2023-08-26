@@ -376,7 +376,7 @@ fn render_data(
             let (header, rows) = match data.clone().follow_cell_path(&data_path, false) {
                 Ok(Value::List { .. }) => {
                     let header = Row::new(vec![
-                        Cell::from("data")
+                        Cell::from("item")
                             .style(normal_data_style.add_modifier(Modifier::REVERSED)),
                         Cell::from("shape")
                             .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
@@ -396,9 +396,9 @@ fn render_data(
                 }
                 Ok(_) => {
                     let header = Row::new(vec![
-                        Cell::from("name")
+                        Cell::from("key")
                             .style(normal_name_style.add_modifier(Modifier::REVERSED)),
-                        Cell::from("data")
+                        Cell::from("field")
                             .style(normal_data_style.add_modifier(Modifier::REVERSED)),
                         Cell::from("shape")
                             .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
