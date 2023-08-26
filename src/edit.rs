@@ -93,7 +93,7 @@ impl Editor {
 
     /// TODO: documentation
     fn delete_char(&mut self, offset: i32) {
-        let position = self.position() + (offset as usize);
+        let position = (self.position() as i32 + offset) as usize;
 
         // NOTE: work on the chars and do not use remove which works on bytes
         self.buffer = self
