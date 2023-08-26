@@ -1,20 +1,10 @@
-/// Application.
 pub mod app;
-
-/// Terminal events handler.
+pub mod config;
 pub mod event;
-
-/// Widget renderer.
-pub mod ui;
-
-/// Terminal user interface.
-pub mod tui;
-
-/// Event handler.
 pub mod handler;
-
-mod config;
-mod navigation;
+pub mod navigation;
+pub mod tui;
+pub mod ui;
 
 use app::{App, AppResult, Mode};
 use config::Config;
@@ -65,6 +55,7 @@ impl Plugin for Explore {
         input: &Value,
     ) -> Result<Value, LabeledError> {
         match name {
+            // FIXME: do not unwrap
             "explore" => Ok(explore(call, input).unwrap()),
             _ => Err(LabeledError {
                 label: "Plugin call with wrong name signature".into(),
@@ -75,24 +66,8 @@ impl Plugin for Explore {
     }
 }
 
-/// the entry point of the `explore` command
-///
-/// this function
-/// 1. parses the config and default to the [`config::Config::default`] otherwise
-/// 1. sets the terminal up (see [`terminal::setup`])
-/// 1. runs the application (see [`app::run`])
-/// 1. restores the terminal (see [`terminal::restore`])
-///
-/// run the application
-///
-/// this function
-/// 1. creates the initial [`State`]
-/// 1. runs the main application loop
-///
-/// the application loop
-/// 1. renders the TUI with [`tui`]
-/// 1. reads the user's input keys and transition the [`State`] accordingly
 fn explore(call: &EvaluatedCall, input: &Value) -> AppResult<Value> {
+    // FIXME: do not unwrap
     let config = Config::from_value(call.opt(0).unwrap().unwrap_or(Value::record(
         vec![],
         vec![],
@@ -100,21 +75,17 @@ fn explore(call: &EvaluatedCall, input: &Value) -> AppResult<Value> {
     )))
     .unwrap();
 
-    // Create an application.
     let mut app = App::new();
 
-    // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
     let terminal = Terminal::new(backend)?;
     let events = EventHandler::new(250);
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
 
-    // Start the main loop.
     loop {
-        // Render the user interface.
         tui.draw(&mut app, input, &config)?;
-        // Handle events.
+
         match tui.events.next()? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
@@ -131,7 +102,6 @@ fn explore(call: &EvaluatedCall, input: &Value) -> AppResult<Value> {
         }
     }
 
-    // Exit the user interface.
     tui.exit()?;
 
     Ok(Value::nothing(Span::unknown()))

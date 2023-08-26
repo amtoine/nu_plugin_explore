@@ -10,8 +10,8 @@ use ratatui::{
 use nu_protocol::ast::PathMember;
 use nu_protocol::Value;
 
-use super::config::{repr_keycode, Layout};
-use super::{App, Config, Mode};
+use crate::config::{repr_keycode, Layout};
+use crate::{App, Config, Mode};
 
 /// Renders the user interface widgets.
 pub fn render<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, input: &Value, config: &Config) {

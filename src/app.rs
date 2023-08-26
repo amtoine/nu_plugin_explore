@@ -3,10 +3,7 @@ use nu_protocol::{
     Span, Value,
 };
 
-use std::error;
-
-/// Application result type.
-pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
+pub type AppResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 /// the mode in which the application is
 #[derive(Clone, Debug, PartialEq)]
@@ -39,7 +36,6 @@ impl std::fmt::Display for Mode {
     }
 }
 
-/// Application.
 #[derive(Debug)]
 pub struct App {
     /// the full current path in the data
@@ -58,7 +54,7 @@ impl Default for App {
 }
 
 impl App {
-    /// Constructs a new instance of [`State`].
+    /// Constructs a new instance of [`App`].
     pub fn new() -> Self {
         Self::default()
     }
