@@ -1,11 +1,13 @@
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
-use std::io;
-use std::panic;
+use nu_protocol::Value;
 use ratatui::backend::Backend;
 use ratatui::Terminal;
+use std::io;
+use std::panic;
 
 use crate::app::{App, AppResult};
+use crate::config::Config;
 use crate::event::EventHandler;
 use crate::ui;
 
@@ -51,8 +53,9 @@ impl<B: Backend> Tui<B> {
     ///
     /// [`Draw`]: tui::Terminal::draw
     /// [`rendering`]: crate::ui:render
-    pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
-        self.terminal.draw(|frame| ui::render(app, frame))?;
+    pub fn draw(&mut self, app: &mut App, input: &Value, config: &Config) -> AppResult<()> {
+        self.terminal
+            .draw(|frame| ui::render(app, frame, input, config))?;
         Ok(())
     }
 
