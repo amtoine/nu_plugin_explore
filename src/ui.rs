@@ -1,43 +1,6 @@
-use tui::{
+use ratatui::{
     backend::Backend,
     layout::Alignment,
-    style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Paragraph},
-    Frame,
-};
-
-use crate::app::App;
-
-/// Renders the user interface widgets.
-pub fn render<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>) {
-    // This is where you add new widgets.
-    // See the following resources:
-    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
-    // - https://github.com/ratatui-org/ratatui/tree/master/examples
-    frame.render_widget(
-        Paragraph::new(format!(
-            "This is a tui template.\n\
-                Press `Esc`, `Ctrl-C` or `q` to stop running.\n\
-                Press left and right to increment and decrement the counter respectively.\n\
-                Counter: {}",
-            app.counter
-        ))
-        .block(
-            Block::default()
-                .title("Template")
-                .title_alignment(Alignment::Center)
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
-        )
-        .style(Style::default().fg(Color::Cyan).bg(Color::Black))
-        .alignment(Alignment::Center),
-        frame.size(),
-    )
-}
-
-//! the module responsible for rendering the TUI
-use ratatui::{
-    prelude::{Alignment, Constraint, CrosstermBackend, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
@@ -48,20 +11,24 @@ use nu_protocol::ast::PathMember;
 use nu_protocol::Value;
 
 use super::config::{repr_keycode, Layout};
-use super::{Config, Mode, App};
+use super::{App, Config, Mode};
 
-/// render the whole ui
-pub(super) fn render_ui(
-    frame: &mut Frame<CrosstermBackend<console::Term>>,
+/// Renders the user interface widgets.
+pub fn render<B: Backend>(
+    app: &mut App,
+    frame: &mut Frame<'_, B>,
     input: &Value,
-    state: &App,
     config: &Config,
 ) {
-    render_data(frame, input, state, config);
+    // This is where you add new widgets.
+    // See the following resources:
+    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
+    // - https://github.com/ratatui-org/ratatui/tree/master/examples
+    render_data(frame, input, app, config);
     if config.show_cell_path {
-        render_cell_path(frame, state);
+        render_cell_path(frame, app);
     }
-    render_status_bar(frame, state, config);
+    render_status_bar(frame, app, config);
 }
 
 /// a common representation for an explore row
