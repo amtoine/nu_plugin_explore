@@ -1,7 +1,8 @@
 //! the module responsible for rendering the TUI
+use console::Key;
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
-    style::{Modifier, Style, Color},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
     Frame,
@@ -547,7 +548,7 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &
 /// ```
 /// - in INSERT mode
 /// ```text
-/// ||INSERT  ...                                                     <esc> to NORMAL | COMING SOON | q to quit||
+/// ||INSERT  ...                                                                               <esc> to NORMAL||
 /// ```
 /// - in PEEKING mode
 /// ```text
@@ -588,9 +589,13 @@ fn render_status_bar(
             repr_keycode(&config.keybindings.quit),
         ),
         Mode::Insert => format!(
-            "{} to {} | COMING SOON",
-            repr_keycode(&config.keybindings.normal),
-            Mode::Normal
+            "{} to quit | {}{} to move the cursor | {}{} to delete characters | {} to confirm",
+            repr_keycode(&Key::Escape),
+            repr_keycode(&Key::ArrowLeft),
+            repr_keycode(&Key::ArrowRight),
+            repr_keycode(&Key::Backspace),
+            repr_keycode(&Key::Del),
+            repr_keycode(&Key::Enter),
         ),
         Mode::Peeking => format!(
             "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to quit",
