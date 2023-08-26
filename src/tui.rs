@@ -214,6 +214,29 @@ fn is_table(value: &Value, cell_path: &[PathMember]) -> Option<bool> {
     }
 }
 
+/// compute the representation of a complete Nushell table
+///
+/// > see the tests for detailed examples
+fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
+    let shapes = table[0]
+        .columns()
+        .iter()
+        .map(|c| table[0].get_data_by_key(c).unwrap().get_type().to_string())
+        .collect();
+
+    let rows = table
+        .iter()
+        .map(|v| {
+            v.columns()
+                .iter()
+                .map(|c| repr_value(&v.get_data_by_key(c).unwrap()).data)
+                .collect::<Vec<String>>()
+        })
+        .collect::<Vec<Vec<String>>>();
+
+    (table[0].columns(), shapes, rows)
+}
+
 /// render the whole data
 ///
 /// the layout can be changed from [`crate::config::Config::layout`].
@@ -268,44 +291,29 @@ fn render_data(
     };
 
     if is_table(data, &data_path).expect("cell path is invalid when checking for table") {
-        let (header, rows) = match data
+        let (columns, shapes, cells) = match data
             .clone()
             .follow_cell_path(&data_path, false)
             .expect("cell path invalid when rendering table")
         {
-            Value::List { vals, .. } => {
-                let cols_with_type = vals[0]
-                    .columns()
-                    .iter()
-                    .map(|c| {
-                        let spans = vec![
-                            Span::styled(c.clone(), normal_name_style),
-                            " (".into(),
-                            Span::styled(
-                                vals[0].get_data_by_key(c).unwrap().get_type().to_string(),
-                                normal_shape_style,
-                            ),
-                            ")".into(),
-                        ];
-
-                        Cell::from(Line::from(spans))
-                    })
-                    .collect::<Vec<Cell>>();
-
-                let rows = vals
-                    .iter()
-                    .map(|v| {
-                        v.columns()
-                            .iter()
-                            .map(|c| v.get_data_by_key(c).unwrap())
-                            .collect()
-                    })
-                    .collect::<Vec<Vec<Value>>>();
-
-                (cols_with_type, rows)
-            }
+            Value::List { vals, .. } => repr_table(&vals),
             _ => panic!("value is a table but is not a list"),
         };
+
+        let header = columns
+            .iter()
+            .zip(shapes)
+            .map(|(c, s)| {
+                let spans = vec![
+                    Span::styled(c, normal_name_style),
+                    " (".into(),
+                    Span::styled(s, normal_shape_style),
+                    ")".into(),
+                ];
+
+                Cell::from(Line::from(spans))
+            })
+            .collect::<Vec<Cell>>();
 
         let widths = header
             .iter()
@@ -315,16 +323,9 @@ fn render_data(
 
         let header = Row::new(header).height(1);
 
-        let rows: Vec<Row> = rows
+        let rows: Vec<Row> = cells
             .iter()
-            .map(|r| {
-                let cells = r
-                    .iter()
-                    .map(|v| Cell::from(repr_value(v).data))
-                    .collect::<Vec<Cell>>();
-
-                Row::new(cells)
-            })
+            .map(|r| Row::new(r.iter().cloned().map(Cell::from).collect::<Vec<Cell>>()))
             .collect();
 
         let table = Table::new(rows)
@@ -621,6 +622,8 @@ fn render_status_bar(
 mod tests {
     use nu_protocol::Value;
 
+    use crate::tui::repr_table;
+
     use super::{is_table, repr_data, repr_list, repr_record, repr_simple_value, DataRowRepr};
 
     #[test]
@@ -739,5 +742,22 @@ mod tests {
         assert_eq!(is_table(&not_a_table, &[]), Some(false));
 
         assert_eq!(is_table(&Value::test_int(0), &[]), Some(false));
+    }
+
+    #[test]
+    fn table() {
+        #[rustfmt::skip]
+        let table = vec![
+            Value::test_record(vec!["a", "b"], vec![Value::test_string("x"), Value::test_int(1)]),
+            Value::test_record(vec!["a", "b"], vec![Value::test_string("y"), Value::test_int(2)]),
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["string".into(), "int".into()],
+            vec![vec!["x".into(), "1".into()], vec!["y".into(), "2".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
     }
 }
