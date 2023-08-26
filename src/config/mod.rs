@@ -36,6 +36,13 @@ pub(super) struct TableRowColorConfig {
     pub shape: BgFgColorConfig,
 }
 
+/// the configuration for the editor box
+#[derive(Clone, PartialEq, Debug)]
+pub(super) struct EditorColorConfig {
+    pub frame: BgFgColorConfig,
+    pub buffer: BgFgColorConfig,
+}
+
 /// the colors of the application
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct ColorConfig {
@@ -48,6 +55,8 @@ pub(super) struct ColorConfig {
     /// the symbol to show to the left of the selected row under the cursor
     pub selected_symbol: String,
     pub status_bar: StatusBarColorConfig,
+    /// the color when editing a cell
+    pub editor: EditorColorConfig,
 }
 
 /// a pair of background / foreground colors
@@ -161,6 +170,16 @@ impl Config {
                     bottom: BgFgColorConfig {
                         background: Color::Black,
                         foreground: Color::LightMagenta,
+                    },
+                },
+                editor: EditorColorConfig {
+                    frame: BgFgColorConfig {
+                        background: Color::Black,
+                        foreground: Color::LightCyan,
+                    },
+                    buffer: BgFgColorConfig {
+                        background: Color::Reset,
+                        foreground: Color::White,
                     },
                 },
             },
@@ -353,6 +372,52 @@ impl Config {
                                     }
                                 }
                             }
+                            "editor" => {
+                                let (columns, span) = match follow_cell_path(
+                                    &value,
+                                    &["colors", "editor"],
+                                )
+                                .unwrap()
+                                {
+                                    Value::Record { cols, span, .. } => (cols, span),
+                                    x => {
+                                        return Err(invalid_type(
+                                            &x,
+                                            &["colors", "editor"],
+                                            "record",
+                                        ))
+                                    }
+                                };
+
+                                for column in columns {
+                                    match column.as_str() {
+                                        "frame" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "editor", "frame"],
+                                                &config.colors.editor.frame,
+                                            )? {
+                                                config.colors.editor.frame = val
+                                            }
+                                        }
+                                        "buffer" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "editor", "buffer"],
+                                                &config.colors.editor.buffer,
+                                            )? {
+                                                config.colors.editor.buffer = val
+                                            }
+                                        }
+                                        x => {
+                                            return Err(invalid_field(
+                                                &["colors", "editor", x],
+                                                Some(span),
+                                            ))
+                                        }
+                                    }
+                                }
+                            }
                             x => return Err(invalid_field(&["colors", x], Some(span))),
                         }
                     }
@@ -517,11 +582,14 @@ impl Config {
 pub(super) fn repr_keycode(keycode: &Key) -> String {
     match keycode {
         Key::Char(c) => c.to_string(),
-        Key::ArrowLeft => "←".into(),
-        Key::ArrowUp => "↑".into(),
-        Key::ArrowRight => "→".into(),
-        Key::ArrowDown => "↓".into(),
+        Key::ArrowLeft => char::from_u32(0x2190).unwrap().into(),
+        Key::ArrowUp => char::from_u32(0x2191).unwrap().into(),
+        Key::ArrowRight => char::from_u32(0x2192).unwrap().into(),
+        Key::ArrowDown => char::from_u32(0x2193).unwrap().into(),
         Key::Escape => "<esc>".into(),
+        Key::Enter => char::from_u32(0x23ce).unwrap().into(),
+        Key::Backspace => char::from_u32(0x232b).unwrap().into(),
+        Key::Del => char::from_u32(0x2326).unwrap().into(),
         _ => "??".into(),
     }
 }
@@ -539,7 +607,8 @@ mod tests {
         assert_eq!(repr_keycode(&Key::Char('x')), "x".to_string());
         assert_eq!(repr_keycode(&Key::ArrowLeft), "←".to_string());
         assert_eq!(repr_keycode(&Key::Escape), "<esc>".to_string());
-        assert_eq!(repr_keycode(&Key::Enter), "??".to_string());
+        assert_eq!(repr_keycode(&Key::Enter), "⏎".to_string());
+        assert_eq!(repr_keycode(&Key::Home), "??".to_string());
     }
 
     #[test]

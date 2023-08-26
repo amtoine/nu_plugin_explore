@@ -120,6 +120,8 @@ in order to help, you can have a look at
 - [ ] get the config from `$env.config` => can parse configuration from CLI
 - [ ] add check for the config to make sure it's valid
 - [ ] support for editing cells in INSERT mode
+  - [x] string cells
+  - [ ] other simple cells
 - [x] detect if a string is of a particular type, path, URL, ...
 
 ## internal

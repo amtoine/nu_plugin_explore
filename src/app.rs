@@ -14,6 +14,8 @@ use nu_protocol::{
     ShellError, Span, Value,
 };
 
+use crate::edit::Editor;
+
 use super::navigation::Direction;
 use super::{config::Config, navigation, tui};
 
@@ -54,6 +56,8 @@ pub(super) struct State {
     pub cell_path: CellPath,
     /// the current [`Mode`]
     pub mode: Mode,
+    /// the editor to modify the cells of the data
+    pub editor: Editor,
 }
 
 impl Default for State {
@@ -61,6 +65,7 @@ impl Default for State {
         Self {
             cell_path: CellPath { members: vec![] },
             mode: Mode::default(),
+            editor: Editor::default(),
         }
     }
 }
@@ -94,6 +99,11 @@ impl State {
     pub(super) fn hit_bottom(&mut self) {
         self.mode = Mode::Bottom;
     }
+
+    fn enter_editor(&mut self, value: &Value) {
+        self.mode = Mode::Insert;
+        self.editor = Editor::from_value(value);
+    }
 }
 
 /// the result of a state transition
@@ -103,6 +113,8 @@ struct TransitionResult {
     exit: bool,
     /// a potential value to return
     result: Option<Value>,
+    /// a potential error to show
+    error: Option<String>,
 }
 
 impl TransitionResult {
@@ -111,6 +123,7 @@ impl TransitionResult {
         TransitionResult {
             exit: true,
             result: None,
+            error: None,
         }
     }
 
@@ -119,6 +132,7 @@ impl TransitionResult {
         TransitionResult {
             exit: false,
             result: None,
+            error: None,
         }
     }
 
@@ -127,6 +141,16 @@ impl TransitionResult {
         TransitionResult {
             exit: true,
             result: Some(value.clone()),
+            error: None,
+        }
+    }
+
+    /// TODO: documentation
+    fn error(msg: &str) -> Self {
+        TransitionResult {
+            exit: false,
+            result: None,
+            error: Some(msg.to_string()),
         }
     }
 }
@@ -146,17 +170,40 @@ pub(super) fn run(
     config: &Config,
 ) -> Result<Value> {
     let mut state = State::from_value(input);
+    let mut value = input.clone();
 
     loop {
-        terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
+        if state.mode == Mode::Insert {
+            state
+                .editor
+                .set_width(terminal.size().unwrap().width as usize)
+        }
+
+        terminal.draw(|frame| tui::render_ui(frame, &value, &state, config, None))?;
 
         let key = console::Term::stderr().read_key()?;
-        match transition_state(&key, config, &mut state, input)? {
-            TransitionResult { exit: true, result } => match result {
+        match transition_state(&key, config, &mut state, &value)? {
+            TransitionResult {
+                exit: true, result, ..
+            } => match result {
                 None => break,
                 Some(value) => return Ok(value),
             },
-            TransitionResult { exit: false, .. } => {}
+            TransitionResult {
+                exit: false,
+                result: Some(val),
+                ..
+            } => value = crate::nu::value::mutate_value_cell(&value, &state.cell_path, &val),
+            TransitionResult {
+                exit: false,
+                error: Some(error),
+                ..
+            } => {
+                terminal
+                    .draw(|frame| tui::render_ui(frame, &value, &state, config, Some(&error)))?;
+                let _ = console::Term::stderr().read_key()?;
+            }
+            _ => {}
         }
     }
     Ok(Value::nothing(Span::unknown()))
@@ -171,11 +218,29 @@ fn transition_state(
     value: &Value,
 ) -> Result<TransitionResult, ShellError> {
     if key == &config.keybindings.quit {
-        return Ok(TransitionResult::quit());
+        if state.mode != Mode::Insert {
+            return Ok(TransitionResult::quit());
+        }
     } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
-            state.mode = Mode::Insert;
-            return Ok(TransitionResult::next());
+            let value = &value
+                .clone()
+                .follow_cell_path(&state.cell_path.members, false)
+                .unwrap();
+
+            match value {
+                Value::String { .. } => {
+                    state.enter_editor(value);
+                    return Ok(TransitionResult::next());
+                }
+                // TODO: support more diverse cell edition
+                x => {
+                    return Ok(TransitionResult::error(&format!(
+                        "can only edit string cells, found {}",
+                        x.get_type()
+                    )))
+                }
+            }
         }
     } else if key == &config.keybindings.normal {
         if state.mode == Mode::Insert {
@@ -245,6 +310,26 @@ fn transition_state(
         }
     }
 
+    if state.mode == Mode::Insert {
+        match state.editor.handle_key(key) {
+            Some((mode, val)) => {
+                state.mode = mode;
+
+                match val {
+                    Some(v) => {
+                        return Ok(TransitionResult {
+                            exit: false,
+                            result: Some(v),
+                            error: None,
+                        });
+                    }
+                    None => return Ok(TransitionResult::next()),
+                }
+            }
+            None => return Ok(TransitionResult::next()),
+        }
+    }
+
     Ok(TransitionResult::next())
 }
 
@@ -260,6 +345,7 @@ mod tests {
     use crate::{
         app::Mode,
         config::{repr_keycode, Config},
+        nu::cell_path::{to_path_member_vec, PM},
     };
 
     /// {
@@ -298,8 +384,8 @@ mod tests {
         // PEEKING -> INSERT: not allowed
         let transitions = vec![
             (&keybindings.normal, Mode::Normal),
-            (&keybindings.insert, Mode::Insert),
-            (&keybindings.insert, Mode::Insert),
+            // FIXME: non-string editing is not allowed
+            // (&keybindings.insert, Mode::Insert),
             (&keybindings.normal, Mode::Normal),
             (&keybindings.peek, Mode::Peeking),
             (&keybindings.normal, Mode::Normal),
@@ -365,32 +451,6 @@ mod tests {
                 );
             }
         }
-    }
-
-    /// a simplified [`PathMember`] that can be put in a single vector, without being too long
-    enum PM<'a> {
-        // the [`PathMember::String`] variant
-        S(&'a str),
-        // the [`PathMember::Int`] variant
-        I(usize),
-    }
-
-    fn to_path_member_vec(cell_path: Vec<PM>) -> Vec<PathMember> {
-        cell_path
-            .iter()
-            .map(|x| match *x {
-                PM::S(val) => PathMember::String {
-                    val: val.into(),
-                    span: Span::test_data(),
-                    optional: false,
-                },
-                PM::I(val) => PathMember::Int {
-                    val,
-                    span: Span::test_data(),
-                    optional: false,
-                },
-            })
-            .collect::<Vec<_>>()
     }
 
     fn repr_path_member_vec(members: &[PathMember]) -> String {
@@ -635,11 +695,5 @@ mod tests {
             (&keybindings.peek, true, Some(Value::test_string("my"))),
         ];
         run_peeking_scenario(peek_at_the_bottom, &config, &value);
-    }
-
-    #[ignore = "data edition is not implemented for now"]
-    #[test]
-    fn edit_cells() {
-        /**/
     }
 }

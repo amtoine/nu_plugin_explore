@@ -1,7 +1,8 @@
 //! the module responsible for rendering the TUI
+use console::Key;
 use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
         Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState, Wrap,
@@ -21,12 +22,43 @@ pub(super) fn render_ui(
     input: &Value,
     state: &State,
     config: &Config,
+    error: Option<&str>,
 ) {
     render_data(frame, input, state, config);
     if config.show_cell_path {
         render_cell_path(frame, state);
     }
-    render_status_bar(frame, state, config);
+
+    match error {
+        Some(err) => render_error(frame, err),
+        None => {
+            render_status_bar(frame, state, config);
+
+            if state.mode == Mode::Insert {
+                state.editor.render(frame, config);
+            }
+        }
+    }
+}
+
+pub(super) fn render_error(frame: &mut Frame<CrosstermBackend<console::Term>>, error: &str) {
+    let bottom_two_lines = Rect::new(0, frame.size().height - 2, frame.size().width, 2);
+
+    let lines = vec![
+        Line::from(Span::styled(
+            format!("Err: {error}"),
+            Style::default().fg(Color::Red),
+        )),
+        Line::from(Span::styled(
+            "Press any key to continue exploring the data.",
+            Style::default().fg(Color::Blue),
+        )),
+    ];
+
+    frame.render_widget(
+        Paragraph::new(lines).alignment(Alignment::Left),
+        bottom_two_lines,
+    );
 }
 
 /// a common representation for an explore row
@@ -537,7 +569,7 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &
 /// ```
 /// - in INSERT mode
 /// ```text
-/// ||INSERT  ...                                                     <esc> to NORMAL | COMING SOON | q to quit||
+/// ||INSERT  ...                                                                               <esc> to NORMAL||
 /// ```
 /// - in PEEKING mode
 /// ```text
@@ -566,7 +598,7 @@ fn render_status_bar(
 
     let hints = match state.mode {
         Mode::Normal => format!(
-            "{} to {} | {}{}{}{} to move around | {} to peek",
+            "{} to {} | {}{}{}{} to move around | {} to peek | {} to quit",
             repr_keycode(&config.keybindings.insert),
             Mode::Insert,
             repr_keycode(&config.keybindings.navigation.left),
@@ -574,11 +606,18 @@ fn render_status_bar(
             repr_keycode(&config.keybindings.navigation.up),
             repr_keycode(&config.keybindings.navigation.right),
             repr_keycode(&config.keybindings.peek),
+            repr_keycode(&config.keybindings.quit),
         ),
         Mode::Insert => format!(
-            "{} to {} | COMING SOON",
-            repr_keycode(&config.keybindings.normal),
-            Mode::Normal
+            "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",
+            repr_keycode(&Key::Escape),
+            repr_keycode(&Key::ArrowLeft),
+            repr_keycode(&Key::ArrowRight),
+            repr_keycode(&Key::ArrowUp),
+            repr_keycode(&Key::ArrowDown),
+            repr_keycode(&Key::Backspace),
+            repr_keycode(&Key::Del),
+            repr_keycode(&Key::Enter),
         ),
         Mode::Peeking => format!(
             "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to peek the cell path",
@@ -590,10 +629,11 @@ fn render_status_bar(
             repr_keycode(&config.keybindings.peeking.cell_path),
         ),
         Mode::Bottom => format!(
-            "{} to {} | {} to peek",
+            "{} to {} | {} to peek | {} to quit",
             repr_keycode(&config.keybindings.navigation.left),
             Mode::Normal,
             repr_keycode(&config.keybindings.peek),
+            repr_keycode(&config.keybindings.quit),
         ),
     };
 
@@ -601,10 +641,7 @@ fn render_status_bar(
         format!(" {} ", state.mode),
         style.add_modifier(Modifier::REVERSED),
     ));
-    let right = Line::from(Span::styled(
-        hints + &format!(" | {} to quit", repr_keycode(&config.keybindings.quit)),
-        style,
-    ));
+    let right = Line::from(Span::styled(hints, style));
 
     frame.render_widget(
         Paragraph::new(left)
