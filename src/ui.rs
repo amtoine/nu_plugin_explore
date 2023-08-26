@@ -1,6 +1,6 @@
 use ratatui::{
     backend::Backend,
-    layout::Alignment,
+    layout::{Alignment, Rect, Constraint},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
@@ -14,12 +14,7 @@ use super::config::{repr_keycode, Layout};
 use super::{App, Config, Mode};
 
 /// Renders the user interface widgets.
-pub fn render<B: Backend>(
-    app: &mut App,
-    frame: &mut Frame<'_, B>,
-    input: &Value,
-    config: &Config,
-) {
+pub fn render<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, input: &Value, config: &Config) {
     // This is where you add new widgets.
     // See the following resources:
     // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
@@ -222,12 +217,7 @@ fn is_table(value: &Value, cell_path: &[PathMember]) -> Option<bool> {
 ///
 /// the data will be rendered on top of the bar, and on top of the cell path in case
 /// [`crate::config::Config::show_cell_path`] is set to `true`.
-fn render_data(
-    frame: &mut Frame<CrosstermBackend<console::Term>>,
-    data: &Value,
-    state: &App,
-    config: &Config,
-) {
+fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, state: &App, config: &Config) {
     let data_frame_height = if config.show_cell_path {
         frame.size().height - 2
     } else {
@@ -476,7 +466,7 @@ fn render_data(
 /// ```text
 /// ||cell path: $.foo.bar.2.baz    ...||
 /// ```
-fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &App) {
+fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, state: &App) {
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
@@ -526,11 +516,7 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &
 /// ```text
 /// ||PEEKING ... <esc> to NORMAL | a to peek all | c to peek current view | u to peek under cursor | q to quit||
 /// ```
-fn render_status_bar(
-    frame: &mut Frame<CrosstermBackend<console::Term>>,
-    state: &App,
-    config: &Config,
-) {
+fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, state: &App, config: &Config) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
     let style = match state.mode {
