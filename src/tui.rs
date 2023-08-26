@@ -3,7 +3,9 @@ use ratatui::{
     prelude::{Alignment, Constraint, CrosstermBackend, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState},
+    widgets::{
+        Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, TableState, Wrap,
+    },
     Frame,
 };
 
@@ -397,7 +399,7 @@ fn render_data(
 
                     (header, rows, constraints)
                 }
-                Ok(_) => {
+                Ok(Value::Record { .. }) => {
                     let header = Row::new(vec![
                         Cell::from("key").style(normal_name_style.add_modifier(Modifier::REVERSED)),
                         Cell::from("field")
@@ -425,6 +427,22 @@ fn render_data(
                     ];
 
                     (header, rows, constraints)
+                }
+                Ok(v) => {
+                    let repr = repr_simple_value(&v);
+                    let spans = vec![
+                        Span::styled(repr.data, normal_data_style),
+                        " is of shape ".into(),
+                        Span::styled(repr.shape, normal_shape_style),
+                    ];
+
+                    frame.render_widget(
+                        Paragraph::new(Line::from(spans))
+                            .block(Block::default().borders(Borders::ALL))
+                            .wrap(Wrap { trim: false }),
+                        rect_without_bottom_bar,
+                    );
+                    return;
                 }
                 Err(_) => panic!("unexpected error when following cell path during rendering"),
             };
