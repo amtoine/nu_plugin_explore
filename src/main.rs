@@ -1,36 +1,6 @@
-use nu_plugin_explore::app::{App, AppResult};
-use nu_plugin_explore::event::{Event, EventHandler};
-use nu_plugin_explore::handler::handle_key_events;
-use nu_plugin_explore::tui::Tui;
-use std::io;
-use tui::backend::CrosstermBackend;
-use tui::Terminal;
+use nu_plugin::{serve_plugin, MsgPackSerializer};
+use nu_plugin_explore::Explore;
 
-fn main() -> AppResult<()> {
-    // Create an application.
-    let mut app = App::new();
-
-    // Initialize the terminal user interface.
-    let backend = CrosstermBackend::new(io::stderr());
-    let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(250);
-    let mut tui = Tui::new(terminal, events);
-    tui.init()?;
-
-    // Start the main loop.
-    while app.running {
-        // Render the user interface.
-        tui.draw(&mut app)?;
-        // Handle events.
-        match tui.events.next()? {
-            Event::Tick => app.tick(),
-            Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
-            Event::Mouse(_) => {}
-            Event::Resize(_, _) => {}
-        }
-    }
-
-    // Exit the user interface.
-    tui.exit()?;
-    Ok(())
+fn main() {
+    serve_plugin(&mut Explore {}, MsgPackSerializer {})
 }
