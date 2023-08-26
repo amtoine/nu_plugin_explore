@@ -1,5 +1,10 @@
-use crate::app::{App, AppResult};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::KeyEvent;
+use nu_protocol::Value;
+
+use crate::{
+    app::{App, AppResult, Mode},
+    config::Config, navigation::{self, Direction},
+};
 
 /// the result of a state transition
 #[derive(Debug, PartialEq)]
@@ -37,128 +42,79 @@ impl TransitionResult {
 }
 
 /// Handles the key events and updates the state of [`App`].
-pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
-    match key_event.code {
-        // Exit application on `ESC` or `q`
-        KeyCode::Esc | KeyCode::Char('q') => {
-            app.quit();
-        }
-        // Exit application on `Ctrl-C`
-        KeyCode::Char('c') | KeyCode::Char('C') => {
-            if key_event.modifiers == KeyModifiers::CONTROL {
-                app.quit();
-            }
-        }
-        // Counter handlers
-        KeyCode::Right => {
-            app.increment_counter();
-        }
-        KeyCode::Left => {
-            app.decrement_counter();
-        }
-        // Other handlers you could add here.
-        _ => {}
-    }
-    Ok(())
-}
-
-
-pub(super) fn run(
-    terminal: &mut Terminal<CrosstermBackend<console::Term>>,
-    input: &Value,
-    config: &Config,
-) -> Result<Value> {
-    let mut state = App::from_value(input);
-
-    loop {
-        terminal.draw(|frame| tui::render_ui(frame, input, &state, config))?;
-
-        let key = console::Term::stderr().read_key()?;
-        match transition_state(&key, config, &mut state, input)? {
-            TransitionResult { exit: true, result } => match result {
-                None => break,
-                Some(value) => return Ok(value),
-            },
-            TransitionResult { exit: false, .. } => {}
-        }
-    }
-    Ok(Value::nothing(Span::unknown()))
-}
-
-/// perform the state transition based on the key pressed and the previous state
 #[allow(clippy::collapsible_if)]
-fn transition_state(
-    key: &Key,
+pub fn handle_key_events(
+    key_event: KeyEvent,
+    app: &mut App,
     config: &Config,
-    state: &mut App,
     value: &Value,
-) -> Result<TransitionResult, ShellError> {
-    if key == &config.keybindings.quit {
+) -> AppResult<TransitionResult> {
+    if key_event.code == &config.keybindings.quit {
         return Ok(TransitionResult::quit());
-    } else if key == &config.keybindings.insert {
-        if state.mode == Mode::Normal {
-            state.mode = Mode::Insert;
+    } else if key_event.code == &config.keybindings.insert {
+        if app.mode == Mode::Normal {
+            app.mode = Mode::Insert;
             return Ok(TransitionResult::next());
         }
-    } else if key == &config.keybindings.normal {
-        if state.mode == Mode::Insert {
-            state.mode = Mode::Normal;
+    } else if key_event.code == &config.keybindings.normal {
+        if app.mode == Mode::Insert {
+            app.mode = Mode::Normal;
             return Ok(TransitionResult::next());
         }
-    } else if key == &config.keybindings.navigation.down {
-        if state.mode == Mode::Normal {
-            navigation::go_up_or_down_in_data(state, value, Direction::Down);
+    } else if key_event.code == &config.keybindings.navigation.down {
+        if app.mode == Mode::Normal {
+            navigation::go_up_or_down_in_data(app, value, Direction::Down);
             return Ok(TransitionResult::next());
         }
-    } else if key == &config.keybindings.navigation.up {
-        if state.mode == Mode::Normal {
-            navigation::go_up_or_down_in_data(state, value, Direction::Up);
+    } else if key_event.code == &config.keybindings.navigation.up {
+        if app.mode == Mode::Normal {
+            navigation::go_up_or_down_in_data(app, value, Direction::Up);
             return Ok(TransitionResult::next());
         }
-    } else if key == &config.keybindings.navigation.right {
-        if state.mode == Mode::Normal {
-            navigation::go_deeper_in_data(state, value);
+    } else if key_event.code == &config.keybindings.navigation.right {
+        if app.mode == Mode::Normal {
+            navigation::go_deeper_in_data(app, value);
             return Ok(TransitionResult::next());
         }
-    } else if key == &config.keybindings.navigation.left {
-        if state.mode == Mode::Normal {
-            navigation::go_back_in_data(state);
+    } else if key_event.code == &config.keybindings.navigation.left {
+        if app.mode == Mode::Normal {
+            navigation::go_back_in_data(app);
             return Ok(TransitionResult::next());
-        } else if state.is_at_bottom() {
-            state.mode = Mode::Normal;
+        } else if app.is_at_bottom() {
+            app.mode = Mode::Normal;
             return Ok(TransitionResult::next());
         }
-    } else if key == &config.keybindings.peek {
-        if state.mode == Mode::Normal {
-            state.mode = Mode::Peeking;
+    } else if key_event.code == &config.keybindings.peek {
+        if app.mode == Mode::Normal {
+            app.mode = Mode::Peeking;
             return Ok(TransitionResult::next());
-        } else if state.is_at_bottom() {
+        } else if app.is_at_bottom() {
             return Ok(TransitionResult::output(
                 &value
                     .clone()
-                    .follow_cell_path(&state.cell_path.members, false)?,
+                    .follow_cell_path(&app.cell_path.members, false)?,
             ));
         }
     }
 
-    if state.mode == Mode::Peeking {
-        if key == &config.keybindings.normal {
-            state.mode = Mode::Normal;
+    if app.mode == Mode::Peeking {
+        if key_event.code == &config.keybindings.normal {
+            app.mode = Mode::Normal;
             return Ok(TransitionResult::next());
-        } else if key == &config.keybindings.peeking.all {
+        } else if key_event.code == &config.keybindings.peeking.all {
             return Ok(TransitionResult::output(value));
-        } else if key == &config.keybindings.peeking.current {
-            state.cell_path.members.pop();
+        } else if key_event.code == &config.keybindings.peeking.current {
+            app.cell_path.members.pop();
             return Ok(TransitionResult::output(
                 &value
                     .clone()
-                    .follow_cell_path(&state.cell_path.members, false)?,
+                    .follow_cell_path(&app.cell_path.members, false)?,
             ));
-        } else if key == &config.keybindings.peeking.under {
+        } else if key_event.code == &config.keybindings.peeking.under {
             return Ok(TransitionResult::output(
                 &value
                     .clone()
-                    .follow_cell_path(&state.cell_path.members, false)?,
+                    .follow_cell_path(&app.cell_path.members, false)?,
             ));
         }
     }
