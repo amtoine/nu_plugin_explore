@@ -129,6 +129,24 @@ pub(super) fn go_back_in_data(app: &mut App) {
     app.mode = Mode::Normal;
 }
 
+pub(super) fn go_left_in_table(app: &mut App, input: &Value) {
+    let columns = input.columns();
+
+    app.table_column = app
+        .table_column
+        .saturating_sub(1)
+        .clamp(0, columns.len() - 1);
+}
+
+pub(super) fn go_right_in_table(app: &mut App, input: &Value) {
+    let columns = input.columns();
+
+    app.table_column = app
+        .table_column
+        .saturating_add(1)
+        .clamp(0, columns.len() - 1);
+}
+
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {

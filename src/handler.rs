@@ -6,6 +6,7 @@ use crate::{
     app::{App, Mode},
     config::Config,
     navigation::{self, Direction},
+    nu::value::is_table,
 };
 
 /// the result of a state transition
@@ -66,10 +67,30 @@ pub(super) fn transition_state(
                 navigation::go_up_or_down_in_data(app, value, Direction::Up);
                 return Ok(TransitionResult::Continue);
             } else if key == &config.keybindings.navigation.right {
-                navigation::go_deeper_in_data(app, value);
+                let mut data_path = app.cell_path.members.clone();
+                if !app.is_at_bottom() {
+                    data_path.pop();
+                }
+
+                if is_table(value, &data_path).unwrap_or(false) {
+                    navigation::go_right_in_table(app, value);
+                } else {
+                    navigation::go_deeper_in_data(app, value);
+                }
+
                 return Ok(TransitionResult::Continue);
             } else if key == &config.keybindings.navigation.left {
-                navigation::go_back_in_data(app);
+                let mut data_path = app.cell_path.members.clone();
+                if !app.is_at_bottom() {
+                    data_path.pop();
+                }
+
+                if is_table(value, &data_path).unwrap_or(false) {
+                    navigation::go_left_in_table(app, value);
+                } else {
+                    navigation::go_back_in_data(app);
+                }
+
                 return Ok(TransitionResult::Continue);
             }
         }
