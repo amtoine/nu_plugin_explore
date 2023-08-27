@@ -183,7 +183,7 @@ mod tests {
         let keybindings = config.clone().keybindings;
 
         let mut app = App::default();
-        let value = test_value();
+        let value = Value::test_string("foo");
 
         assert!(app.mode == Mode::Normal);
 
@@ -191,8 +191,7 @@ mod tests {
         // PEEKING -> INSERT: not allowed
         let transitions = vec![
             (&keybindings.normal, Mode::Normal),
-            // FIXME: non-string editing is not allowed
-            // (&keybindings.insert, Mode::Insert),
+            (&keybindings.insert, Mode::Insert),
             (&keybindings.normal, Mode::Normal),
             (&keybindings.peek, Mode::Peeking),
             (&keybindings.normal, Mode::Normal),
