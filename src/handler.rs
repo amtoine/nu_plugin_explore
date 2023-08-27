@@ -33,110 +33,107 @@ pub(super) fn transition_state(
     app: &mut App,
     value: &Value,
 ) -> Result<TransitionResult, ShellError> {
-    if key == &config.keybindings.quit {
-        if app.mode != Mode::Insert {
-            return Ok(TransitionResult::Quit);
-        }
-    } else if key == &config.keybindings.insert {
-        if app.mode == Mode::Normal {
-            let value = &value
-                .clone()
-                .follow_cell_path(&app.cell_path.members, false)
-                .unwrap();
+    match app.mode {
+        Mode::Normal => {
+            if key == &config.keybindings.quit {
+                return Ok(TransitionResult::Quit);
+            } else if key == &config.keybindings.insert {
+                let value = &value
+                    .clone()
+                    .follow_cell_path(&app.cell_path.members, false)
+                    .unwrap();
 
-            match value {
-                Value::String { .. } => {
-                    app.enter_editor(value);
-                    return Ok(TransitionResult::Continue);
+                match value {
+                    Value::String { .. } => {
+                        app.enter_editor(value);
+                        return Ok(TransitionResult::Continue);
+                    }
+                    // TODO: support more diverse cell edition
+                    x => {
+                        return Ok(TransitionResult::Error(format!(
+                            "can only edit string cells, found {}",
+                            x.get_type()
+                        )))
+                    }
                 }
-                // TODO: support more diverse cell edition
-                x => {
-                    return Ok(TransitionResult::Error(format!(
-                        "can only edit string cells, found {}",
-                        x.get_type()
-                    )))
-                }
+            } else if key == &config.keybindings.peek {
+                app.mode = Mode::Peeking;
+                return Ok(TransitionResult::Continue);
+            } else if key == &config.keybindings.navigation.down {
+                navigation::go_up_or_down_in_data(app, value, Direction::Down);
+                return Ok(TransitionResult::Continue);
+            } else if key == &config.keybindings.navigation.up {
+                navigation::go_up_or_down_in_data(app, value, Direction::Up);
+                return Ok(TransitionResult::Continue);
+            } else if key == &config.keybindings.navigation.right {
+                navigation::go_deeper_in_data(app, value);
+                return Ok(TransitionResult::Continue);
+            } else if key == &config.keybindings.navigation.left {
+                navigation::go_back_in_data(app);
+                return Ok(TransitionResult::Continue);
             }
         }
-    } else if key == &config.keybindings.normal {
-        if app.mode == Mode::Insert {
-            app.mode = Mode::Normal;
-            return Ok(TransitionResult::Continue);
-        }
-    } else if key == &config.keybindings.navigation.down {
-        if app.mode == Mode::Normal {
-            navigation::go_up_or_down_in_data(app, value, Direction::Down);
-            return Ok(TransitionResult::Continue);
-        }
-    } else if key == &config.keybindings.navigation.up {
-        if app.mode == Mode::Normal {
-            navigation::go_up_or_down_in_data(app, value, Direction::Up);
-            return Ok(TransitionResult::Continue);
-        }
-    } else if key == &config.keybindings.navigation.right {
-        if app.mode == Mode::Normal {
-            navigation::go_deeper_in_data(app, value);
-            return Ok(TransitionResult::Continue);
-        }
-    } else if key == &config.keybindings.navigation.left {
-        if app.mode == Mode::Normal {
-            navigation::go_back_in_data(app);
-            return Ok(TransitionResult::Continue);
-        } else if app.is_at_bottom() {
-            app.mode = Mode::Normal;
-            return Ok(TransitionResult::Continue);
-        }
-    } else if key == &config.keybindings.peek {
-        if app.mode == Mode::Normal {
-            app.mode = Mode::Peeking;
-            return Ok(TransitionResult::Continue);
-        } else if app.is_at_bottom() {
-            return Ok(TransitionResult::Return(
-                value
-                    .clone()
-                    .follow_cell_path(&app.cell_path.members, false)?,
-            ));
-        }
-    }
-
-    if app.mode == Mode::Peeking {
-        if key == &config.keybindings.normal {
-            app.mode = Mode::Normal;
-            return Ok(TransitionResult::Continue);
-        } else if key == &config.keybindings.peeking.all {
-            return Ok(TransitionResult::Return(value.clone()));
-        } else if key == &config.keybindings.peeking.view {
-            app.cell_path.members.pop();
-            return Ok(TransitionResult::Return(
-                value
-                    .clone()
-                    .follow_cell_path(&app.cell_path.members, false)?,
-            ));
-        } else if key == &config.keybindings.peeking.under {
-            return Ok(TransitionResult::Return(
-                value
-                    .clone()
-                    .follow_cell_path(&app.cell_path.members, false)?,
-            ));
-        } else if key == &config.keybindings.peeking.cell_path {
-            return Ok(TransitionResult::Return(Value::cell_path(
-                app.cell_path.clone(),
-                Span::unknown(),
-            )));
-        }
-    }
-
-    if app.mode == Mode::Insert {
-        match app.editor.handle_key(key) {
-            Some((mode, val)) => {
-                app.mode = mode;
-
-                match val {
-                    Some(v) => return Ok(TransitionResult::Edit(v)),
-                    None => return Ok(TransitionResult::Continue),
-                }
+        Mode::Insert => {
+            if key == &config.keybindings.quit {
+                return Ok(TransitionResult::Quit);
+            } else if key == &config.keybindings.normal {
+                app.mode = Mode::Normal;
+                return Ok(TransitionResult::Continue);
             }
-            None => return Ok(TransitionResult::Continue),
+
+            match app.editor.handle_key(key) {
+                Some((mode, val)) => {
+                    app.mode = mode;
+
+                    match val {
+                        Some(v) => return Ok(TransitionResult::Edit(v)),
+                        None => return Ok(TransitionResult::Continue),
+                    }
+                }
+                None => return Ok(TransitionResult::Continue),
+            }
+        }
+        Mode::Peeking => {
+            if key == &config.keybindings.quit {
+                return Ok(TransitionResult::Quit);
+            } else if key == &config.keybindings.normal {
+                app.mode = Mode::Normal;
+                return Ok(TransitionResult::Continue);
+            } else if key == &config.keybindings.peeking.all {
+                return Ok(TransitionResult::Return(value.clone()));
+            } else if key == &config.keybindings.peeking.view {
+                app.cell_path.members.pop();
+                return Ok(TransitionResult::Return(
+                    value
+                        .clone()
+                        .follow_cell_path(&app.cell_path.members, false)?,
+                ));
+            } else if key == &config.keybindings.peeking.under {
+                return Ok(TransitionResult::Return(
+                    value
+                        .clone()
+                        .follow_cell_path(&app.cell_path.members, false)?,
+                ));
+            } else if key == &config.keybindings.peeking.cell_path {
+                return Ok(TransitionResult::Return(Value::cell_path(
+                    app.cell_path.clone(),
+                    Span::unknown(),
+                )));
+            }
+        }
+        Mode::Bottom => {
+            if key == &config.keybindings.quit {
+                return Ok(TransitionResult::Quit);
+            } else if key == &config.keybindings.navigation.left {
+                app.mode = Mode::Normal;
+                return Ok(TransitionResult::Continue);
+            } else if key == &config.keybindings.peek {
+                return Ok(TransitionResult::Return(
+                    value
+                        .clone()
+                        .follow_cell_path(&app.cell_path.members, false)?,
+                ));
+            }
         }
     }
 
