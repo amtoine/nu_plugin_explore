@@ -23,7 +23,7 @@ pub enum Direction {
 /// > this function will only modify the last element of the state's *cell path* either by
 /// > - not doing anything
 /// > - poping the last element to know where we are and then pushing back the new element
-pub fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Direction) {
+pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Direction) {
     if app.is_at_bottom() {
         return;
     }
@@ -97,7 +97,7 @@ pub fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Direction)
 /// > this function will
 /// > - push a new *cell path* member to the state if there is more depth ahead
 /// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
-pub fn go_deeper_in_data(app: &mut App, input: &Value) {
+pub(super) fn go_deeper_in_data(app: &mut App, input: &Value) {
     match input
         .clone()
         .follow_cell_path(&app.cell_path.members, false)
@@ -122,7 +122,7 @@ pub fn go_deeper_in_data(app: &mut App, input: &Value) {
 /// > :bulb: **Note**
 /// > - the state is always marked as *not at the bottom*
 /// > - the state *cell path* can have it's last member popped if possible
-pub fn go_back_in_data(app: &mut App) {
+pub(super) fn go_back_in_data(app: &mut App) {
     if !app.is_at_bottom() & (app.cell_path.members.len() > 1) {
         app.cell_path.members.pop();
     }

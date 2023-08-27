@@ -1,13 +1,15 @@
+use anyhow::Result;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::Backend;
+use ratatui::prelude::Rect;
 use ratatui::Terminal;
 use std::io;
 use std::panic;
 
 use nu_protocol::Value;
 
-use crate::app::{App, AppResult};
+use crate::app::App;
 use crate::config::Config;
 use crate::event::EventHandler;
 use crate::ui;
@@ -33,7 +35,7 @@ impl<B: Backend> Tui<B> {
     /// Initializes the terminal interface.
     ///
     /// It enables the raw mode and sets terminal properties.
-    pub fn init(&mut self) -> AppResult<()> {
+    pub fn init(&mut self) -> Result<()> {
         terminal::enable_raw_mode()?;
         crossterm::execute!(io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;
 
@@ -54,9 +56,15 @@ impl<B: Backend> Tui<B> {
     ///
     /// [`Draw`]: tui::Terminal::draw
     /// [`rendering`]: crate::ui:render
-    pub fn draw(&mut self, app: &mut App, input: &Value, config: &Config) -> AppResult<()> {
+    pub fn draw(
+        &mut self,
+        app: &mut App,
+        input: &Value,
+        config: &Config,
+        error: Option<&str>,
+    ) -> Result<()> {
         self.terminal
-            .draw(|frame| ui::render(app, frame, input, config))?;
+            .draw(|frame| ui::render_ui(frame, input, app, config, error))?;
         Ok(())
     }
 
@@ -64,7 +72,7 @@ impl<B: Backend> Tui<B> {
     ///
     /// This function is also used for the panic hook to revert
     /// the terminal properties if unexpected errors occur.
-    fn reset() -> AppResult<()> {
+    fn reset() -> Result<()> {
         terminal::disable_raw_mode()?;
         crossterm::execute!(io::stderr(), LeaveAlternateScreen, DisableMouseCapture)?;
         Ok(())
@@ -73,9 +81,13 @@ impl<B: Backend> Tui<B> {
     /// Exits the terminal interface.
     ///
     /// It disables the raw mode and reverts back the terminal properties.
-    pub fn exit(&mut self) -> AppResult<()> {
+    pub fn exit(&mut self) -> Result<()> {
         Self::reset()?;
         self.terminal.show_cursor()?;
         Ok(())
+    }
+
+    pub fn size(&self) -> Result<Rect> {
+        Ok(self.terminal.size()?)
     }
 }

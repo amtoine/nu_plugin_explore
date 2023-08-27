@@ -36,6 +36,13 @@ pub struct TableRowColorConfig {
     pub shape: BgFgColorConfig,
 }
 
+/// the configuration for the editor box
+#[derive(Clone, PartialEq, Debug)]
+pub(super) struct EditorColorConfig {
+    pub frame: BgFgColorConfig,
+    pub buffer: BgFgColorConfig,
+}
+
 /// the colors of the application
 #[derive(Clone, PartialEq, Debug)]
 pub struct ColorConfig {
@@ -48,6 +55,8 @@ pub struct ColorConfig {
     /// the symbol to show to the left of the selected row under the cursor
     pub selected_symbol: String,
     pub status_bar: StatusBarColorConfig,
+    /// the color when editing a cell
+    pub editor: EditorColorConfig,
 }
 
 /// a pair of background / foreground colors
@@ -75,10 +84,12 @@ pub struct NavigationBindingsMap {
 pub struct PeekingBindingsMap {
     /// peek the whole data structure
     pub all: KeyCode,
-    /// peek the current level
-    pub current: KeyCode,
+    /// peek the current cell path
+    pub cell_path: KeyCode,
     /// peek the current level, but only the row under the cursor
     pub under: KeyCode,
+    /// peek the current view
+    pub view: KeyCode,
 }
 
 /// the keybindings mapping
@@ -145,20 +156,30 @@ impl Default for Config {
                 selected_symbol: "".into(),
                 status_bar: StatusBarColorConfig {
                     normal: BgFgColorConfig {
-                        background: Color::Reset,
+                        background: Color::Black,
                         foreground: Color::White,
                     },
                     insert: BgFgColorConfig {
-                        background: Color::Reset,
+                        background: Color::Black,
                         foreground: Color::LightYellow,
                     },
                     peek: BgFgColorConfig {
-                        background: Color::Reset,
+                        background: Color::Black,
                         foreground: Color::LightGreen,
                     },
                     bottom: BgFgColorConfig {
-                        background: Color::Reset,
+                        background: Color::Black,
                         foreground: Color::LightMagenta,
+                    },
+                },
+                editor: EditorColorConfig {
+                    frame: BgFgColorConfig {
+                        background: Color::Black,
+                        foreground: Color::LightCyan,
+                    },
+                    buffer: BgFgColorConfig {
+                        background: Color::Reset,
+                        foreground: Color::White,
                     },
                 },
             },
@@ -175,8 +196,9 @@ impl Default for Config {
                 peek: KeyCode::Char('p'),
                 peeking: PeekingBindingsMap {
                     all: KeyCode::Char('a'),
-                    current: KeyCode::Char('c'),
+                    cell_path: KeyCode::Char('c'),
                     under: KeyCode::Char('p'),
+                    view: KeyCode::Char('v'),
                 },
             },
         }
@@ -334,9 +356,64 @@ impl Config {
                                                 config.colors.status_bar.peek = val
                                             }
                                         }
+                                        "bottom" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "status_bar", "bottom"],
+                                                &config.colors.status_bar.bottom,
+                                            )? {
+                                                config.colors.status_bar.bottom = val
+                                            }
+                                        }
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "status_bar", x],
+                                                Some(span),
+                                            ))
+                                        }
+                                    }
+                                }
+                            }
+                            "editor" => {
+                                let (columns, span) = match follow_cell_path(
+                                    &value,
+                                    &["colors", "editor"],
+                                )
+                                .unwrap()
+                                {
+                                    Value::Record { cols, span, .. } => (cols, span),
+                                    x => {
+                                        return Err(invalid_type(
+                                            &x,
+                                            &["colors", "editor"],
+                                            "record",
+                                        ))
+                                    }
+                                };
+
+                                for column in columns {
+                                    match column.as_str() {
+                                        "frame" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "editor", "frame"],
+                                                &config.colors.editor.frame,
+                                            )? {
+                                                config.colors.editor.frame = val
+                                            }
+                                        }
+                                        "buffer" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "editor", "buffer"],
+                                                &config.colors.editor.buffer,
+                                            )? {
+                                                config.colors.editor.buffer = val
+                                            }
+                                        }
+                                        x => {
+                                            return Err(invalid_field(
+                                                &["colors", "editor", x],
                                                 Some(span),
                                             ))
                                         }
@@ -458,12 +535,12 @@ impl Config {
                                                 config.keybindings.peeking.all = val
                                             }
                                         }
-                                        "current" => {
+                                        "cell_path" => {
                                             if let Some(val) = try_key(
                                                 &value,
-                                                &["keybindings", "peeking", "current"],
+                                                &["keybindings", "peeking", "cell_path"],
                                             )? {
-                                                config.keybindings.peeking.current = val
+                                                config.keybindings.peeking.cell_path = val
                                             }
                                         }
                                         "under" => {
@@ -472,6 +549,14 @@ impl Config {
                                                 &["keybindings", "peeking", "under"],
                                             )? {
                                                 config.keybindings.peeking.under = val
+                                            }
+                                        }
+                                        "view" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "peeking", "view"],
+                                            )? {
+                                                config.keybindings.peeking.view = val
                                             }
                                         }
                                         x => {
@@ -499,11 +584,14 @@ impl Config {
 pub fn repr_keycode(keycode: &KeyCode) -> String {
     match keycode {
         KeyCode::Char(c) => c.to_string(),
-        KeyCode::Left => "←".into(),
-        KeyCode::Up => "↑".into(),
-        KeyCode::Right => "→".into(),
-        KeyCode::Down => "↓".into(),
+        KeyCode::Left => char::from_u32(0x2190).unwrap().into(),
+        KeyCode::Up => char::from_u32(0x2191).unwrap().into(),
+        KeyCode::Right => char::from_u32(0x2192).unwrap().into(),
+        KeyCode::Down => char::from_u32(0x2193).unwrap().into(),
         KeyCode::Esc => "<esc>".into(),
+        KeyCode::Enter => char::from_u32(0x23ce).unwrap().into(),
+        KeyCode::Backspace => char::from_u32(0x232b).unwrap().into(),
+        KeyCode::Delete => char::from_u32(0x2326).unwrap().into(),
         _ => "??".into(),
     }
 }
@@ -521,7 +609,8 @@ mod tests {
         assert_eq!(repr_keycode(&KeyCode::Char('x')), "x".to_string());
         assert_eq!(repr_keycode(&KeyCode::Left), "←".to_string());
         assert_eq!(repr_keycode(&KeyCode::Esc), "<esc>".to_string());
-        assert_eq!(repr_keycode(&KeyCode::Enter), "??".to_string());
+        assert_eq!(repr_keycode(&KeyCode::Enter), "⏎".to_string());
+        assert_eq!(repr_keycode(&KeyCode::Home), "??".to_string());
     }
 
     #[test]

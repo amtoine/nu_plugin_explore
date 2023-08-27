@@ -1,9 +1,10 @@
+//! the higher level application
 use nu_protocol::{
     ast::{CellPath, PathMember},
     Span, Value,
 };
 
-pub type AppResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+use crate::edit::Editor;
 
 /// the mode in which the application is
 #[derive(Clone, Debug, PartialEq)]
@@ -36,12 +37,14 @@ impl std::fmt::Display for Mode {
     }
 }
 
-#[derive(Debug)]
-pub struct App {
+/// the complete state of the application
+pub(super) struct App {
     /// the full current path in the data
     pub cell_path: CellPath,
     /// the current [`Mode`]
     pub mode: Mode,
+    /// the editor to modify the cells of the data
+    pub editor: Editor,
 }
 
 impl Default for App {
@@ -49,6 +52,7 @@ impl Default for App {
         Self {
             cell_path: CellPath { members: vec![] },
             mode: Mode::default(),
+            editor: Editor::default(),
         }
     }
 }
@@ -62,7 +66,7 @@ impl App {
     /// Handles the tick event of the terminal.
     pub fn tick(&self) {}
 
-    pub fn from_value(value: &Value) -> Self {
+    pub(super) fn from_value(value: &Value) -> Self {
         let mut app = Self::default();
         match value {
             Value::List { vals, .. } => app.cell_path.members.push(PathMember::Int {
@@ -89,5 +93,10 @@ impl App {
     /// TODO: documentation
     pub fn hit_bottom(&mut self) {
         self.mode = Mode::Bottom;
+    }
+
+    pub(super) fn enter_editor(&mut self, value: &Value) {
+        self.mode = Mode::Insert;
+        self.editor = Editor::from_value(value);
     }
 }

@@ -1,45 +1,27 @@
 use crossterm::event::KeyEvent;
 
-use nu_protocol::Value;
+use nu_protocol::{ShellError, Span, Value};
 
 use crate::{
-    app::{App, AppResult, Mode},
+    app::{App, Mode},
     config::Config,
     navigation::{self, Direction},
 };
 
 /// the result of a state transition
 #[derive(Debug, PartialEq)]
-pub struct TransitionResult {
-    /// whether or not to exit the application
-    pub exit: bool,
-    /// a potential value to return
-    pub result: Option<Value>,
+pub(super) enum TransitionResult {
+    Quit,
+    Continue,
+    Return(Value),
+    Edit(Value),
+    Error(String),
 }
 
 impl TransitionResult {
-    /// TODO: documentation
-    fn quit() -> Self {
-        TransitionResult {
-            exit: true,
-            result: None,
-        }
-    }
-
-    /// TODO: documentation
-    fn next() -> Self {
-        TransitionResult {
-            exit: false,
-            result: None,
-        }
-    }
-
-    /// TODO: documentation
-    fn output(value: &Value) -> Self {
-        TransitionResult {
-            exit: true,
-            result: Some(value.clone()),
-        }
+    #[cfg(test)]
+    fn is_quit(&self) -> bool {
+        matches!(self, Self::Quit | Self::Return(_))
     }
 }
 
@@ -50,49 +32,67 @@ pub fn handle_key_events(
     app: &mut App,
     config: &Config,
     value: &Value,
-) -> AppResult<TransitionResult> {
+) -> Result<TransitionResult, ShellError> {
     if key_event.code == config.keybindings.quit {
-        return Ok(TransitionResult::quit());
+        if app.mode != Mode::Insert {
+            return Ok(TransitionResult::Quit);
+        }
     } else if key_event.code == config.keybindings.insert {
         if app.mode == Mode::Normal {
-            app.mode = Mode::Insert;
-            return Ok(TransitionResult::next());
+            let value = &value
+                .clone()
+                .follow_cell_path(&app.cell_path.members, false)
+                .unwrap();
+
+            match value {
+                Value::String { .. } => {
+                    app.enter_editor(value);
+                    return Ok(TransitionResult::Continue);
+                }
+                // TODO: support more diverse cell edition
+                x => {
+                    return Ok(TransitionResult::Error(format!(
+                        "can only edit string cells, found {}",
+                        x.get_type()
+                    )))
+                }
+            }
         }
     } else if key_event.code == config.keybindings.normal {
         if app.mode == Mode::Insert {
             app.mode = Mode::Normal;
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key_event.code == config.keybindings.navigation.down {
         if app.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(app, value, Direction::Down);
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key_event.code == config.keybindings.navigation.up {
         if app.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(app, value, Direction::Up);
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key_event.code == config.keybindings.navigation.right {
         if app.mode == Mode::Normal {
             navigation::go_deeper_in_data(app, value);
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key_event.code == config.keybindings.navigation.left {
         if app.mode == Mode::Normal {
             navigation::go_back_in_data(app);
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         } else if app.is_at_bottom() {
             app.mode = Mode::Normal;
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key_event.code == config.keybindings.peek {
         if app.mode == Mode::Normal {
             app.mode = Mode::Peeking;
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         } else if app.is_at_bottom() {
-            return Ok(TransitionResult::output(
-                &value
+            return Ok(TransitionResult::Return(
+                value
                     .clone()
                     .follow_cell_path(&app.cell_path.members, false)?,
             ));
@@ -102,37 +102,64 @@ pub fn handle_key_events(
     if app.mode == Mode::Peeking {
         if key_event.code == config.keybindings.normal {
             app.mode = Mode::Normal;
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         } else if key_event.code == config.keybindings.peeking.all {
-            return Ok(TransitionResult::output(value));
-        } else if key_event.code == config.keybindings.peeking.current {
+            return Ok(TransitionResult::Return(value.clone()));
+        } else if key_event.code == config.keybindings.peeking.view {
             app.cell_path.members.pop();
-            return Ok(TransitionResult::output(
-                &value
+            return Ok(TransitionResult::Return(
+                value
                     .clone()
                     .follow_cell_path(&app.cell_path.members, false)?,
             ));
         } else if key_event.code == config.keybindings.peeking.under {
-            return Ok(TransitionResult::output(
-                &value
+            return Ok(TransitionResult::Return(
+                value
                     .clone()
                     .follow_cell_path(&app.cell_path.members, false)?,
             ));
+        } else if key_event.code == config.keybindings.peeking.cell_path {
+            return Ok(TransitionResult::Return(Value::cell_path(
+                app.cell_path.clone(),
+                Span::unknown(),
+            )));
         }
     }
 
-    Ok(TransitionResult::next())
+    if app.mode == Mode::Insert {
+        match app.editor.handle_key(&key_event.code) {
+            Some((mode, val)) => {
+                app.mode = mode;
+
+                match val {
+                    Some(v) => return Ok(TransitionResult::Edit(v)),
+                    None => return Ok(TransitionResult::Continue),
+                }
+            }
+            None => return Ok(TransitionResult::Continue),
+        }
+    }
+
+    Ok(TransitionResult::Continue)
 }
 
 #[cfg(test)]
 mod tests {
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use nu_protocol::{ast::PathMember, Span, Value};
+    use nu_protocol::{
+        ast::{CellPath, PathMember},
+        Span, Value,
+    };
 
     use super::{handle_key_events, App};
+    use super::{transition_state, App, TransitionResult};
     use crate::{
         app::Mode,
+        app::Mode,
         config::{repr_keycode, Config},
+        config::{repr_keycode, Config},
+        nu::cell_path::{to_path_member_vec, PM},
     };
 
     /// {
@@ -171,8 +198,8 @@ mod tests {
         // PEEKING -> INSERT: not allowed
         let transitions = vec![
             (keybindings.normal, Mode::Normal),
-            (keybindings.insert, Mode::Insert),
-            (keybindings.insert, Mode::Insert),
+            // FIXME: non-string editing is not allowed
+            // (keybindings.insert, Mode::Insert),
             (keybindings.normal, Mode::Normal),
             (keybindings.peek, Mode::Peeking),
             (keybindings.normal, Mode::Normal),
@@ -190,7 +217,7 @@ mod tests {
             .unwrap();
 
             assert!(
-                !result.exit,
+                !result.is_quit(),
                 "unexpected exit after pressing {} in {}",
                 repr_keycode(&key),
                 mode,
@@ -236,62 +263,20 @@ mod tests {
 
             if exit {
                 assert!(
-                    result.exit,
+                    result.is_quit(),
                     "expected to quit after pressing {} in {} mode",
                     repr_keycode(&key),
                     mode
                 );
             } else {
                 assert!(
-                    !result.exit,
+                    !result.is_quit(),
                     "expected NOT to quit after pressing {} in {} mode",
                     repr_keycode(&key),
                     mode
                 );
             }
         }
-    }
-
-    /// a simplified [`PathMember`] that can be put in a single vector, without being too long
-    enum PM<'a> {
-        // the [`PathMember::String`] variant
-        S(&'a str),
-        // the [`PathMember::Int`] variant
-        I(usize),
-    }
-
-    fn to_path_member_vec(cell_path: Vec<PM>) -> Vec<PathMember> {
-        cell_path
-            .iter()
-            .map(|x| match *x {
-                PM::S(val) => PathMember::String {
-                    val: val.into(),
-                    span: Span::test_data(),
-                    optional: false,
-                },
-                PM::I(val) => PathMember::Int {
-                    val,
-                    span: Span::test_data(),
-                    optional: false,
-                },
-            })
-            .collect::<Vec<_>>()
-    }
-
-    fn repr_path_member_vec(members: &[PathMember]) -> String {
-        format!(
-            "$.{}",
-            members
-                .iter()
-                .map(|m| {
-                    match m {
-                        PathMember::Int { val, .. } => val.to_string(),
-                        PathMember::String { val, .. } => val.to_string(),
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join(".")
-        )
     }
 
     #[test]
@@ -413,14 +398,14 @@ mod tests {
 
             if exit {
                 assert!(
-                    result.exit,
+                    result.is_quit(),
                     "expected to peek some data after pressing {} in {} mode",
                     repr_keycode(&key),
                     mode
                 );
             } else {
                 assert!(
-                    !result.exit,
+                    !result.is_quit(),
                     "expected NOT to peek some data after pressing {} in {} mode",
                     repr_keycode(&key),
                     mode
@@ -428,27 +413,29 @@ mod tests {
             }
 
             match expected {
-                Some(value) => match result.result {
-                    Some(v) => assert_eq!(
-                        value,
-                        v,
-                        "unexpected data after pressing {} in {} mode",
-                        repr_keycode(&key),
-                        mode
-                    ),
-                    None => panic!(
+                Some(value) => match result {
+                    TransitionResult::Return(val) => {
+                        assert_eq!(
+                            value,
+                            val,
+                            "unexpected data after pressing {} in {} mode",
+                            repr_keycode(&key),
+                            mode
+                        )
+                    }
+                    _ => panic!(
                         "did expect output data after pressing {} in {} mode",
                         repr_keycode(&key),
                         mode
                     ),
                 },
-                None => match result.result {
-                    Some(_) => panic!(
+                None => match result {
+                    TransitionResult::Return(_) => panic!(
                         "did NOT expect output data after pressing {} in {} mode",
                         repr_keycode(&key),
                         mode
                     ),
-                    None => {}
+                    _ => {}
                 },
             }
         }
@@ -498,17 +485,36 @@ mod tests {
         ];
         run_peeking_scenario(go_in_the_data_and_peek_under, &config, &value);
 
+        let go_in_the_data_and_peek_cell_path = vec![
+            (keybindings.navigation.down, false, None), // on {r: {a: 1, b: 2}}
+            (keybindings.navigation.right, false, None), // on {a: 1}
+            (keybindings.peek, false, None),
+            (
+                keybindings.peeking.cell_path,
+                true,
+                Some(Value::test_cell_path(CellPath {
+                    members: vec![
+                        PathMember::String {
+                            val: "r".into(),
+                            span: Span::test_data(),
+                            optional: false,
+                        },
+                        PathMember::String {
+                            val: "a".into(),
+                            span: Span::test_data(),
+                            optional: false,
+                        },
+                    ],
+                })),
+            ),
+        ];
+        run_peeking_scenario(go_in_the_data_and_peek_cell_path, &config, &value);
+
         let peek_at_the_bottom = vec![
             (keybindings.navigation.right, false, None), // on l: ["my", "list", "elements"],
             (keybindings.navigation.right, false, None), // on "my"
             (keybindings.peek, true, Some(Value::test_string("my"))),
         ];
         run_peeking_scenario(peek_at_the_bottom, &config, &value);
-    }
-
-    #[ignore = "data edition is not implemented for now"]
-    #[test]
-    fn edit_cells() {
-        /**/
     }
 }
