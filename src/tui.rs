@@ -20,22 +20,22 @@ use super::{Config, Mode, App};
 pub(super) fn render_ui(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
     input: &Value,
-    state: &App,
+    app: &App,
     config: &Config,
     error: Option<&str>,
 ) {
-    render_data(frame, input, state, config);
+    render_data(frame, input, app, config);
     if config.show_cell_path {
-        render_cell_path(frame, state);
+        render_cell_path(frame, app);
     }
 
     match error {
         Some(err) => render_error(frame, err),
         None => {
-            render_status_bar(frame, state, config);
+            render_status_bar(frame, app, config);
 
-            if state.mode == Mode::Insert {
-                state.editor.render(frame, config);
+            if app.mode == Mode::Insert {
+                app.editor.render(frame, config);
             }
         }
     }
@@ -278,7 +278,7 @@ fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
 fn render_data(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
     data: &Value,
-    state: &App,
+    app: &App,
     config: &Config,
 ) {
     let data_frame_height = if config.show_cell_path {
@@ -288,8 +288,8 @@ fn render_data(
     };
     let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
-    let mut data_path = state.cell_path.members.clone();
-    let current = if !state.is_at_bottom() {
+    let mut data_path = app.cell_path.members.clone();
+    let current = if !app.is_at_bottom() {
         data_path.pop()
     } else {
         None
@@ -525,11 +525,11 @@ fn render_data(
 /// ```text
 /// ||cell path: $.foo.bar.2.baz    ...||
 /// ```
-fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &App) {
+fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, app: &App) {
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
-        state
+        app
             .cell_path
             .members
             .iter()
@@ -577,26 +577,26 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &
 /// ```
 fn render_status_bar(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
-    state: &App,
+    app: &App,
     config: &Config,
 ) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
-    let bg_style = match state.mode {
+    let bg_style = match app.mode {
         Mode::Normal => Style::default().bg(config.colors.status_bar.normal.background),
         Mode::Insert => Style::default().bg(config.colors.status_bar.insert.background),
         Mode::Peeking => Style::default().bg(config.colors.status_bar.peek.background),
         Mode::Bottom => Style::default().bg(config.colors.status_bar.bottom.background),
     };
 
-    let style = match state.mode {
+    let style = match app.mode {
         Mode::Normal => bg_style.fg(config.colors.status_bar.normal.foreground),
         Mode::Insert => bg_style.fg(config.colors.status_bar.insert.foreground),
         Mode::Peeking => bg_style.fg(config.colors.status_bar.peek.foreground),
         Mode::Bottom => bg_style.fg(config.colors.status_bar.bottom.foreground),
     };
 
-    let hints = match state.mode {
+    let hints = match app.mode {
         Mode::Normal => format!(
             "{} to {} | {}{}{}{} to move around | {} to peek | {} to quit",
             repr_keycode(&config.keybindings.insert),
@@ -638,7 +638,7 @@ fn render_status_bar(
     };
 
     let left = Line::from(Span::styled(
-        format!(" {} ", state.mode),
+        format!(" {} ", app.mode),
         style.add_modifier(Modifier::REVERSED),
     ));
     let right = Line::from(Span::styled(hints, style));

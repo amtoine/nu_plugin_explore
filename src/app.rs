@@ -72,14 +72,14 @@ impl Default for App {
 
 impl App {
     pub(super) fn from_value(value: &Value) -> Self {
-        let mut state = Self::default();
+        let mut app = Self::default();
         match value {
-            Value::List { vals, .. } => state.cell_path.members.push(PathMember::Int {
+            Value::List { vals, .. } => app.cell_path.members.push(PathMember::Int {
                 val: 0,
                 span: Span::unknown(),
                 optional: vals.is_empty(),
             }),
-            Value::Record { cols, .. } => state.cell_path.members.push(PathMember::String {
+            Value::Record { cols, .. } => app.cell_path.members.push(PathMember::String {
                 val: cols.get(0).unwrap_or(&"".to_string()).into(),
                 span: Span::unknown(),
                 optional: cols.is_empty(),
@@ -87,7 +87,7 @@ impl App {
             _ => {}
         }
 
-        state
+        app
     }
 
     /// TODO: documentation
@@ -137,28 +137,28 @@ pub(super) fn run(
     input: &Value,
     config: &Config,
 ) -> Result<Value> {
-    let mut state = App::from_value(input);
+    let mut app = App::from_value(input);
     let mut value = input.clone();
 
     loop {
-        if state.mode == Mode::Insert {
-            state
+        if app.mode == Mode::Insert {
+            app
                 .editor
                 .set_width(terminal.size().unwrap().width as usize)
         }
 
-        terminal.draw(|frame| tui::render_ui(frame, &value, &state, config, None))?;
+        terminal.draw(|frame| tui::render_ui(frame, &value, &app, config, None))?;
 
         let key = console::Term::stderr().read_key()?;
-        match transition_state(&key, config, &mut state, &value)? {
+        match transition_state(&key, config, &mut app, &value)? {
             TransitionResult::Quit => break,
             TransitionResult::Continue => {}
             TransitionResult::Edit(val) => {
-                value = crate::nu::value::mutate_value_cell(&value, &state.cell_path, &val)
+                value = crate::nu::value::mutate_value_cell(&value, &app.cell_path, &val)
             }
             TransitionResult::Error(error) => {
                 terminal
-                    .draw(|frame| tui::render_ui(frame, &value, &state, config, Some(&error)))?;
+                    .draw(|frame| tui::render_ui(frame, &value, &app, config, Some(&error)))?;
                 let _ = console::Term::stderr().read_key()?;
             }
             TransitionResult::Return(value) => return Ok(value),
@@ -172,23 +172,23 @@ pub(super) fn run(
 fn transition_state(
     key: &Key,
     config: &Config,
-    state: &mut App,
+    app: &mut App,
     value: &Value,
 ) -> Result<TransitionResult, ShellError> {
     if key == &config.keybindings.quit {
-        if state.mode != Mode::Insert {
+        if app.mode != Mode::Insert {
             return Ok(TransitionResult::Quit);
         }
     } else if key == &config.keybindings.insert {
-        if state.mode == Mode::Normal {
+        if app.mode == Mode::Normal {
             let value = &value
                 .clone()
-                .follow_cell_path(&state.cell_path.members, false)
+                .follow_cell_path(&app.cell_path.members, false)
                 .unwrap();
 
             match value {
                 Value::String { .. } => {
-                    state.enter_editor(value);
+                    app.enter_editor(value);
                     return Ok(TransitionResult::Continue);
                 }
                 // TODO: support more diverse cell edition
@@ -201,77 +201,77 @@ fn transition_state(
             }
         }
     } else if key == &config.keybindings.normal {
-        if state.mode == Mode::Insert {
-            state.mode = Mode::Normal;
+        if app.mode == Mode::Insert {
+            app.mode = Mode::Normal;
             return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.navigation.down {
-        if state.mode == Mode::Normal {
-            navigation::go_up_or_down_in_data(state, value, Direction::Down);
+        if app.mode == Mode::Normal {
+            navigation::go_up_or_down_in_data(app, value, Direction::Down);
             return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.navigation.up {
-        if state.mode == Mode::Normal {
-            navigation::go_up_or_down_in_data(state, value, Direction::Up);
+        if app.mode == Mode::Normal {
+            navigation::go_up_or_down_in_data(app, value, Direction::Up);
             return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.navigation.right {
-        if state.mode == Mode::Normal {
-            navigation::go_deeper_in_data(state, value);
+        if app.mode == Mode::Normal {
+            navigation::go_deeper_in_data(app, value);
             return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.navigation.left {
-        if state.mode == Mode::Normal {
-            navigation::go_back_in_data(state);
+        if app.mode == Mode::Normal {
+            navigation::go_back_in_data(app);
             return Ok(TransitionResult::Continue);
-        } else if state.is_at_bottom() {
-            state.mode = Mode::Normal;
+        } else if app.is_at_bottom() {
+            app.mode = Mode::Normal;
             return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.peek {
-        if state.mode == Mode::Normal {
-            state.mode = Mode::Peeking;
+        if app.mode == Mode::Normal {
+            app.mode = Mode::Peeking;
             return Ok(TransitionResult::Continue);
-        } else if state.is_at_bottom() {
+        } else if app.is_at_bottom() {
             return Ok(TransitionResult::Return(
                 value
                     .clone()
-                    .follow_cell_path(&state.cell_path.members, false)?,
+                    .follow_cell_path(&app.cell_path.members, false)?,
             ));
         }
     }
 
-    if state.mode == Mode::Peeking {
+    if app.mode == Mode::Peeking {
         if key == &config.keybindings.normal {
-            state.mode = Mode::Normal;
+            app.mode = Mode::Normal;
             return Ok(TransitionResult::Continue);
         } else if key == &config.keybindings.peeking.all {
             return Ok(TransitionResult::Return(value.clone()));
         } else if key == &config.keybindings.peeking.view {
-            state.cell_path.members.pop();
+            app.cell_path.members.pop();
             return Ok(TransitionResult::Return(
                 value
                     .clone()
-                    .follow_cell_path(&state.cell_path.members, false)?,
+                    .follow_cell_path(&app.cell_path.members, false)?,
             ));
         } else if key == &config.keybindings.peeking.under {
             return Ok(TransitionResult::Return(
                 value
                     .clone()
-                    .follow_cell_path(&state.cell_path.members, false)?,
+                    .follow_cell_path(&app.cell_path.members, false)?,
             ));
         } else if key == &config.keybindings.peeking.cell_path {
             return Ok(TransitionResult::Return(Value::cell_path(
-                state.cell_path.clone(),
+                app.cell_path.clone(),
                 Span::unknown(),
             )));
         }
     }
 
-    if state.mode == Mode::Insert {
-        match state.editor.handle_key(key) {
+    if app.mode == Mode::Insert {
+        match app.editor.handle_key(key) {
             Some((mode, val)) => {
-                state.mode = mode;
+                app.mode = mode;
 
                 match val {
                     Some(v) => return Ok(TransitionResult::Edit(v)),
@@ -327,10 +327,10 @@ mod tests {
         let config = Config::default();
         let keybindings = config.clone().keybindings;
 
-        let mut state = App::default();
+        let mut app = App::default();
         let value = test_value();
 
-        assert!(state.mode == Mode::Normal);
+        assert!(app.mode == Mode::Normal);
 
         // INSERT -> PEEKING: not allowed
         // PEEKING -> INSERT: not allowed
@@ -344,9 +344,9 @@ mod tests {
         ];
 
         for (key, expected_mode) in transitions {
-            let mode = state.mode.clone();
+            let mode = app.mode.clone();
 
-            let result = transition_state(&key, &config, &mut state, &value).unwrap();
+            let result = transition_state(&key, &config, &mut app, &value).unwrap();
 
             assert!(
                 !result.is_quit(),
@@ -355,12 +355,12 @@ mod tests {
                 mode,
             );
             assert!(
-                state.mode == expected_mode,
+                app.mode == expected_mode,
                 "expected to be in {} after pressing {} in {}, found {}",
                 expected_mode,
                 repr_keycode(key),
                 mode,
-                state.mode
+                app.mode
             );
         }
     }
@@ -370,7 +370,7 @@ mod tests {
         let config = Config::default();
         let keybindings = config.clone().keybindings;
 
-        let mut state = App::default();
+        let mut app = App::default();
         let value = test_value();
 
         let transitions = vec![
@@ -383,9 +383,9 @@ mod tests {
         ];
 
         for (key, exit) in transitions {
-            let mode = state.mode.clone();
+            let mode = app.mode.clone();
 
-            let result = transition_state(key, &config, &mut state, &value).unwrap();
+            let result = transition_state(key, &config, &mut app, &value).unwrap();
 
             if exit {
                 assert!(
@@ -427,11 +427,11 @@ mod tests {
         let nav = config.clone().keybindings.navigation;
 
         let value = test_value();
-        let mut state = App::from_value(&value);
+        let mut app = App::from_value(&value);
 
-        assert!(!state.is_at_bottom());
+        assert!(!app.is_at_bottom());
         assert_eq!(
-            state.cell_path.members,
+            app.cell_path.members,
             to_path_member_vec(vec![PM::S("l")])
         );
 
@@ -492,27 +492,27 @@ mod tests {
 
         for (key, cell_path, bottom) in transitions {
             let expected = to_path_member_vec(cell_path);
-            transition_state(key, &config, &mut state, &value).unwrap();
+            transition_state(key, &config, &mut app, &value).unwrap();
 
             if bottom {
                 assert!(
-                    state.is_at_bottom(),
+                    app.is_at_bottom(),
                     "expected to be at the bottom after pressing {}",
                     repr_keycode(key)
                 );
             } else {
                 assert!(
-                    !state.is_at_bottom(),
+                    !app.is_at_bottom(),
                     "expected NOT to be at the bottom after pressing {}",
                     repr_keycode(key)
                 );
             }
             assert_eq!(
-                state.cell_path.members,
+                app.cell_path.members,
                 expected,
                 "expected to be at {:?}, found {:?}",
                 repr_path_member_vec(&expected),
-                repr_path_member_vec(&state.cell_path.members)
+                repr_path_member_vec(&app.cell_path.members)
             );
         }
     }
@@ -522,12 +522,12 @@ mod tests {
         config: &Config,
         value: &Value,
     ) {
-        let mut state = App::from_value(&value);
+        let mut app = App::from_value(&value);
 
         for (key, exit, expected) in transitions {
-            let mode = state.mode.clone();
+            let mode = app.mode.clone();
 
-            let result = transition_state(key, &config, &mut state, &value).unwrap();
+            let result = transition_state(key, &config, &mut app, &value).unwrap();
 
             if exit {
                 assert!(
