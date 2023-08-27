@@ -11,7 +11,7 @@ env:
   NU_VERSION: "0.84.0"
 
 jobs:
-  fmt-clippy:
+  fmt-check-clippy:
     runs-on: ubuntu-20.04
 
     steps:
@@ -30,6 +30,12 @@ jobs:
           cargo add "nu-plugin@$NU_VERSION"
           cargo add "nu-protocol@$NU_VERSION" --features plugin
         shell: bash
+
+      - name: Check the library
+        run: cargo check --workspace --lib
+
+      - name: Check the tests
+        run: cargo check --workspace --tests
 
       - name: Clippy
         run: cargo clippy --workspace -- $CLIPPY_OPTIONS
