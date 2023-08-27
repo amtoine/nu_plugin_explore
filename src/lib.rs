@@ -73,7 +73,11 @@ pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
                     }
                     TransitionResult::Error(error) => {
                         tui.draw(&mut app, input, &config, Some(&error))?;
-                        let _ = tui.events.next()?;
+                        loop {
+                            if let Event::Key(_) = tui.events.next()? {
+                                break;
+                            }
+                        }
                     }
                     TransitionResult::Return(value) => {
                         tui.exit()?;
