@@ -10,9 +10,9 @@ mod tui;
 use anyhow::{Context, Result};
 
 use nu_plugin::{EvaluatedCall, LabeledError};
-use nu_protocol::{Span, Value};
+use nu_protocol::{Value, Span};
 
-use app::{Mode, State};
+use app::{Mode, App};
 use config::Config;
 use terminal::restore as restore_terminal;
 use terminal::setup as setup_terminal;

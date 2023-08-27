@@ -51,7 +51,7 @@ impl std::fmt::Display for Mode {
 }
 
 /// the complete state of the application
-pub(super) struct State {
+pub(super) struct App {
     /// the full current path in the data
     pub cell_path: CellPath,
     /// the current [`Mode`]
@@ -60,7 +60,7 @@ pub(super) struct State {
     pub editor: Editor,
 }
 
-impl Default for State {
+impl Default for App {
     fn default() -> Self {
         Self {
             cell_path: CellPath { members: vec![] },
@@ -70,7 +70,7 @@ impl Default for State {
     }
 }
 
-impl State {
+impl App {
     pub(super) fn from_value(value: &Value) -> Self {
         let mut state = Self::default();
         match value {
@@ -126,18 +126,18 @@ impl TransitionResult {
 /// run the application
 ///
 /// this function
-/// 1. creates the initial [`State`]
+/// 1. creates the initial [`App`]
 /// 1. runs the main application loop
 ///
 /// the application loop
 /// 1. renders the TUI with [`tui`]
-/// 1. reads the user's input keys and transition the [`State`] accordingly
+/// 1. reads the user's input keys and transition the [`App`] accordingly
 pub(super) fn run(
     terminal: &mut Terminal<CrosstermBackend<console::Term>>,
     input: &Value,
     config: &Config,
 ) -> Result<Value> {
-    let mut state = State::from_value(input);
+    let mut state = App::from_value(input);
     let mut value = input.clone();
 
     loop {
@@ -172,7 +172,7 @@ pub(super) fn run(
 fn transition_state(
     key: &Key,
     config: &Config,
-    state: &mut State,
+    state: &mut App,
     value: &Value,
 ) -> Result<TransitionResult, ShellError> {
     if key == &config.keybindings.quit {
@@ -293,7 +293,7 @@ mod tests {
         Span, Value,
     };
 
-    use super::{transition_state, State, TransitionResult};
+    use super::{transition_state, App, TransitionResult};
     use crate::{
         app::Mode,
         config::{repr_keycode, Config},
@@ -327,7 +327,7 @@ mod tests {
         let config = Config::default();
         let keybindings = config.clone().keybindings;
 
-        let mut state = State::default();
+        let mut state = App::default();
         let value = test_value();
 
         assert!(state.mode == Mode::Normal);
@@ -370,7 +370,7 @@ mod tests {
         let config = Config::default();
         let keybindings = config.clone().keybindings;
 
-        let mut state = State::default();
+        let mut state = App::default();
         let value = test_value();
 
         let transitions = vec![
@@ -427,7 +427,7 @@ mod tests {
         let nav = config.clone().keybindings.navigation;
 
         let value = test_value();
-        let mut state = State::from_value(&value);
+        let mut state = App::from_value(&value);
 
         assert!(!state.is_at_bottom());
         assert_eq!(
@@ -522,7 +522,7 @@ mod tests {
         config: &Config,
         value: &Value,
     ) {
-        let mut state = State::from_value(&value);
+        let mut state = App::from_value(&value);
 
         for (key, exit, expected) in transitions {
             let mode = state.mode.clone();

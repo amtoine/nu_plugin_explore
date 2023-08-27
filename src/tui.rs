@@ -14,13 +14,13 @@ use nu_protocol::ast::PathMember;
 use nu_protocol::Value;
 
 use super::config::{repr_keycode, Layout};
-use super::{Config, Mode, State};
+use super::{Config, Mode, App};
 
 /// render the whole ui
 pub(super) fn render_ui(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
     input: &Value,
-    state: &State,
+    state: &App,
     config: &Config,
     error: Option<&str>,
 ) {
@@ -278,7 +278,7 @@ fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
 fn render_data(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
     data: &Value,
-    state: &State,
+    state: &App,
     config: &Config,
 ) {
     let data_frame_height = if config.show_cell_path {
@@ -525,7 +525,7 @@ fn render_data(
 /// ```text
 /// ||cell path: $.foo.bar.2.baz    ...||
 /// ```
-fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &State) {
+fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &App) {
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
@@ -577,7 +577,7 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, state: &
 /// ```
 fn render_status_bar(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
-    state: &State,
+    state: &App,
     config: &Config,
 ) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
