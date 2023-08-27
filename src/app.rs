@@ -108,50 +108,18 @@ impl State {
 
 /// the result of a state transition
 #[derive(Debug, PartialEq)]
-struct TransitionResult {
-    /// whether or not to exit the application
-    exit: bool,
-    /// a potential value to return
-    result: Option<Value>,
-    /// a potential error to show
-    error: Option<String>,
+enum TransitionResult {
+    Quit,
+    Continue,
+    Return(Value),
+    Edit(Value),
+    Error(String),
 }
 
 impl TransitionResult {
-    /// TODO: documentation
-    fn quit() -> Self {
-        TransitionResult {
-            exit: true,
-            result: None,
-            error: None,
-        }
-    }
-
-    /// TODO: documentation
-    fn next() -> Self {
-        TransitionResult {
-            exit: false,
-            result: None,
-            error: None,
-        }
-    }
-
-    /// TODO: documentation
-    fn output(value: &Value) -> Self {
-        TransitionResult {
-            exit: true,
-            result: Some(value.clone()),
-            error: None,
-        }
-    }
-
-    /// TODO: documentation
-    fn error(msg: &str) -> Self {
-        TransitionResult {
-            exit: false,
-            result: None,
-            error: Some(msg.to_string()),
-        }
+    #[cfg(test)]
+    fn is_quit(&self) -> bool {
+        matches!(self, Self::Quit | Self::Return(_))
     }
 }
 
@@ -183,27 +151,17 @@ pub(super) fn run(
 
         let key = console::Term::stderr().read_key()?;
         match transition_state(&key, config, &mut state, &value)? {
-            TransitionResult {
-                exit: true, result, ..
-            } => match result {
-                None => break,
-                Some(value) => return Ok(value),
-            },
-            TransitionResult {
-                exit: false,
-                result: Some(val),
-                ..
-            } => value = crate::nu::value::mutate_value_cell(&value, &state.cell_path, &val),
-            TransitionResult {
-                exit: false,
-                error: Some(error),
-                ..
-            } => {
+            TransitionResult::Quit => break,
+            TransitionResult::Continue => {}
+            TransitionResult::Edit(val) => {
+                value = crate::nu::value::mutate_value_cell(&value, &state.cell_path, &val)
+            }
+            TransitionResult::Error(error) => {
                 terminal
                     .draw(|frame| tui::render_ui(frame, &value, &state, config, Some(&error)))?;
                 let _ = console::Term::stderr().read_key()?;
             }
-            _ => {}
+            TransitionResult::Return(value) => return Ok(value),
         }
     }
     Ok(Value::nothing(Span::unknown()))
@@ -219,7 +177,7 @@ fn transition_state(
 ) -> Result<TransitionResult, ShellError> {
     if key == &config.keybindings.quit {
         if state.mode != Mode::Insert {
-            return Ok(TransitionResult::quit());
+            return Ok(TransitionResult::Quit);
         }
     } else if key == &config.keybindings.insert {
         if state.mode == Mode::Normal {
@@ -231,11 +189,11 @@ fn transition_state(
             match value {
                 Value::String { .. } => {
                     state.enter_editor(value);
-                    return Ok(TransitionResult::next());
+                    return Ok(TransitionResult::Continue);
                 }
                 // TODO: support more diverse cell edition
                 x => {
-                    return Ok(TransitionResult::error(&format!(
+                    return Ok(TransitionResult::Error(format!(
                         "can only edit string cells, found {}",
                         x.get_type()
                     )))
@@ -245,38 +203,38 @@ fn transition_state(
     } else if key == &config.keybindings.normal {
         if state.mode == Mode::Insert {
             state.mode = Mode::Normal;
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.navigation.down {
         if state.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(state, value, Direction::Down);
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.navigation.up {
         if state.mode == Mode::Normal {
             navigation::go_up_or_down_in_data(state, value, Direction::Up);
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.navigation.right {
         if state.mode == Mode::Normal {
             navigation::go_deeper_in_data(state, value);
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.navigation.left {
         if state.mode == Mode::Normal {
             navigation::go_back_in_data(state);
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         } else if state.is_at_bottom() {
             state.mode = Mode::Normal;
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         }
     } else if key == &config.keybindings.peek {
         if state.mode == Mode::Normal {
             state.mode = Mode::Peeking;
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         } else if state.is_at_bottom() {
-            return Ok(TransitionResult::output(
-                &value
+            return Ok(TransitionResult::Return(
+                value
                     .clone()
                     .follow_cell_path(&state.cell_path.members, false)?,
             ));
@@ -286,24 +244,24 @@ fn transition_state(
     if state.mode == Mode::Peeking {
         if key == &config.keybindings.normal {
             state.mode = Mode::Normal;
-            return Ok(TransitionResult::next());
+            return Ok(TransitionResult::Continue);
         } else if key == &config.keybindings.peeking.all {
-            return Ok(TransitionResult::output(value));
+            return Ok(TransitionResult::Return(value.clone()));
         } else if key == &config.keybindings.peeking.view {
             state.cell_path.members.pop();
-            return Ok(TransitionResult::output(
-                &value
+            return Ok(TransitionResult::Return(
+                value
                     .clone()
                     .follow_cell_path(&state.cell_path.members, false)?,
             ));
         } else if key == &config.keybindings.peeking.under {
-            return Ok(TransitionResult::output(
-                &value
+            return Ok(TransitionResult::Return(
+                value
                     .clone()
                     .follow_cell_path(&state.cell_path.members, false)?,
             ));
         } else if key == &config.keybindings.peeking.cell_path {
-            return Ok(TransitionResult::output(&Value::cell_path(
+            return Ok(TransitionResult::Return(Value::cell_path(
                 state.cell_path.clone(),
                 Span::unknown(),
             )));
@@ -316,21 +274,15 @@ fn transition_state(
                 state.mode = mode;
 
                 match val {
-                    Some(v) => {
-                        return Ok(TransitionResult {
-                            exit: false,
-                            result: Some(v),
-                            error: None,
-                        });
-                    }
-                    None => return Ok(TransitionResult::next()),
+                    Some(v) => return Ok(TransitionResult::Edit(v)),
+                    None => return Ok(TransitionResult::Continue),
                 }
             }
-            None => return Ok(TransitionResult::next()),
+            None => return Ok(TransitionResult::Continue),
         }
     }
 
-    Ok(TransitionResult::next())
+    Ok(TransitionResult::Continue)
 }
 
 #[cfg(test)]
@@ -341,7 +293,7 @@ mod tests {
         Span, Value,
     };
 
-    use super::{transition_state, State};
+    use super::{transition_state, State, TransitionResult};
     use crate::{
         app::Mode,
         config::{repr_keycode, Config},
@@ -397,7 +349,7 @@ mod tests {
             let result = transition_state(&key, &config, &mut state, &value).unwrap();
 
             assert!(
-                !result.exit,
+                !result.is_quit(),
                 "unexpected exit after pressing {} in {}",
                 repr_keycode(key),
                 mode,
@@ -437,14 +389,14 @@ mod tests {
 
             if exit {
                 assert!(
-                    result.exit,
+                    result.is_quit(),
                     "expected to quit after pressing {} in {} mode",
                     repr_keycode(key),
                     mode
                 );
             } else {
                 assert!(
-                    !result.exit,
+                    !result.is_quit(),
                     "expected NOT to quit after pressing {} in {} mode",
                     repr_keycode(key),
                     mode
@@ -579,14 +531,14 @@ mod tests {
 
             if exit {
                 assert!(
-                    result.exit,
+                    result.is_quit(),
                     "expected to peek some data after pressing {} in {} mode",
                     repr_keycode(key),
                     mode
                 );
             } else {
                 assert!(
-                    !result.exit,
+                    !result.is_quit(),
                     "expected NOT to peek some data after pressing {} in {} mode",
                     repr_keycode(key),
                     mode
@@ -594,27 +546,29 @@ mod tests {
             }
 
             match expected {
-                Some(value) => match result.result {
-                    Some(v) => assert_eq!(
-                        value,
-                        v,
-                        "unexpected data after pressing {} in {} mode",
-                        repr_keycode(key),
-                        mode
-                    ),
-                    None => panic!(
+                Some(value) => match result {
+                    TransitionResult::Return(val) => {
+                        assert_eq!(
+                            value,
+                            val,
+                            "unexpected data after pressing {} in {} mode",
+                            repr_keycode(key),
+                            mode
+                        )
+                    }
+                    _ => panic!(
                         "did expect output data after pressing {} in {} mode",
                         repr_keycode(key),
                         mode
                     ),
                 },
-                None => match result.result {
-                    Some(_) => panic!(
+                None => match result {
+                    TransitionResult::Return(_) => panic!(
                         "did NOT expect output data after pressing {} in {} mode",
                         repr_keycode(key),
                         mode
                     ),
-                    None => {}
+                    _ => {}
                 },
             }
         }
