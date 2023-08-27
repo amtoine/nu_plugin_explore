@@ -94,7 +94,7 @@ pub struct PeekingBindingsMap {
 
 /// the keybindings mapping
 #[derive(Clone, PartialEq, Debug)]
-pub struct KeyCodeBindingsMap {
+pub struct KeyBindingsMap {
     pub quit: KeyCode,
     /// go into INSERT mode (see [crate::app::Mode::Insert])
     pub insert: KeyCode,
@@ -119,7 +119,7 @@ pub enum Layout {
 #[derive(Clone, PartialEq, Debug)]
 pub struct Config {
     pub colors: ColorConfig,
-    pub keybindings: KeyCodeBindingsMap,
+    pub keybindings: KeyBindingsMap,
     pub show_cell_path: bool,
     pub layout: Layout,
     pub show_table_header: bool,
@@ -183,7 +183,7 @@ impl Default for Config {
                     },
                 },
             },
-            keybindings: KeyCodeBindingsMap {
+            keybindings: KeyBindingsMap {
                 quit: KeyCode::Char('q'),
                 insert: KeyCode::Char('i'),
                 normal: KeyCode::Esc,
