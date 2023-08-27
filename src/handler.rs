@@ -80,13 +80,13 @@ pub(super) fn transition_state(
             }
 
             match app.editor.handle_key(key) {
-                Some((mode, val)) => {
-                    app.mode = mode;
-
-                    match val {
-                        Some(v) => return Ok(TransitionResult::Edit(v)),
-                        None => return Ok(TransitionResult::Continue),
-                    }
+                Some(Some(v)) => {
+                    app.mode = Mode::Normal;
+                    return Ok(TransitionResult::Edit(v));
+                }
+                Some(None) => {
+                    app.mode = Mode::Normal;
+                    return Ok(TransitionResult::Continue);
                 }
                 None => return Ok(TransitionResult::Continue),
             }

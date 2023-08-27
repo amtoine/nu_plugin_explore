@@ -7,7 +7,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app::Mode, config::Config};
+use crate::config::Config;
 
 pub(super) struct Editor {
     pub buffer: String,
@@ -118,7 +118,7 @@ impl Editor {
     }
 
     /// TODO: documentation
-    pub(super) fn handle_key(&mut self, key: &Key) -> Option<(Mode, Option<Value>)> {
+    pub(super) fn handle_key(&mut self, key: &Key) -> Option<Option<Value>> {
         match key {
             Key::ArrowLeft => self.move_cursor_left(),
             Key::ArrowRight => self.move_cursor_right(),
@@ -132,9 +132,9 @@ impl Editor {
                     val: self.buffer.clone(),
                     span: Span::unknown(),
                 };
-                return Some((Mode::Normal, Some(val)));
+                return Some(Some(val));
             }
-            Key::Escape => return Some((Mode::Normal, None)),
+            Key::Escape => return Some(None),
             _ => {}
         }
 
@@ -189,8 +189,6 @@ mod tests {
     use console::Key;
     use nu_protocol::Value;
 
-    use crate::app::Mode;
-
     use super::Editor;
 
     #[test]
@@ -199,11 +197,7 @@ mod tests {
         editor.set_width(10 + 2);
 
         let strokes = vec![
-            (
-                Key::Enter,
-                "",
-                Some((Mode::Normal, Some(Value::test_string("")))),
-            ),
+            (Key::Enter, "", Some(Some(Value::test_string("")))),
             (Key::Char('a'), "a", None),
             (Key::Char('b'), "ab", None),
             (Key::Char('c'), "abc", None),
@@ -240,7 +234,7 @@ mod tests {
             (
                 Key::Enter,
                 "abmcgdfeohijknl",
-                Some((Mode::Normal, Some(Value::test_string("abmcgdfeohijknl")))),
+                Some(Some(Value::test_string("abmcgdfeohijknl"))),
             ),
             (Key::ArrowRight, "abmcgdfeohijknl", None),
             (Key::ArrowRight, "abmcgdfeohijknl", None),
@@ -252,11 +246,11 @@ mod tests {
             (Key::Del, "amcgdfeohinl", None),
             (Key::Del, "acgdfeohinl", None),
             (Key::Del, "agdfeohinl", None),
-            (Key::Escape, "agdfeohinl", Some((Mode::Normal, None))),
+            (Key::Escape, "agdfeohinl", Some(None)),
             (
                 Key::Enter,
                 "agdfeohinl",
-                Some((Mode::Normal, Some(Value::test_string("agdfeohinl")))),
+                Some(Some(Value::test_string("agdfeohinl"))),
             ),
         ];
 
