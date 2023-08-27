@@ -74,9 +74,7 @@ pub(super) fn transition_state(
             }
         }
         Mode::Insert => {
-            if key == &config.keybindings.quit {
-                return Ok(TransitionResult::Quit);
-            } else if key == &config.keybindings.normal {
+            if key == &config.keybindings.normal {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
             }
