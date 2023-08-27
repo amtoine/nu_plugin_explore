@@ -32,7 +32,7 @@ pub(super) fn render_ui(
     match error {
         Some(err) => render_error(frame, err),
         None => {
-            render_status_bar(frame, app, config);
+            render_status_bar(frame, app, config, input);
 
             if app.mode == Mode::Insert {
                 app.editor.render(frame, config);
@@ -578,18 +578,37 @@ fn render_status_bar(
     frame: &mut Frame<CrosstermBackend<console::Term>>,
     app: &App,
     config: &Config,
+    value: &Value,
 ) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
+    let mut data_path = app.cell_path.members.clone();
+    if !app.is_at_bottom() {
+        data_path.pop();
+    }
+    let is_table = is_table(value, &data_path).unwrap_or(false);
+
     let bg_style = match app.mode {
-        Mode::Normal => Style::default().bg(config.colors.status_bar.normal.background),
+        Mode::Normal => {
+            if is_table {
+                Style::default().bg(Color::Red)
+            } else {
+                Style::default().bg(config.colors.status_bar.normal.background)
+            }
+        }
         Mode::Insert => Style::default().bg(config.colors.status_bar.insert.background),
         Mode::Peeking => Style::default().bg(config.colors.status_bar.peek.background),
         Mode::Bottom => Style::default().bg(config.colors.status_bar.bottom.background),
     };
 
     let style = match app.mode {
-        Mode::Normal => bg_style.fg(config.colors.status_bar.normal.foreground),
+        Mode::Normal => {
+            if is_table {
+                bg_style.fg(Color::Green)
+            } else {
+                bg_style.fg(config.colors.status_bar.normal.foreground)
+            }
+        }
         Mode::Insert => bg_style.fg(config.colors.status_bar.insert.foreground),
         Mode::Peeking => bg_style.fg(config.colors.status_bar.peek.foreground),
         Mode::Bottom => bg_style.fg(config.colors.status_bar.bottom.foreground),
@@ -636,10 +655,18 @@ fn render_status_bar(
         ),
     };
 
-    let left = Line::from(Span::styled(
-        format!(" {} ", app.mode),
-        style.add_modifier(Modifier::REVERSED),
-    ));
+    let mode = match &app.mode {
+        Mode::Normal => {
+            if is_table {
+                "TABLE".to_string()
+            } else {
+                format!(" {} ", app.mode)
+            }
+        }
+        m => format!(" {} ", m),
+    };
+
+    let left = Line::from(Span::styled(mode, style.add_modifier(Modifier::REVERSED)));
     let right = Line::from(Span::styled(hints, style));
 
     frame.render_widget(
