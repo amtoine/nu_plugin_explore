@@ -658,7 +658,7 @@ fn render_status_bar(
     let mode = match &app.mode {
         Mode::Normal => {
             if is_table {
-                "TABLE".to_string()
+                " TABLE ".to_string()
             } else {
                 format!(" {} ", app.mode)
             }
