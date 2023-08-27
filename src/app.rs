@@ -58,11 +58,6 @@ impl Default for App {
 }
 
 impl App {
-    /// Constructs a new instance of [`App`].
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Handles the tick event of the terminal.
     pub fn tick(&self) {}
 

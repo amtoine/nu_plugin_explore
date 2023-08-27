@@ -146,18 +146,14 @@ pub fn handle_key_events(
 #[cfg(test)]
 mod tests {
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-    use nu_protocol::{ast::PathMember, Span, Value};
     use nu_protocol::{
         ast::{CellPath, PathMember},
         Span, Value,
     };
 
-    use super::{handle_key_events, App};
-    use super::{transition_state, App, TransitionResult};
+    use super::{handle_key_events, App, TransitionResult};
     use crate::{
         app::Mode,
-        app::Mode,
-        config::{repr_keycode, Config},
         config::{repr_keycode, Config},
         nu::cell_path::{to_path_member_vec, PM},
     };
@@ -277,6 +273,22 @@ mod tests {
                 );
             }
         }
+    }
+
+    fn repr_path_member_vec(members: &[PathMember]) -> String {
+        format!(
+            "$.{}",
+            members
+                .iter()
+                .map(|m| {
+                    match m {
+                        PathMember::Int { val, .. } => val.to_string(),
+                        PathMember::String { val, .. } => val.to_string(),
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(".")
+        )
     }
 
     #[test]
@@ -456,7 +468,7 @@ mod tests {
 
         let peek_current_from_top = vec![
             (keybindings.peek, false, None),
-            (keybindings.peeking.current, true, Some(value.clone())),
+            (keybindings.peeking.view, true, Some(value.clone())),
         ];
         run_peeking_scenario(peek_current_from_top, &config, &value);
 
@@ -466,7 +478,7 @@ mod tests {
             (keybindings.peek, false, None),
             (keybindings.peeking.all, true, Some(value.clone())),
             (
-                keybindings.peeking.current,
+                keybindings.peeking.view,
                 true,
                 Some(Value::test_record(
                     vec!["a", "b"],
