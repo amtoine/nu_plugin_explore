@@ -46,6 +46,7 @@ pub(super) struct App {
     pub mode: Mode,
     /// the editor to modify the cells of the data
     pub editor: Editor,
+    pub table_column: usize,
 }
 
 impl Default for App {
@@ -54,6 +55,7 @@ impl Default for App {
             cell_path: CellPath { members: vec![] },
             mode: Mode::default(),
             editor: Editor::default(),
+            table_column: 0,
         }
     }
 }
