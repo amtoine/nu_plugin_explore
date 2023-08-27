@@ -66,7 +66,12 @@ pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
                     .draw(|frame| tui::render_ui(frame, &value, &app, &config, Some(&error)))?;
                 let _ = console::Term::stderr().read_key()?;
             }
-            TransitionResult::Return(value) => return Ok(value),
+            TransitionResult::Return(value) => {
+                restore_terminal(&mut terminal)
+                    .context("restore terminal failed")
+                    .unwrap();
+                return Ok(value);
+            }
         }
     }
 
