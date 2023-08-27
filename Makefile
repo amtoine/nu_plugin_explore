@@ -12,3 +12,11 @@ fmt:
 
 doc:
 	cargo doc --document-private-items --no-deps --open
+
+build:
+	cargo build --release
+
+register:
+	nu --commands "register target/release/nu_plugin_explore"
+
+install: build register
