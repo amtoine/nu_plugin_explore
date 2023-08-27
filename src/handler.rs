@@ -10,7 +10,7 @@ use crate::{
 
 /// the result of a state transition
 #[derive(Debug, PartialEq)]
-pub(super) enum TransitionResult {
+pub enum TransitionResult {
     Quit,
     Continue,
     Return(Value),

@@ -38,7 +38,7 @@ pub struct TableRowColorConfig {
 
 /// the configuration for the editor box
 #[derive(Clone, PartialEq, Debug)]
-pub(super) struct EditorColorConfig {
+pub struct EditorColorConfig {
     pub frame: BgFgColorConfig,
     pub buffer: BgFgColorConfig,
 }

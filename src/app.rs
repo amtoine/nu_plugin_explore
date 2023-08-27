@@ -38,7 +38,7 @@ impl std::fmt::Display for Mode {
 }
 
 /// the complete state of the application
-pub(super) struct App {
+pub struct App {
     /// the full current path in the data
     pub cell_path: CellPath,
     /// the current [`Mode`]

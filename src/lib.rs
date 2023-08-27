@@ -57,8 +57,7 @@ pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
 
     loop {
         if app.mode == Mode::Insert {
-            app.editor
-                .set_width(tui.size().unwrap().width as usize)
+            app.editor.set_width(tui.size().unwrap().width as usize)
         }
 
         tui.draw(&mut app, input, &config, None)?;
