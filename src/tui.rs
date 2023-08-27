@@ -591,7 +591,7 @@ fn render_status_bar(
     let bg_style = match app.mode {
         Mode::Normal => {
             if is_table {
-                Style::default().bg(Color::Red)
+                Style::default().bg(config.colors.status_bar.table.background)
             } else {
                 Style::default().bg(config.colors.status_bar.normal.background)
             }
@@ -604,7 +604,7 @@ fn render_status_bar(
     let style = match app.mode {
         Mode::Normal => {
             if is_table {
-                bg_style.fg(Color::Green)
+                bg_style.fg(config.colors.status_bar.table.foreground)
             } else {
                 bg_style.fg(config.colors.status_bar.normal.foreground)
             }

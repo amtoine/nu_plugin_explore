@@ -20,6 +20,7 @@ use parsing::{
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct StatusBarColorConfig {
     pub normal: BgFgColorConfig,
+    pub table: BgFgColorConfig,
     pub insert: BgFgColorConfig,
     pub peek: BgFgColorConfig,
     pub bottom: BgFgColorConfig,
@@ -158,6 +159,10 @@ impl Config {
                     normal: BgFgColorConfig {
                         background: Color::Black,
                         foreground: Color::White,
+                    },
+                    table: BgFgColorConfig {
+                        background: Color::Black,
+                        foreground: Color::LightBlue,
                     },
                     insert: BgFgColorConfig {
                         background: Color::Black,
@@ -334,6 +339,15 @@ impl Config {
                                                 &config.colors.status_bar.normal,
                                             )? {
                                                 config.colors.status_bar.normal = val
+                                            }
+                                        }
+                                        "table" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "status_bar", "table"],
+                                                &config.colors.status_bar.table,
+                                            )? {
+                                                config.colors.status_bar.table = val
                                             }
                                         }
                                         "insert" => {

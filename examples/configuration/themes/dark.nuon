@@ -26,6 +26,10 @@
             background: black,
             foreground: white,
         },
+        table: {  # the colors for the status bar in NORMAL mode, when the data is a table
+            background: black,
+            foreground: lightblue,
+        },
         insert: {  # the colors for the status bar in INSERT mode
             background: black,
             foreground: lightyellow,
