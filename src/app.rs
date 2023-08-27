@@ -1,10 +1,4 @@
 //! the higher level application
-//!
-//! this module mostly handles
-//! 1. the main TUI loop
-//! 1. the rendering
-//! 1. the keybindings
-//! 1. the internal state of the application
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
