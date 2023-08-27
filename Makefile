@@ -1,10 +1,14 @@
 CLIPPY_OPTIONS="-D warnings"
 
+all: check test install
+
 check:
 	cargo fmt --all -- --check
 	cargo check --workspace --lib
 	cargo check --workspace --tests
 	cargo clippy --workspace -- "${CLIPPY_OPTIONS}"
+
+test: check
 	cargo test --workspace
 
 fmt:
