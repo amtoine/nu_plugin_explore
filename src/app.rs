@@ -142,8 +142,7 @@ pub(super) fn run(
 
     loop {
         if app.mode == Mode::Insert {
-            app
-                .editor
+            app.editor
                 .set_width(terminal.size().unwrap().width as usize)
         }
 
@@ -157,8 +156,7 @@ pub(super) fn run(
                 value = crate::nu::value::mutate_value_cell(&value, &app.cell_path, &val)
             }
             TransitionResult::Error(error) => {
-                terminal
-                    .draw(|frame| tui::render_ui(frame, &value, &app, config, Some(&error)))?;
+                terminal.draw(|frame| tui::render_ui(frame, &value, &app, config, Some(&error)))?;
                 let _ = console::Term::stderr().read_key()?;
             }
             TransitionResult::Return(value) => return Ok(value),
@@ -430,10 +428,7 @@ mod tests {
         let mut app = App::from_value(&value);
 
         assert!(!app.is_at_bottom());
-        assert_eq!(
-            app.cell_path.members,
-            to_path_member_vec(vec![PM::S("l")])
-        );
+        assert_eq!(app.cell_path.members, to_path_member_vec(vec![PM::S("l")]));
 
         let transitions = vec![
             (&nav.up, vec![PM::S("i")], false),

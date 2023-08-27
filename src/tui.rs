@@ -14,7 +14,7 @@ use nu_protocol::ast::PathMember;
 use nu_protocol::Value;
 
 use super::config::{repr_keycode, Layout};
-use super::{Config, Mode, App};
+use super::{App, Config, Mode};
 
 /// render the whole ui
 pub(super) fn render_ui(
@@ -529,8 +529,7 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, app: &Ap
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
-        app
-            .cell_path
+        app.cell_path
             .members
             .iter()
             .map(|m| {
