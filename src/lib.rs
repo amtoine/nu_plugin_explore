@@ -10,6 +10,7 @@ mod tui;
 mod ui;
 
 use anyhow::Result;
+use crossterm::event::KeyEventKind;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
@@ -65,23 +66,26 @@ pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
         match tui.events.next()? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
-                match handle_key_events(key_event, &mut app, &config, &value)? {
-                    TransitionResult::Quit => break,
-                    TransitionResult::Continue => {}
-                    TransitionResult::Edit(val) => {
-                        value = crate::nu::value::mutate_value_cell(&value, &app.cell_path, &val)
-                    }
-                    TransitionResult::Error(error) => {
-                        tui.draw(&mut app, &value, &config, Some(&error))?;
-                        loop {
-                            if let Event::Key(_) = tui.events.next()? {
-                                break;
+                if key_event.kind == KeyEventKind::Press {
+                    match handle_key_events(key_event, &mut app, &config, &value)? {
+                        TransitionResult::Quit => break,
+                        TransitionResult::Continue => {}
+                        TransitionResult::Edit(val) => {
+                            value =
+                                crate::nu::value::mutate_value_cell(&value, &app.cell_path, &val)
+                        }
+                        TransitionResult::Error(error) => {
+                            tui.draw(&mut app, &value, &config, Some(&error))?;
+                            loop {
+                                if let Event::Key(_) = tui.events.next()? {
+                                    break;
+                                }
                             }
                         }
-                    }
-                    TransitionResult::Return(value) => {
-                        tui.exit()?;
-                        return Ok(value);
+                        TransitionResult::Return(value) => {
+                            tui.exit()?;
+                            return Ok(value);
+                        }
                     }
                 }
             }
