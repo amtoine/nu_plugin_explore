@@ -60,7 +60,7 @@ pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
             app.editor.set_width(tui.size().unwrap().width as usize)
         }
 
-        tui.draw(&mut app, input, &config, None)?;
+        tui.draw(&mut app, &value, &config, None)?;
 
         match tui.events.next()? {
             Event::Tick => app.tick(),
@@ -72,7 +72,7 @@ pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
                         value = crate::nu::value::mutate_value_cell(&value, &app.cell_path, &val)
                     }
                     TransitionResult::Error(error) => {
-                        tui.draw(&mut app, input, &config, Some(&error))?;
+                        tui.draw(&mut app, &value, &config, Some(&error))?;
                         loop {
                             if let Event::Key(_) = tui.events.next()? {
                                 break;
