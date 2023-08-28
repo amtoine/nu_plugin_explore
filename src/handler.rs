@@ -1,12 +1,10 @@
-use console::Key;
-
-use nu_protocol::{ShellError, Span, Value};
-
 use crate::{
     app::{App, Mode},
     config::Config,
     navigation::{self, Direction},
 };
+use console::Key;
+use nu_protocol::{ShellError, Span, Value};
 
 /// the result of a state transition
 #[derive(Debug, PartialEq)]
@@ -143,7 +141,7 @@ mod tests {
     use console::Key;
     use nu_protocol::{
         ast::{CellPath, PathMember},
-        Span, Value,
+        record, Span, Value,
     };
 
     use super::{transition_state, App, TransitionResult};
@@ -160,19 +158,20 @@ mod tests {
     ///     i: 123,
     /// }
     fn test_value() -> Value {
-        Value::test_record(
-            vec!["l", "r", "s", "i"],
-            vec![
-                Value::test_list(vec![
-                    Value::test_string("my"),
-                    Value::test_string("list"),
-                    Value::test_string("elements"),
-                ]),
-                Value::test_record(vec!["a", "b"], vec![Value::test_int(1), Value::test_int(2)]),
-                Value::test_string("some string"),
-                Value::test_int(123),
-            ],
-        )
+        Value::test_record(record! {
+            "l" => Value::test_list(vec![
+                Value::test_string("my"),
+                Value::test_string("list"),
+                Value::test_string("elements"),
+            ]),
+            "r" => Value::test_record(record! {
+                "a" => Value::test_int(1),
+                "b" => Value::test_int(2),
+            }
+            ),
+            "s" => Value::test_string("some string"),
+            "i" => Value::test_int(123),
+        })
     }
 
     #[test]
@@ -450,10 +449,10 @@ mod tests {
             (
                 &keybindings.peeking.view,
                 true,
-                Some(Value::test_record(
-                    vec!["a", "b"],
-                    vec![Value::test_int(1), Value::test_int(2)],
-                )),
+                Some(Value::test_record(record! {
+                    "a" => Value::test_int(1),
+                    "b" => Value::test_int(2),
+                })),
             ),
         ];
         run_peeking_scenario(go_in_the_data_and_peek_all_and_current, &config, &value);

@@ -9,13 +9,11 @@ mod terminal;
 mod tui;
 
 use anyhow::{Context, Result};
-
-use nu_plugin::EvaluatedCall;
-use nu_protocol::{ShellError, Span, Value};
-
 use app::{App, Mode};
 use config::Config;
 use handler::{transition_state, TransitionResult};
+use nu_plugin::EvaluatedCall;
+use nu_protocol::{Record, ShellError, Span, Value};
 use terminal::{restore as restore_terminal, setup as setup_terminal};
 
 /// the entry point of the `explore` command
@@ -35,7 +33,13 @@ use terminal::{restore as restore_terminal, setup as setup_terminal};
 /// 1. renders the TUI with [`tui`]
 /// 1. reads the user's input keys and transition the [`App`] accordingly
 pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
-    let empty_custom_config = Value::record(vec![], vec![], Span::unknown());
+    let empty_custom_config = Value::record(
+        Record {
+            cols: vec![],
+            vals: vec![],
+        },
+        Span::unknown(),
+    );
     let config = match Config::from_value(call.opt(0).unwrap().unwrap_or(empty_custom_config)) {
         Ok(cfg) => cfg,
         Err(err) => return Err(ShellError::from(err).into()),
