@@ -8,7 +8,7 @@ use ratatui::{
 
 use nu_protocol::{Span, Value};
 
-use crate::{app::Mode, config::Config};
+use crate::config::Config;
 
 pub struct Editor {
     pub buffer: String,
@@ -119,7 +119,7 @@ impl Editor {
     }
 
     /// TODO: documentation
-    pub(super) fn handle_key(&mut self, key: &KeyCode) -> Option<(Mode, Option<Value>)> {
+    pub(super) fn handle_key(&mut self, key: &KeyCode) -> Option<Option<Value>> {
         match key {
             KeyCode::Left => self.move_cursor_left(),
             KeyCode::Right => self.move_cursor_right(),
@@ -133,9 +133,9 @@ impl Editor {
                     val: self.buffer.clone(),
                     span: Span::unknown(),
                 };
-                return Some((Mode::Normal, Some(val)));
+                return Some(Some(val));
             }
-            KeyCode::Esc => return Some((Mode::Normal, None)),
+            KeyCode::Esc => return Some(None),
             _ => {}
         }
 
@@ -186,8 +186,6 @@ mod tests {
     use crossterm::event::KeyCode;
     use nu_protocol::Value;
 
-    use crate::app::Mode;
-
     use super::Editor;
 
     #[test]
@@ -196,11 +194,7 @@ mod tests {
         editor.set_width(10 + 2);
 
         let strokes = vec![
-            (
-                KeyCode::Enter,
-                "",
-                Some((Mode::Normal, Some(Value::test_string("")))),
-            ),
+            (KeyCode::Enter, "", Some(Some(Value::test_string("")))),
             (KeyCode::Char('a'), "a", None),
             (KeyCode::Char('b'), "ab", None),
             (KeyCode::Char('c'), "abc", None),
@@ -237,7 +231,7 @@ mod tests {
             (
                 KeyCode::Enter,
                 "abmcgdfeohijknl",
-                Some((Mode::Normal, Some(Value::test_string("abmcgdfeohijknl")))),
+                Some(Some(Value::test_string("abmcgdfeohijknl"))),
             ),
             (KeyCode::Right, "abmcgdfeohijknl", None),
             (KeyCode::Right, "abmcgdfeohijknl", None),
@@ -249,11 +243,11 @@ mod tests {
             (KeyCode::Delete, "amcgdfeohinl", None),
             (KeyCode::Delete, "acgdfeohinl", None),
             (KeyCode::Delete, "agdfeohinl", None),
-            (KeyCode::Esc, "agdfeohinl", Some((Mode::Normal, None))),
+            (KeyCode::Esc, "agdfeohinl", Some(None)),
             (
                 KeyCode::Enter,
                 "agdfeohinl",
-                Some((Mode::Normal, Some(Value::test_string("agdfeohinl")))),
+                Some(Some(Value::test_string("agdfeohinl"))),
             ),
         ];
 
