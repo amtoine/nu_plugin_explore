@@ -180,7 +180,7 @@ fn repr_simple_value(value: &Value) -> DataRowRepr {
 fn repr_value(value: &Value) -> DataRowRepr {
     match value {
         Value::List { vals, .. } => repr_list(vals),
-        Value::Record { cols, .. } => repr_record(cols),
+        Value::Record { val: rec, .. } => repr_record(&rec.cols),
         x => repr_simple_value(x),
     }
 }
@@ -202,18 +202,17 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                 vals.iter().map(repr_value).collect::<Vec<DataRowRepr>>()
             }
         }
-        Ok(Value::Record { cols, vals, .. }) => {
-            if cols.is_empty() {
+        Ok(Value::Record { val: rec, .. }) => {
+            if rec.cols.is_empty() {
                 vec![DataRowRepr {
                     name: None,
                     shape: "record".into(),
                     data: "{}".into(),
                 }]
             } else {
-                cols.iter()
-                    .zip(vals)
+                rec.iter()
                     .map(|(col, val)| {
-                        let mut repr = repr_value(&val);
+                        let mut repr = repr_value(val);
                         repr.name = Some(col.to_string());
                         repr
                     })
@@ -647,7 +646,7 @@ fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &C
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
-    use nu_protocol::Value;
+    use nu_protocol::{record, Value};
 
     use super::{
         is_table, repr_data, repr_list, repr_record, repr_simple_value, repr_table, DataRowRepr,
@@ -728,19 +727,19 @@ mod tests {
 
     #[test]
     fn data() {
-        let data = Value::test_record(
-            vec!["l", "r", "s", "i"],
-            vec![
-                Value::test_list(vec![
-                    Value::test_string("my"),
-                    Value::test_string("list"),
-                    Value::test_string("elements"),
-                ]),
-                Value::test_record(vec!["a", "b"], vec![Value::test_int(1), Value::test_int(2)]),
-                Value::test_string("some string"),
-                Value::test_int(123),
-            ],
-        );
+        let data = Value::test_record(record! {
+            "l" => Value::test_list(vec![
+                Value::test_string("my"),
+                Value::test_string("list"),
+                Value::test_string("elements"),
+            ]),
+            "r" => Value::test_record(record! {
+                "a" => Value::test_int(1),
+                "b" => Value::test_int(2),
+            }),
+            "s" => Value::test_string("some string"),
+            "i" => Value::test_int(123),
+        });
 
         let result = repr_data(&data, &[]);
         let expected: Vec<DataRowRepr> = vec![
@@ -756,15 +755,26 @@ mod tests {
     fn is_a_table() {
         #[rustfmt::skip]
         let table = Value::test_list(vec![
-            Value::test_record(vec!["a", "b"], vec![Value::test_string("a"), Value::test_int(1)]),
-            Value::test_record(vec!["a", "b"], vec![Value::test_string("a"), Value::test_int(1)]),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
         ]);
         assert_eq!(is_table(&table, &[]), Some(true));
 
         #[rustfmt::skip]
         let not_a_table = Value::test_list(vec![
-            Value::test_record(vec!["a"], vec![Value::test_string("a")]),
-            Value::test_record(vec!["a", "b"], vec![Value::test_string("a"), Value::test_int(1)]),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
         ]);
         assert_eq!(is_table(&not_a_table, &[]), Some(false));
 
@@ -775,8 +785,14 @@ mod tests {
     fn table() {
         #[rustfmt::skip]
         let table = vec![
-            Value::test_record(vec!["a", "b"], vec![Value::test_string("x"), Value::test_int(1)]),
-            Value::test_record(vec!["a", "b"], vec![Value::test_string("y"), Value::test_int(2)]),
+            Value::test_record(record! {
+                "a" => Value::test_string("x"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("y"),
+                "b" => Value::test_int(2),
+            }),
         ];
 
         let expected = (

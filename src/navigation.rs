@@ -62,21 +62,21 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
             };
             app.cell_path.members.push(new);
         }
-        Ok(Value::Record { cols, .. }) => {
+        Ok(Value::Record { val: rec, .. }) => {
             let new = match current {
                 Some(PathMember::String {
                     val,
                     span,
                     optional,
                 }) => PathMember::String {
-                    val: if cols.is_empty() {
+                    val: if rec.cols.is_empty() {
                         "".into()
                     } else {
-                        let index = cols.iter().position(|x| x == &val).unwrap() as i32;
-                        let len = cols.len() as i32;
+                        let index = rec.cols.iter().position(|x| x == &val).unwrap() as i32;
+                        let len = rec.cols.len() as i32;
                         let new_index = (index + direction + len) % len;
 
-                        cols[new_index as usize].clone()
+                        rec.cols[new_index as usize].clone()
                     },
                     span,
                     optional,
@@ -107,10 +107,10 @@ pub(super) fn go_deeper_in_data(app: &mut App, input: &Value) {
             span: Span::unknown(),
             optional: vals.is_empty(),
         }),
-        Ok(Value::Record { cols, .. }) => app.cell_path.members.push(PathMember::String {
-            val: cols.get(0).unwrap_or(&"".to_string()).into(),
+        Ok(Value::Record { val: rec, .. }) => app.cell_path.members.push(PathMember::String {
+            val: rec.cols.get(0).unwrap_or(&"".to_string()).into(),
             span: Span::unknown(),
-            optional: cols.is_empty(),
+            optional: rec.cols.is_empty(),
         }),
         Err(_) => panic!("unexpected error when following cell path"),
         _ => app.hit_bottom(),
@@ -119,7 +119,7 @@ pub(super) fn go_deeper_in_data(app: &mut App, input: &Value) {
 
 /// pop one level of depth from the data
 ///
-/// > :bulb: **Note**
+/// > :bulb: **Note**  
 /// > - the state is always marked as *not at the bottom*
 /// > - the state *cell path* can have it's last member popped if possible
 pub(super) fn go_back_in_data(app: &mut App) {
@@ -132,10 +132,9 @@ pub(super) fn go_back_in_data(app: &mut App) {
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
-    use nu_protocol::{ast::PathMember, Span, Value};
-
     use super::{go_back_in_data, go_deeper_in_data, go_up_or_down_in_data, Direction};
     use crate::app::App;
+    use nu_protocol::{ast::PathMember, record, Span, Value};
 
     fn test_string_pathmember(val: impl Into<String>) -> PathMember {
         PathMember::String {
@@ -179,14 +178,11 @@ mod tests {
 
     #[test]
     fn go_up_and_down_in_record() {
-        let value = Value::test_record(
-            vec!["a", "b", "c"],
-            vec![
-                Value::test_nothing(),
-                Value::test_nothing(),
-                Value::test_nothing(),
-            ],
-        );
+        let value = Value::test_record(record! {
+            "a" => Value::test_nothing(),
+            "b" => Value::test_nothing(),
+            "c" => Value::test_nothing(),
+        });
         let mut app = App::from_value(&value);
 
         let sequence = vec![
@@ -206,10 +202,9 @@ mod tests {
 
     #[test]
     fn go_deeper() {
-        let value = Value::test_list(vec![Value::test_record(
-            vec!["a"],
-            vec![Value::test_list(vec![Value::test_nothing()])],
-        )]);
+        let value = Value::test_list(vec![Value::test_record(record! {
+            "a" => Value::test_list(vec![Value::test_nothing()]),
+        })]);
         let mut app = App::from_value(&value);
 
         let mut expected = vec![test_int_pathmember(0)];
@@ -237,10 +232,9 @@ mod tests {
 
     #[test]
     fn go_back() {
-        let value = Value::test_list(vec![Value::test_record(
-            vec!["a"],
-            vec![Value::test_list(vec![Value::test_nothing()])],
-        )]);
+        let value = Value::test_list(vec![Value::test_record(record! {
+            "a" => Value::test_list(vec![Value::test_nothing()]),
+        })]);
         let mut app = App::from_value(&value);
         app.cell_path.members = vec![
             test_int_pathmember(0),

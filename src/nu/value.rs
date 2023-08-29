@@ -1,7 +1,7 @@
 //! TODO: documentation
 use nu_protocol::{
     ast::{CellPath, PathMember},
-    Span, Value,
+    Record, Span, Value,
 };
 
 /// TODO: documentation
@@ -36,19 +36,24 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
 
             Value::list(vals, Span::unknown())
         }
-        Value::Record { cols, vals, .. } => {
+        Value::Record { val: rec, .. } => {
             let col = match first {
                 PathMember::String { val, .. } => val.clone(),
                 _ => panic!("first cell path element should be an string"),
             };
             cell_path.members.remove(0);
 
-            let id = cols.iter().position(|x| *x == col).unwrap_or(0);
+            let id = rec.cols.iter().position(|x| *x == col).unwrap_or(0);
 
-            let mut vals = vals.clone();
+            let mut vals = rec.vals.clone();
             vals[id] = mutate_value_cell(&vals[id], &cell_path, val);
 
-            Value::record(cols.to_vec(), vals, Span::unknown())
+            let mut record = Record::new();
+            rec.cols.iter().zip(vals).for_each(|(col, val)| {
+                record.push(col, val);
+            });
+
+            Value::record(record, Span::unknown())
         }
         _ => val.clone(),
     }
@@ -56,10 +61,9 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
 
 #[cfg(test)]
 mod tests {
-    use nu_protocol::{ast::CellPath, Value};
-
     use super::mutate_value_cell;
     use crate::nu::cell_path::{to_path_member_vec, PM};
+    use nu_protocol::{ast::CellPath, record, Value};
 
     #[test]
     fn value_mutation() {
@@ -68,10 +72,11 @@ mod tests {
             Value::test_int(2),
             Value::test_int(3),
         ]);
-        let record = Value::test_record(
-            vec!["a", "b", "c"],
-            vec![Value::test_int(1), Value::test_int(2), Value::test_int(3)],
-        );
+        let record = Value::test_record(record! {
+            "a" => Value::test_int(1),
+            "b" => Value::test_int(2),
+            "c" => Value::test_int(3),
+        });
 
         let cases = vec![
             // simple value -> simple value
@@ -125,24 +130,22 @@ mod tests {
                 record.clone(),
                 vec![PM::S("a")],
                 Value::test_nothing(),
-                Value::test_record(
-                    vec!["a", "b", "c"],
-                    vec![
-                        Value::test_nothing(),
-                        Value::test_int(2),
-                        Value::test_int(3),
-                    ],
-                ),
+                Value::test_record(record! {
+                    "a" => Value::test_nothing(),
+                    "b" => Value::test_int(2),
+                    "c" => Value::test_int(3),
+                }),
             ),
             // mutate a record field with a complex value
             (
                 record.clone(),
                 vec![PM::S("c")],
                 list.clone(),
-                Value::test_record(
-                    vec!["a", "b", "c"],
-                    vec![Value::test_int(1), Value::test_int(2), list.clone()],
-                ),
+                Value::test_record(record! {
+                    "a" => Value::test_int(1),
+                    "b" => Value::test_int(2),
+                    "c" => list.clone(),
+                }),
             ),
             // mutate a deeply-nested list element
             (
@@ -157,28 +160,22 @@ mod tests {
             ),
             // mutate a deeply-nested record field
             (
-                Value::test_record(
-                    vec!["a"],
-                    vec![Value::test_record(
-                        vec!["b"],
-                        vec![Value::test_record(
-                            vec!["c"],
-                            vec![Value::test_string("foo")],
-                        )],
-                    )],
-                ),
+                Value::test_record(record! {
+                    "a" => Value::test_record(record! {
+                        "b" => Value::test_record(record! {
+                            "c" => Value::test_string("foo"),
+                        }),
+                    }),
+                }),
                 vec![PM::S("a"), PM::S("b"), PM::S("c")],
                 Value::test_string("bar"),
-                Value::test_record(
-                    vec!["a"],
-                    vec![Value::test_record(
-                        vec!["b"],
-                        vec![Value::test_record(
-                            vec!["c"],
-                            vec![Value::test_string("bar")],
-                        )],
-                    )],
-                ),
+                Value::test_record(record! {
+                    "a" => Value::test_record(record! {
+                        "b" => Value::test_record(record! {
+                            "c" => Value::test_string("bar"),
+                        }),
+                    }),
+                }),
             ),
         ];
 

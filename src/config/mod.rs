@@ -228,7 +228,7 @@ impl Config {
                 }
                 "colors" => {
                     let (columns, span) = match follow_cell_path(&value, &["colors"]).unwrap() {
-                        Value::Record { cols, span, .. } => (cols, span),
+                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                         x => return Err(invalid_type(&x, &["colors"], "record")),
                     };
 
@@ -241,7 +241,7 @@ impl Config {
                                 )
                                 .unwrap()
                                 {
-                                    Value::Record { cols, span, .. } => (cols, span),
+                                    Value::Record { val: rec, span, .. } => (rec.cols, span),
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -317,7 +317,7 @@ impl Config {
                                     match follow_cell_path(&value, &["colors", "status_bar"])
                                         .unwrap()
                                     {
-                                        Value::Record { cols, span, .. } => (cols, span),
+                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                                         x => {
                                             return Err(invalid_type(
                                                 &x,
@@ -381,7 +381,7 @@ impl Config {
                                 )
                                 .unwrap()
                                 {
-                                    Value::Record { cols, span, .. } => (cols, span),
+                                    Value::Record { val: rec, span, .. } => (rec.cols, span),
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -427,7 +427,7 @@ impl Config {
                 "keybindings" => {
                     let (columns, span) = match follow_cell_path(&value, &["keybindings"]).unwrap()
                     {
-                        Value::Record { cols, span, .. } => (cols, span),
+                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                         x => return Err(invalid_type(&x, &["keybindings"], "record")),
                     };
 
@@ -453,7 +453,7 @@ impl Config {
                                     match follow_cell_path(&value, &["keybindings", "navigation"])
                                         .unwrap()
                                     {
-                                        Value::Record { cols, span, .. } => (cols, span),
+                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                                         x => {
                                             return Err(invalid_type(
                                                 &x,
@@ -516,7 +516,7 @@ impl Config {
                                     match follow_cell_path(&value, &["keybindings", "peeking"])
                                         .unwrap()
                                     {
-                                        Value::Record { cols, span, .. } => (cols, span),
+                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                                         x => {
                                             return Err(invalid_type(
                                                 &x,
@@ -572,7 +572,7 @@ impl Config {
                         }
                     }
                 }
-                x => return Err(invalid_field(&[x], value.span().ok())),
+                x => return Err(invalid_field(&[x], Some(value.span()))),
             }
         }
 
@@ -600,7 +600,7 @@ pub fn repr_keycode(keycode: &KeyCode) -> String {
 #[cfg(test)]
 mod tests {
     use crossterm::event::KeyCode;
-    use nu_protocol::Value;
+    use nu_protocol::{record, Record, Value};
 
     use super::{repr_keycode, Config};
 
@@ -623,25 +623,27 @@ mod tests {
 
     #[test]
     fn parse_empty_config() {
-        let cols: Vec<&str> = vec![];
         assert_eq!(
-            Config::from_value(Value::test_record(cols, vec![])),
+            Config::from_value(Value::test_record(Record::new())),
             Ok(Config::default())
         );
     }
 
     #[test]
     fn parse_config_with_invalid_field() {
-        let value = Value::test_record(vec!["x"], vec![Value::test_nothing()]);
+        let value = Value::test_record(record! {
+            "x" => Value::test_nothing()
+        });
         let result = Config::from_value(value);
         assert!(result.is_err());
         let error = result.err().unwrap();
         assert!(error.msg.contains("not a valid config field"));
 
-        let value = Value::test_record(
-            vec!["colors"],
-            vec![Value::test_record(vec!["foo"], vec![Value::test_nothing()])],
-        );
+        let value = Value::test_record(record! {
+            "colors" => Value::test_record(record! {
+                "foo" => Value::test_nothing()
+            })
+        });
         let result = Config::from_value(value);
         assert!(result.is_err());
         let error = result.err().unwrap();
@@ -650,24 +652,26 @@ mod tests {
 
     #[test]
     fn parse_config() {
-        let value = Value::test_record(vec!["show_cell_path"], vec![Value::test_bool(true)]);
+        let value = Value::test_record(record! {
+            "show_cell_path" => Value::test_bool(true)
+        });
         assert_eq!(Config::from_value(value), Ok(Config::default()));
 
-        let value = Value::test_record(vec!["show_cell_path"], vec![Value::test_bool(false)]);
+        let value = Value::test_record(record! {
+            "show_cell_path" => Value::test_bool(false)
+        });
         let mut expected = Config::default();
         expected.show_cell_path = false;
         assert_eq!(Config::from_value(value), Ok(expected));
 
-        let value = Value::test_record(
-            vec!["keybindings"],
-            vec![Value::test_record(
-                vec!["navigation"],
-                vec![Value::test_record(
-                    vec!["up"],
-                    vec![Value::test_string("x")],
-                )],
-            )],
-        );
+        let value = Value::test_record(record! {
+            "keybindings" => Value::test_record(record!{
+                "navigation" => Value::test_record(record!{
+                    "up" => Value::test_string("x")
+                })
+            }),
+        });
+
         let mut expected = Config::default();
         expected.keybindings.navigation.up = KeyCode::Char('x');
         assert_eq!(Config::from_value(value), Ok(expected));

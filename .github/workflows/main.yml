@@ -8,7 +8,6 @@ name: continuous-integration
 
 env:
   CLIPPY_OPTIONS: "-D warnings"
-  NU_VERSION: "0.84.0"
 
 jobs:
   fmt-check-clippy:
@@ -27,8 +26,8 @@ jobs:
 
       - name: Setup dependencies
         run: |
-          cargo add "nu-plugin@$NU_VERSION"
-          cargo add "nu-protocol@$NU_VERSION" --features plugin
+          git clone https://github.com/nushell/nushell
+          make NUSHELL_PATH=nushell dev-deps
         shell: bash
 
       - name: Check the library
@@ -58,8 +57,8 @@ jobs:
 
       - name: Setup dependencies
         run: |
-          cargo add "nu-plugin@$NU_VERSION"
-          cargo add "nu-protocol@$NU_VERSION" --features plugin
+          git clone https://github.com/nushell/nushell
+          make NUSHELL_PATH=nushell dev-deps
         shell: bash
 
       - name: Tests

@@ -16,7 +16,7 @@ use ratatui::Terminal;
 use std::io;
 
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{ShellError, Span, Value};
+use nu_protocol::{Record, ShellError, Span, Value};
 
 use app::{App, Mode};
 use config::Config;
@@ -41,7 +41,7 @@ use tui::Tui;
 /// 1. renders the TUI with [`tui`]
 /// 1. reads the user's input keys and transition the [`App`] accordingly
 pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
-    let empty_custom_config = Value::record(vec![], vec![], Span::unknown());
+    let empty_custom_config = Value::record(Record::new(), Span::unknown());
     let config = match Config::from_value(call.opt(0).unwrap().unwrap_or(empty_custom_config)) {
         Ok(cfg) => cfg,
         Err(err) => return Err(ShellError::from(err).into()),

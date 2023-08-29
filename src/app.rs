@@ -69,10 +69,10 @@ impl App {
                 span: Span::unknown(),
                 optional: vals.is_empty(),
             }),
-            Value::Record { cols, .. } => app.cell_path.members.push(PathMember::String {
-                val: cols.get(0).unwrap_or(&"".to_string()).into(),
+            Value::Record { val: rec, .. } => app.cell_path.members.push(PathMember::String {
+                val: rec.cols.get(0).unwrap_or(&"".to_string()).into(),
                 span: Span::unknown(),
-                optional: cols.is_empty(),
+                optional: rec.cols.is_empty(),
             }),
             _ => {}
         }

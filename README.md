@@ -38,17 +38,34 @@ will come very handy in a day-to-day basis for me at least :)
 so here we are... LET'S GO :muscle:
 
 # installation
+## requirements
+> **Note**  
+> this is the development version of `nu_plugin_explore`, thus it does not require Nushell to be
+> installed with a stable version.
+
+let's setup the Nushell dependencies locally, because `nu-plugin` and `nu-protocol` are not release
+in version `0.xx.1`, only the stable `0.xx.0` :open_mouth:
+
+- clone the [Nushell repository][nushell/nushell] somewhere
+- setup the dependencies
+```shell
+make NUSHELL_PATH=/path/to/nushell/ dev-deps
+```
+
 there are three ways to do it:
 ## building from source
 - build the plugin
-```nushell
-cargo build --release
+```shell
+make build
 ```
 - register the plugin in [Nushell]
 ```nushell
-register target/release/nu_plugin_explore
+make register
 ```
 - do not forget to restart [Nushell]
+
+> **Note**  
+> alternatively, you can use directly `make install`
 
 ## installing manually
 - define the install root, e.g. `$env.CARGO_HOME` or `/some/where/plugins/`
@@ -228,6 +245,7 @@ in order to help, you can have a look at
 - [ ] write better error messages when some test fails
 
 [Nushell]: https://nushell.sh
+[nushell/nushell]: https://github.com/nushell/nushell
 [`nu-explore`]: https://crates.io/crates/nu-explore
 
 [`nu-plugin`]: https://crates.io/crates/nu-plugin

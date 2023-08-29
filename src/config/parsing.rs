@@ -54,7 +54,7 @@ pub fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) -> Labele
             cell_path.join("."),
             value.get_type()
         ),
-        span: value.span().ok(),
+        span: Some(value.span()),
     }
 }
 
@@ -105,7 +105,7 @@ pub fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<Modifier
                     cell_path.join("."),
                     x
                 ),
-                span: value.span().ok(),
+                span: Some(value.span()),
             }),
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string or null")),
@@ -141,7 +141,7 @@ pub fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, Lab
                     cell_path.join("."),
                     x
                 ),
-                span: value.span().ok(),
+                span: Some(value.span()),
             }),
         },
         Some(Value::Int { val, .. }) => {
@@ -173,7 +173,7 @@ pub fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, Lab
                 match val {
                     Value::Int { val: x, .. } => {
                         if (*x < 0) | (*x > 255) {
-                            return Err(u8_out_of_range(*x, &cell_path, val.span().ok()));
+                            return Err(u8_out_of_range(*x, &cell_path, Some(val.span())));
                         }
 
                         channels.push(*x as u8);
@@ -198,7 +198,7 @@ pub fn try_fg_bg_colors(
     default: &BgFgColorConfig,
 ) -> Result<Option<BgFgColorConfig>, LabeledError> {
     let (columns, span) = match follow_cell_path(value, cell_path).unwrap() {
-        Value::Record { cols, span, .. } => (cols, span),
+        Value::Record { val: rec, span, .. } => (rec.cols, span),
         x => return Err(invalid_type(&x, cell_path, "record")),
     };
 
@@ -249,7 +249,7 @@ pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCode>, Lab
                             cell_path.join("."),
                             x
                         ),
-                        span: value.span().ok(),
+                        span: Some(value.span()),
                     });
                 }
 
@@ -275,7 +275,7 @@ pub fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Layout>, L
                     cell_path.join("."),
                     x
                 ),
-                span: value.span().ok(),
+                span: Some(value.span()),
             }),
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
@@ -317,7 +317,7 @@ pub fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Value> {
 mod tests {
     use crossterm::event::KeyCode;
     use nu_plugin::LabeledError;
-    use nu_protocol::Value;
+    use nu_protocol::{record, Record, Value};
     use ratatui::style::{Color, Modifier};
 
     use super::{
@@ -330,17 +330,18 @@ mod tests {
     fn follow_str_cell_path() {
         let inner_record_a = Value::test_int(1);
         let inner_record_b = Value::test_int(2);
-        let record = Value::test_record(
-            vec!["a", "b"],
-            vec![inner_record_a.clone(), inner_record_b.clone()],
-        );
+        let record = Value::test_record(record! {
+            "a" => inner_record_a.clone(),
+            "b" => inner_record_b.clone(),
+        });
         let string = Value::test_string("some string");
         let int = Value::test_int(123);
 
-        let value = Value::test_record(
-            vec!["r", "s", "i"],
-            vec![record.clone(), string.clone(), int.clone()],
-        );
+        let value = Value::test_record(record! {
+            "r" => record.clone(),
+            "s" => string.clone(),
+            "i" => int.clone(),
+        });
 
         assert_eq!(follow_cell_path(&value, &[]), Some(value.clone()));
         assert_eq!(follow_cell_path(&value, &["r"]), Some(record));
@@ -591,7 +592,9 @@ mod tests {
         );
         test_tried_error(
             try_fg_bg_colors(
-                &Value::test_record(vec!["x"], vec![Value::test_nothing()]),
+                &Value::test_record(record! {
+                    "x" => Value::test_nothing(),
+                }),
                 &[],
                 &default_color,
             ),
@@ -628,8 +631,12 @@ mod tests {
         ];
 
         for (cols, vals, expected) in cases {
+            let mut rec = Record::new();
+            cols.iter().zip(vals).for_each(|(col, val)| {
+                rec.push(*col, val);
+            });
             assert_eq!(
-                try_fg_bg_colors(&Value::test_record(cols, vals), &[], &default_color),
+                try_fg_bg_colors(&Value::test_record(rec), &[], &default_color),
                 Ok(Some(expected))
             );
         }
