@@ -1,10 +1,10 @@
 //! navigate in the data in all directions
 use nu_protocol::{ast::PathMember, Span, Value};
 
-use super::app::{App, Mode};
+use crate::app::{App, Mode};
 
 /// specify a vertical direction in which to go in the data
-pub(super) enum Direction {
+pub enum Direction {
     /// go one row down in the data
     Down,
     /// go one row up in the data

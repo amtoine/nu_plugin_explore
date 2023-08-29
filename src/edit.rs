@@ -1,15 +1,16 @@
-use console::Key;
-use nu_protocol::{Span, Value};
+use crossterm::event::KeyCode;
 use ratatui::{
-    prelude::{CrosstermBackend, Rect},
+    prelude::{Backend, Rect},
     style::Style,
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
     Frame,
 };
 
+use nu_protocol::{Span, Value};
+
 use crate::config::Config;
 
-pub(super) struct Editor {
+pub struct Editor {
     pub buffer: String,
     cursor_position: (usize, usize),
     width: usize,
@@ -118,34 +119,30 @@ impl Editor {
     }
 
     /// TODO: documentation
-    pub(super) fn handle_key(&mut self, key: &Key) -> Option<Option<Value>> {
+    pub(super) fn handle_key(&mut self, key: &KeyCode) -> Option<Option<Value>> {
         match key {
-            Key::ArrowLeft => self.move_cursor_left(),
-            Key::ArrowRight => self.move_cursor_right(),
-            Key::ArrowUp => self.move_cursor_up(),
-            Key::ArrowDown => self.move_cursor_down(),
-            Key::Char(c) => self.enter_char(*c),
-            Key::Backspace => self.delete_char_before_cursor(),
-            Key::Del => self.delete_char_under_cursor(),
-            Key::Enter => {
+            KeyCode::Left => self.move_cursor_left(),
+            KeyCode::Right => self.move_cursor_right(),
+            KeyCode::Up => self.move_cursor_up(),
+            KeyCode::Down => self.move_cursor_down(),
+            KeyCode::Char(c) => self.enter_char(*c),
+            KeyCode::Backspace => self.delete_char_before_cursor(),
+            KeyCode::Delete => self.delete_char_under_cursor(),
+            KeyCode::Enter => {
                 let val = Value::String {
                     val: self.buffer.clone(),
                     span: Span::unknown(),
                 };
                 return Some(Some(val));
             }
-            Key::Escape => return Some(None),
+            KeyCode::Esc => return Some(None),
             _ => {}
         }
 
         None
     }
 
-    pub(super) fn render(
-        &self,
-        frame: &mut Frame<CrosstermBackend<console::Term>>,
-        config: &Config,
-    ) {
+    pub(super) fn render<B: Backend>(&self, frame: &mut Frame<'_, B>, config: &Config) {
         let title = "Editor";
 
         let block = Paragraph::new(self.buffer.as_str())
@@ -186,7 +183,7 @@ impl Editor {
 
 #[cfg(test)]
 mod tests {
-    use console::Key;
+    use crossterm::event::KeyCode;
     use nu_protocol::Value;
 
     use super::Editor;
@@ -197,58 +194,58 @@ mod tests {
         editor.set_width(10 + 2);
 
         let strokes = vec![
-            (Key::Enter, "", Some(Some(Value::test_string("")))),
-            (Key::Char('a'), "a", None),
-            (Key::Char('b'), "ab", None),
-            (Key::Char('c'), "abc", None),
-            (Key::Char('d'), "abcd", None),
-            (Key::Char('e'), "abcde", None),
-            (Key::ArrowLeft, "abcde", None),
-            (Key::Char('f'), "abcdfe", None),
-            (Key::ArrowLeft, "abcdfe", None),
-            (Key::ArrowLeft, "abcdfe", None),
-            (Key::Char('g'), "abcgdfe", None),
-            (Key::ArrowRight, "abcgdfe", None),
-            (Key::ArrowRight, "abcgdfe", None),
-            (Key::ArrowRight, "abcgdfe", None),
-            (Key::ArrowUp, "abcgdfe", None),
-            (Key::ArrowDown, "abcgdfe", None),
-            (Key::Char('h'), "abcgdfeh", None),
-            (Key::Char('i'), "abcgdfehi", None),
-            (Key::Char('j'), "abcgdfehij", None),
-            (Key::Char('k'), "abcgdfehijk", None),
-            (Key::Char('l'), "abcgdfehijkl", None),
-            (Key::ArrowUp, "abcgdfehijkl", None),
-            (Key::Char('m'), "abmcgdfehijkl", None),
-            (Key::ArrowDown, "abmcgdfehijkl", None),
-            (Key::ArrowLeft, "abmcgdfehijkl", None),
-            (Key::Char('n'), "abmcgdfehijknl", None),
-            (Key::ArrowLeft, "abmcgdfehijknl", None),
-            (Key::ArrowLeft, "abmcgdfehijknl", None),
-            (Key::ArrowLeft, "abmcgdfehijknl", None),
-            (Key::ArrowLeft, "abmcgdfehijknl", None),
-            (Key::ArrowLeft, "abmcgdfehijknl", None),
-            (Key::Char('o'), "abmcgdfeohijknl", None),
-            (Key::ArrowRight, "abmcgdfeohijknl", None),
-            (Key::ArrowRight, "abmcgdfeohijknl", None),
+            (KeyCode::Enter, "", Some(Some(Value::test_string("")))),
+            (KeyCode::Char('a'), "a", None),
+            (KeyCode::Char('b'), "ab", None),
+            (KeyCode::Char('c'), "abc", None),
+            (KeyCode::Char('d'), "abcd", None),
+            (KeyCode::Char('e'), "abcde", None),
+            (KeyCode::Left, "abcde", None),
+            (KeyCode::Char('f'), "abcdfe", None),
+            (KeyCode::Left, "abcdfe", None),
+            (KeyCode::Left, "abcdfe", None),
+            (KeyCode::Char('g'), "abcgdfe", None),
+            (KeyCode::Right, "abcgdfe", None),
+            (KeyCode::Right, "abcgdfe", None),
+            (KeyCode::Right, "abcgdfe", None),
+            (KeyCode::Up, "abcgdfe", None),
+            (KeyCode::Down, "abcgdfe", None),
+            (KeyCode::Char('h'), "abcgdfeh", None),
+            (KeyCode::Char('i'), "abcgdfehi", None),
+            (KeyCode::Char('j'), "abcgdfehij", None),
+            (KeyCode::Char('k'), "abcgdfehijk", None),
+            (KeyCode::Char('l'), "abcgdfehijkl", None),
+            (KeyCode::Up, "abcgdfehijkl", None),
+            (KeyCode::Char('m'), "abmcgdfehijkl", None),
+            (KeyCode::Down, "abmcgdfehijkl", None),
+            (KeyCode::Left, "abmcgdfehijkl", None),
+            (KeyCode::Char('n'), "abmcgdfehijknl", None),
+            (KeyCode::Left, "abmcgdfehijknl", None),
+            (KeyCode::Left, "abmcgdfehijknl", None),
+            (KeyCode::Left, "abmcgdfehijknl", None),
+            (KeyCode::Left, "abmcgdfehijknl", None),
+            (KeyCode::Left, "abmcgdfehijknl", None),
+            (KeyCode::Char('o'), "abmcgdfeohijknl", None),
+            (KeyCode::Right, "abmcgdfeohijknl", None),
+            (KeyCode::Right, "abmcgdfeohijknl", None),
             (
-                Key::Enter,
+                KeyCode::Enter,
                 "abmcgdfeohijknl",
                 Some(Some(Value::test_string("abmcgdfeohijknl"))),
             ),
-            (Key::ArrowRight, "abmcgdfeohijknl", None),
-            (Key::ArrowRight, "abmcgdfeohijknl", None),
-            (Key::Char('p'), "abmcgdfeohijkpnl", None),
-            (Key::Backspace, "abmcgdfeohijknl", None),
-            (Key::Backspace, "abmcgdfeohijnl", None),
-            (Key::Backspace, "abmcgdfeohinl", None),
-            (Key::ArrowUp, "abmcgdfeohinl", None),
-            (Key::Del, "amcgdfeohinl", None),
-            (Key::Del, "acgdfeohinl", None),
-            (Key::Del, "agdfeohinl", None),
-            (Key::Escape, "agdfeohinl", Some(None)),
+            (KeyCode::Right, "abmcgdfeohijknl", None),
+            (KeyCode::Right, "abmcgdfeohijknl", None),
+            (KeyCode::Char('p'), "abmcgdfeohijkpnl", None),
+            (KeyCode::Backspace, "abmcgdfeohijknl", None),
+            (KeyCode::Backspace, "abmcgdfeohijnl", None),
+            (KeyCode::Backspace, "abmcgdfeohinl", None),
+            (KeyCode::Up, "abmcgdfeohinl", None),
+            (KeyCode::Delete, "amcgdfeohinl", None),
+            (KeyCode::Delete, "acgdfeohinl", None),
+            (KeyCode::Delete, "agdfeohinl", None),
+            (KeyCode::Esc, "agdfeohinl", Some(None)),
             (
-                Key::Enter,
+                KeyCode::Enter,
                 "agdfeohinl",
                 Some(Some(Value::test_string("agdfeohinl"))),
             ),

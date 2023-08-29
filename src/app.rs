@@ -1,5 +1,4 @@
 //! the higher level application
-
 use nu_protocol::{
     ast::{CellPath, PathMember},
     Span, Value,
@@ -9,7 +8,7 @@ use crate::edit::Editor;
 
 /// the mode in which the application is
 #[derive(Clone, Debug, PartialEq)]
-pub(super) enum Mode {
+pub enum Mode {
     /// the NORMAL mode is the *navigation* mode, where the user can move around in the data
     Normal,
     /// the INSERT mode lets the user edit cells of the structured data
@@ -39,7 +38,7 @@ impl std::fmt::Display for Mode {
 }
 
 /// the complete state of the application
-pub(super) struct App {
+pub struct App {
     /// the full current path in the data
     pub cell_path: CellPath,
     /// the current [`Mode`]
@@ -59,6 +58,9 @@ impl Default for App {
 }
 
 impl App {
+    /// Handles the tick event of the terminal.
+    pub fn tick(&self) {}
+
     pub(super) fn from_value(value: &Value) -> Self {
         let mut app = Self::default();
         match value {
@@ -79,12 +81,12 @@ impl App {
     }
 
     /// TODO: documentation
-    pub(super) fn is_at_bottom(&self) -> bool {
+    pub fn is_at_bottom(&self) -> bool {
         matches!(self.mode, Mode::Bottom)
     }
 
     /// TODO: documentation
-    pub(super) fn hit_bottom(&mut self) {
+    pub fn hit_bottom(&mut self) {
         self.mode = Mode::Bottom;
     }
 

@@ -1,6 +1,6 @@
 //! utilities to parse a [`Value`](https://docs.rs/nu-protocol/0.83.1/nu_protocol/enum.Value.html)
 //! into a configuration
-use console::Key;
+use crossterm::event::KeyCode;
 use ratatui::style::{Color, Modifier};
 
 use nu_plugin::LabeledError;
@@ -23,7 +23,7 @@ use super::{BgFgColorConfig, Layout};
 ///    ·              ╰── `$.foo` is not a valid config field
 ///    ╰────
 /// ```
-pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledError {
+pub fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledError {
     LabeledError {
         label: "invalid config".into(),
         msg: format!("`$.{}` is not a valid config field", cell_path.join("."),),
@@ -46,7 +46,7 @@ pub(super) fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledEr
 ///    ·                   ╰── `$.layout` should be a string, found int
 ///    ╰────
 /// ```
-pub(super) fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) -> LabeledError {
+pub fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) -> LabeledError {
     LabeledError {
         label: "invalid config".into(),
         msg: format!(
@@ -71,7 +71,7 @@ fn u8_out_of_range(value: i64, cell_path: &[&str], span: Option<Span>) -> Labele
 }
 
 /// try to parse a bool in the *value* at the given *cell path*
-pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>, LabeledError> {
+pub fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::Bool { val, .. }) => Ok(Some(val)),
         Some(x) => Err(invalid_type(&x, cell_path, "bool")),
@@ -80,10 +80,7 @@ pub(super) fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>
 }
 
 /// try to parse a string in the *value* at the given *cell path*
-pub(super) fn try_string(
-    value: &Value,
-    cell_path: &[&str],
-) -> Result<Option<String>, LabeledError> {
+pub fn try_string(value: &Value, cell_path: &[&str]) -> Result<Option<String>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => Ok(Some(val)),
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
@@ -92,10 +89,7 @@ pub(super) fn try_string(
 }
 
 /// try to parse an ANSI modifier in the *value* at the given *cell path*
-pub(super) fn try_modifier(
-    value: &Value,
-    cell_path: &[&str],
-) -> Result<Option<Modifier>, LabeledError> {
+pub fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<Modifier>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::Nothing { .. }) => Ok(Some(Modifier::empty())),
         Some(Value::String { val, .. }) => match val.as_str() {
@@ -120,7 +114,7 @@ pub(super) fn try_modifier(
 }
 
 /// try to parse a color in the *value* at the given *cell path*
-pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, LabeledError> {
+pub fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
             "reset" => Ok(Some(Color::Reset)),
@@ -198,7 +192,7 @@ pub(super) fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Colo
 }
 
 /// try to parse a background / foreground color pair in the *value* at the given *cell path*
-pub(super) fn try_fg_bg_colors(
+pub fn try_fg_bg_colors(
     value: &Value,
     cell_path: &[&str],
     default: &BgFgColorConfig,
@@ -238,14 +232,14 @@ pub(super) fn try_fg_bg_colors(
 }
 
 /// try to parse a key in the *value* at the given *cell path*
-pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, LabeledError> {
+pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCode>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
-            "up" => Ok(Some(Key::ArrowUp)),
-            "down" => Ok(Some(Key::ArrowDown)),
-            "left" => Ok(Some(Key::ArrowLeft)),
-            "right" => Ok(Some(Key::ArrowRight)),
-            "escape" => Ok(Some(Key::Escape)),
+            "up" => Ok(Some(KeyCode::Up)),
+            "down" => Ok(Some(KeyCode::Down)),
+            "left" => Ok(Some(KeyCode::Left)),
+            "right" => Ok(Some(KeyCode::Right)),
+            "escape" => Ok(Some(KeyCode::Esc)),
             x => {
                 if x.len() != 1 {
                     return Err(LabeledError {
@@ -260,7 +254,7 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, 
                 }
 
                 #[allow(clippy::iter_nth_zero)]
-                Ok(Some(Key::Char(x.to_string().chars().nth(0).unwrap())))
+                Ok(Some(KeyCode::Char(x.to_string().chars().nth(0).unwrap())))
             }
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
@@ -269,10 +263,7 @@ pub(super) fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<Key>, 
 }
 
 /// try to parse a layout in the *value* at the given *cell path*
-pub(super) fn try_layout(
-    value: &Value,
-    cell_path: &[&str],
-) -> Result<Option<Layout>, LabeledError> {
+pub fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Layout>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
             "table" => Ok(Some(Layout::Table)),
@@ -308,7 +299,7 @@ pub(super) fn try_layout(
 ///     }
 /// }
 /// ```
-pub(super) fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Value> {
+pub fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Value> {
     let cell_path = cell_path
         .iter()
         .map(|cp| PathMember::String {
@@ -324,7 +315,7 @@ pub(super) fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Valu
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
-    use console::Key;
+    use crossterm::event::KeyCode;
     use nu_plugin::LabeledError;
     use nu_protocol::{record, Record, Value};
     use ratatui::style::{Color, Modifier};
@@ -433,14 +424,14 @@ mod tests {
         );
 
         let cases = vec![
-            ("up", Key::ArrowUp),
-            ("down", Key::ArrowDown),
-            ("left", Key::ArrowLeft),
-            ("right", Key::ArrowRight),
-            ("escape", Key::Escape),
-            ("a", Key::Char('a')),
-            ("b", Key::Char('b')),
-            ("x", Key::Char('x')),
+            ("up", KeyCode::Up),
+            ("down", KeyCode::Down),
+            ("left", KeyCode::Left),
+            ("right", KeyCode::Right),
+            ("escape", KeyCode::Esc),
+            ("a", KeyCode::Char('a')),
+            ("b", KeyCode::Char('b')),
+            ("x", KeyCode::Char('x')),
         ];
 
         for (input, expected) in cases {

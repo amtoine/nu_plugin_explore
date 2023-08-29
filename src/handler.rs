@@ -1,14 +1,16 @@
+use crossterm::event::KeyEvent;
+
+use nu_protocol::{ShellError, Span, Value};
+
 use crate::{
     app::{App, Mode},
     config::Config,
     navigation::{self, Direction},
 };
-use console::Key;
-use nu_protocol::{ShellError, Span, Value};
 
 /// the result of a state transition
 #[derive(Debug, PartialEq)]
-pub(super) enum TransitionResult {
+pub enum TransitionResult {
     Quit,
     Continue,
     Return(Value),
@@ -23,19 +25,19 @@ impl TransitionResult {
     }
 }
 
-/// perform the state transition based on the key pressed and the previous state
+/// Handles the key events and updates the state of [`App`].
 #[allow(clippy::collapsible_if)]
-pub(super) fn transition_state(
-    key: &Key,
-    config: &Config,
+pub fn handle_key_events(
+    key_event: KeyEvent,
     app: &mut App,
+    config: &Config,
     value: &Value,
 ) -> Result<TransitionResult, ShellError> {
     match app.mode {
         Mode::Normal => {
-            if key == &config.keybindings.quit {
+            if key_event.code == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
-            } else if key == &config.keybindings.insert {
+            } else if key_event.code == config.keybindings.insert {
                 let value = &value
                     .clone()
                     .follow_cell_path(&app.cell_path.members, false)
@@ -54,30 +56,30 @@ pub(super) fn transition_state(
                         )))
                     }
                 }
-            } else if key == &config.keybindings.peek {
+            } else if key_event.code == config.keybindings.peek {
                 app.mode = Mode::Peeking;
                 return Ok(TransitionResult::Continue);
-            } else if key == &config.keybindings.navigation.down {
+            } else if key_event.code == config.keybindings.navigation.down {
                 navigation::go_up_or_down_in_data(app, value, Direction::Down);
                 return Ok(TransitionResult::Continue);
-            } else if key == &config.keybindings.navigation.up {
+            } else if key_event.code == config.keybindings.navigation.up {
                 navigation::go_up_or_down_in_data(app, value, Direction::Up);
                 return Ok(TransitionResult::Continue);
-            } else if key == &config.keybindings.navigation.right {
+            } else if key_event.code == config.keybindings.navigation.right {
                 navigation::go_deeper_in_data(app, value);
                 return Ok(TransitionResult::Continue);
-            } else if key == &config.keybindings.navigation.left {
+            } else if key_event.code == config.keybindings.navigation.left {
                 navigation::go_back_in_data(app);
                 return Ok(TransitionResult::Continue);
             }
         }
         Mode::Insert => {
-            if key == &config.keybindings.normal {
+            if key_event.code == config.keybindings.normal {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
             }
 
-            match app.editor.handle_key(key) {
+            match app.editor.handle_key(&key_event.code) {
                 Some(Some(v)) => {
                     app.mode = Mode::Normal;
                     return Ok(TransitionResult::Edit(v));
@@ -90,27 +92,27 @@ pub(super) fn transition_state(
             }
         }
         Mode::Peeking => {
-            if key == &config.keybindings.quit {
+            if key_event.code == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
-            } else if key == &config.keybindings.normal {
+            } else if key_event.code == config.keybindings.normal {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
-            } else if key == &config.keybindings.peeking.all {
+            } else if key_event.code == config.keybindings.peeking.all {
                 return Ok(TransitionResult::Return(value.clone()));
-            } else if key == &config.keybindings.peeking.view {
+            } else if key_event.code == config.keybindings.peeking.view {
                 app.cell_path.members.pop();
                 return Ok(TransitionResult::Return(
                     value
                         .clone()
                         .follow_cell_path(&app.cell_path.members, false)?,
                 ));
-            } else if key == &config.keybindings.peeking.under {
+            } else if key_event.code == config.keybindings.peeking.under {
                 return Ok(TransitionResult::Return(
                     value
                         .clone()
                         .follow_cell_path(&app.cell_path.members, false)?,
                 ));
-            } else if key == &config.keybindings.peeking.cell_path {
+            } else if key_event.code == config.keybindings.peeking.cell_path {
                 return Ok(TransitionResult::Return(Value::cell_path(
                     app.cell_path.clone(),
                     Span::unknown(),
@@ -118,12 +120,12 @@ pub(super) fn transition_state(
             }
         }
         Mode::Bottom => {
-            if key == &config.keybindings.quit {
+            if key_event.code == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
-            } else if key == &config.keybindings.navigation.left {
+            } else if key_event.code == config.keybindings.navigation.left {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
-            } else if key == &config.keybindings.peek {
+            } else if key_event.code == config.keybindings.peek {
                 return Ok(TransitionResult::Return(
                     value
                         .clone()
@@ -138,13 +140,13 @@ pub(super) fn transition_state(
 
 #[cfg(test)]
 mod tests {
-    use console::Key;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use nu_protocol::{
         ast::{CellPath, PathMember},
         record, Span, Value,
     };
 
-    use super::{transition_state, App, TransitionResult};
+    use super::{handle_key_events, App, TransitionResult};
     use crate::{
         app::Mode,
         config::{repr_keycode, Config},
@@ -187,29 +189,35 @@ mod tests {
         // INSERT -> PEEKING: not allowed
         // PEEKING -> INSERT: not allowed
         let transitions = vec![
-            (&keybindings.normal, Mode::Normal),
-            (&keybindings.insert, Mode::Insert),
-            (&keybindings.normal, Mode::Normal),
-            (&keybindings.peek, Mode::Peeking),
-            (&keybindings.normal, Mode::Normal),
+            (keybindings.normal, Mode::Normal),
+            (keybindings.insert, Mode::Insert),
+            (keybindings.normal, Mode::Normal),
+            (keybindings.peek, Mode::Peeking),
+            (keybindings.normal, Mode::Normal),
         ];
 
         for (key, expected_mode) in transitions {
             let mode = app.mode.clone();
 
-            let result = transition_state(&key, &config, &mut app, &value).unwrap();
+            let result = handle_key_events(
+                KeyEvent::new(key, KeyModifiers::empty()),
+                &mut app,
+                &config,
+                &value,
+            )
+            .unwrap();
 
             assert!(
                 !result.is_quit(),
                 "unexpected exit after pressing {} in {}",
-                repr_keycode(key),
+                repr_keycode(&key),
                 mode,
             );
             assert!(
                 app.mode == expected_mode,
                 "expected to be in {} after pressing {} in {}, found {}",
                 expected_mode,
-                repr_keycode(key),
+                repr_keycode(&key),
                 mode,
                 app.mode
             );
@@ -225,31 +233,37 @@ mod tests {
         let value = test_value();
 
         let transitions = vec![
-            (&keybindings.insert, false),
-            (&keybindings.quit, true),
-            (&keybindings.normal, false),
-            (&keybindings.quit, true),
-            (&keybindings.peek, false),
-            (&keybindings.quit, true),
+            (keybindings.insert, false),
+            (keybindings.quit, true),
+            (keybindings.normal, false),
+            (keybindings.quit, true),
+            (keybindings.peek, false),
+            (keybindings.quit, true),
         ];
 
         for (key, exit) in transitions {
             let mode = app.mode.clone();
 
-            let result = transition_state(key, &config, &mut app, &value).unwrap();
+            let result = handle_key_events(
+                KeyEvent::new(key, KeyModifiers::empty()),
+                &mut app,
+                &config,
+                &value,
+            )
+            .unwrap();
 
             if exit {
                 assert!(
                     result.is_quit(),
                     "expected to quit after pressing {} in {} mode",
-                    repr_keycode(key),
+                    repr_keycode(&key),
                     mode
                 );
             } else {
                 assert!(
                     !result.is_quit(),
                     "expected NOT to quit after pressing {} in {} mode",
-                    repr_keycode(key),
+                    repr_keycode(&key),
                     mode
                 );
             }
@@ -284,75 +298,81 @@ mod tests {
         assert_eq!(app.cell_path.members, to_path_member_vec(vec![PM::S("l")]));
 
         let transitions = vec![
-            (&nav.up, vec![PM::S("i")], false),
-            (&nav.up, vec![PM::S("s")], false),
-            (&nav.up, vec![PM::S("r")], false),
-            (&nav.up, vec![PM::S("l")], false),
-            (&nav.down, vec![PM::S("r")], false),
-            (&nav.left, vec![PM::S("r")], false),
-            (&nav.right, vec![PM::S("r"), PM::S("a")], false),
-            (&nav.right, vec![PM::S("r"), PM::S("a")], true),
-            (&nav.up, vec![PM::S("r"), PM::S("a")], true),
-            (&nav.down, vec![PM::S("r"), PM::S("a")], true),
-            (&nav.left, vec![PM::S("r"), PM::S("a")], false),
-            (&nav.down, vec![PM::S("r"), PM::S("b")], false),
-            (&nav.right, vec![PM::S("r"), PM::S("b")], true),
-            (&nav.up, vec![PM::S("r"), PM::S("b")], true),
-            (&nav.down, vec![PM::S("r"), PM::S("b")], true),
-            (&nav.left, vec![PM::S("r"), PM::S("b")], false),
-            (&nav.up, vec![PM::S("r"), PM::S("a")], false),
-            (&nav.up, vec![PM::S("r"), PM::S("b")], false),
-            (&nav.left, vec![PM::S("r")], false),
-            (&nav.down, vec![PM::S("s")], false),
-            (&nav.left, vec![PM::S("s")], false),
-            (&nav.right, vec![PM::S("s")], true),
-            (&nav.up, vec![PM::S("s")], true),
-            (&nav.down, vec![PM::S("s")], true),
-            (&nav.left, vec![PM::S("s")], false),
-            (&nav.down, vec![PM::S("i")], false),
-            (&nav.left, vec![PM::S("i")], false),
-            (&nav.right, vec![PM::S("i")], true),
-            (&nav.up, vec![PM::S("i")], true),
-            (&nav.down, vec![PM::S("i")], true),
-            (&nav.left, vec![PM::S("i")], false),
-            (&nav.down, vec![PM::S("l")], false),
-            (&nav.left, vec![PM::S("l")], false),
-            (&nav.right, vec![PM::S("l"), PM::I(0)], false),
-            (&nav.right, vec![PM::S("l"), PM::I(0)], true),
-            (&nav.up, vec![PM::S("l"), PM::I(0)], true),
-            (&nav.down, vec![PM::S("l"), PM::I(0)], true),
-            (&nav.left, vec![PM::S("l"), PM::I(0)], false),
-            (&nav.down, vec![PM::S("l"), PM::I(1)], false),
-            (&nav.right, vec![PM::S("l"), PM::I(1)], true),
-            (&nav.up, vec![PM::S("l"), PM::I(1)], true),
-            (&nav.down, vec![PM::S("l"), PM::I(1)], true),
-            (&nav.left, vec![PM::S("l"), PM::I(1)], false),
-            (&nav.down, vec![PM::S("l"), PM::I(2)], false),
-            (&nav.right, vec![PM::S("l"), PM::I(2)], true),
-            (&nav.up, vec![PM::S("l"), PM::I(2)], true),
-            (&nav.down, vec![PM::S("l"), PM::I(2)], true),
-            (&nav.left, vec![PM::S("l"), PM::I(2)], false),
-            (&nav.up, vec![PM::S("l"), PM::I(1)], false),
-            (&nav.up, vec![PM::S("l"), PM::I(0)], false),
-            (&nav.up, vec![PM::S("l"), PM::I(2)], false),
-            (&nav.left, vec![PM::S("l")], false),
+            (nav.up, vec![PM::S("i")], false),
+            (nav.up, vec![PM::S("s")], false),
+            (nav.up, vec![PM::S("r")], false),
+            (nav.up, vec![PM::S("l")], false),
+            (nav.down, vec![PM::S("r")], false),
+            (nav.left, vec![PM::S("r")], false),
+            (nav.right, vec![PM::S("r"), PM::S("a")], false),
+            (nav.right, vec![PM::S("r"), PM::S("a")], true),
+            (nav.up, vec![PM::S("r"), PM::S("a")], true),
+            (nav.down, vec![PM::S("r"), PM::S("a")], true),
+            (nav.left, vec![PM::S("r"), PM::S("a")], false),
+            (nav.down, vec![PM::S("r"), PM::S("b")], false),
+            (nav.right, vec![PM::S("r"), PM::S("b")], true),
+            (nav.up, vec![PM::S("r"), PM::S("b")], true),
+            (nav.down, vec![PM::S("r"), PM::S("b")], true),
+            (nav.left, vec![PM::S("r"), PM::S("b")], false),
+            (nav.up, vec![PM::S("r"), PM::S("a")], false),
+            (nav.up, vec![PM::S("r"), PM::S("b")], false),
+            (nav.left, vec![PM::S("r")], false),
+            (nav.down, vec![PM::S("s")], false),
+            (nav.left, vec![PM::S("s")], false),
+            (nav.right, vec![PM::S("s")], true),
+            (nav.up, vec![PM::S("s")], true),
+            (nav.down, vec![PM::S("s")], true),
+            (nav.left, vec![PM::S("s")], false),
+            (nav.down, vec![PM::S("i")], false),
+            (nav.left, vec![PM::S("i")], false),
+            (nav.right, vec![PM::S("i")], true),
+            (nav.up, vec![PM::S("i")], true),
+            (nav.down, vec![PM::S("i")], true),
+            (nav.left, vec![PM::S("i")], false),
+            (nav.down, vec![PM::S("l")], false),
+            (nav.left, vec![PM::S("l")], false),
+            (nav.right, vec![PM::S("l"), PM::I(0)], false),
+            (nav.right, vec![PM::S("l"), PM::I(0)], true),
+            (nav.up, vec![PM::S("l"), PM::I(0)], true),
+            (nav.down, vec![PM::S("l"), PM::I(0)], true),
+            (nav.left, vec![PM::S("l"), PM::I(0)], false),
+            (nav.down, vec![PM::S("l"), PM::I(1)], false),
+            (nav.right, vec![PM::S("l"), PM::I(1)], true),
+            (nav.up, vec![PM::S("l"), PM::I(1)], true),
+            (nav.down, vec![PM::S("l"), PM::I(1)], true),
+            (nav.left, vec![PM::S("l"), PM::I(1)], false),
+            (nav.down, vec![PM::S("l"), PM::I(2)], false),
+            (nav.right, vec![PM::S("l"), PM::I(2)], true),
+            (nav.up, vec![PM::S("l"), PM::I(2)], true),
+            (nav.down, vec![PM::S("l"), PM::I(2)], true),
+            (nav.left, vec![PM::S("l"), PM::I(2)], false),
+            (nav.up, vec![PM::S("l"), PM::I(1)], false),
+            (nav.up, vec![PM::S("l"), PM::I(0)], false),
+            (nav.up, vec![PM::S("l"), PM::I(2)], false),
+            (nav.left, vec![PM::S("l")], false),
         ];
 
         for (key, cell_path, bottom) in transitions {
             let expected = to_path_member_vec(cell_path);
-            transition_state(key, &config, &mut app, &value).unwrap();
+            handle_key_events(
+                KeyEvent::new(key, KeyModifiers::empty()),
+                &mut app,
+                &config,
+                &value,
+            )
+            .unwrap();
 
             if bottom {
                 assert!(
                     app.is_at_bottom(),
                     "expected to be at the bottom after pressing {}",
-                    repr_keycode(key)
+                    repr_keycode(&key)
                 );
             } else {
                 assert!(
                     !app.is_at_bottom(),
                     "expected NOT to be at the bottom after pressing {}",
-                    repr_keycode(key)
+                    repr_keycode(&key)
                 );
             }
             assert_eq!(
@@ -366,7 +386,7 @@ mod tests {
     }
 
     fn run_peeking_scenario(
-        transitions: Vec<(&Key, bool, Option<Value>)>,
+        transitions: Vec<(KeyCode, bool, Option<Value>)>,
         config: &Config,
         value: &Value,
     ) {
@@ -375,20 +395,26 @@ mod tests {
         for (key, exit, expected) in transitions {
             let mode = app.mode.clone();
 
-            let result = transition_state(key, &config, &mut app, &value).unwrap();
+            let result = handle_key_events(
+                KeyEvent::new(key, KeyModifiers::empty()),
+                &mut app,
+                &config,
+                &value,
+            )
+            .unwrap();
 
             if exit {
                 assert!(
                     result.is_quit(),
                     "expected to peek some data after pressing {} in {} mode",
-                    repr_keycode(key),
+                    repr_keycode(&key),
                     mode
                 );
             } else {
                 assert!(
                     !result.is_quit(),
                     "expected NOT to peek some data after pressing {} in {} mode",
-                    repr_keycode(key),
+                    repr_keycode(&key),
                     mode
                 );
             }
@@ -400,20 +426,20 @@ mod tests {
                             value,
                             val,
                             "unexpected data after pressing {} in {} mode",
-                            repr_keycode(key),
+                            repr_keycode(&key),
                             mode
                         )
                     }
                     _ => panic!(
                         "did expect output data after pressing {} in {} mode",
-                        repr_keycode(key),
+                        repr_keycode(&key),
                         mode
                     ),
                 },
                 None => match result {
                     TransitionResult::Return(_) => panic!(
                         "did NOT expect output data after pressing {} in {} mode",
-                        repr_keycode(key),
+                        repr_keycode(&key),
                         mode
                     ),
                     _ => {}
@@ -430,24 +456,24 @@ mod tests {
         let value = test_value();
 
         let peek_all_from_top = vec![
-            (&keybindings.peek, false, None),
-            (&keybindings.peeking.all, true, Some(value.clone())),
+            (keybindings.peek, false, None),
+            (keybindings.peeking.all, true, Some(value.clone())),
         ];
         run_peeking_scenario(peek_all_from_top, &config, &value);
 
         let peek_current_from_top = vec![
-            (&keybindings.peek, false, None),
-            (&keybindings.peeking.view, true, Some(value.clone())),
+            (keybindings.peek, false, None),
+            (keybindings.peeking.view, true, Some(value.clone())),
         ];
         run_peeking_scenario(peek_current_from_top, &config, &value);
 
         let go_in_the_data_and_peek_all_and_current = vec![
-            (&keybindings.navigation.down, false, None),
-            (&keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
-            (&keybindings.peek, false, None),
-            (&keybindings.peeking.all, true, Some(value.clone())),
+            (keybindings.navigation.down, false, None),
+            (keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
+            (keybindings.peek, false, None),
+            (keybindings.peeking.all, true, Some(value.clone())),
             (
-                &keybindings.peeking.view,
+                keybindings.peeking.view,
                 true,
                 Some(Value::test_record(record! {
                     "a" => Value::test_int(1),
@@ -458,20 +484,20 @@ mod tests {
         run_peeking_scenario(go_in_the_data_and_peek_all_and_current, &config, &value);
 
         let go_in_the_data_and_peek_under = vec![
-            (&keybindings.navigation.down, false, None),
-            (&keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
-            (&keybindings.peek, false, None),
-            (&keybindings.peeking.all, true, Some(value.clone())),
-            (&keybindings.peeking.under, true, Some(Value::test_int(1))),
+            (keybindings.navigation.down, false, None),
+            (keybindings.navigation.right, false, None), // on {r: {a: 1, b: 2}}
+            (keybindings.peek, false, None),
+            (keybindings.peeking.all, true, Some(value.clone())),
+            (keybindings.peeking.under, true, Some(Value::test_int(1))),
         ];
         run_peeking_scenario(go_in_the_data_and_peek_under, &config, &value);
 
         let go_in_the_data_and_peek_cell_path = vec![
-            (&keybindings.navigation.down, false, None), // on {r: {a: 1, b: 2}}
-            (&keybindings.navigation.right, false, None), // on {a: 1}
-            (&keybindings.peek, false, None),
+            (keybindings.navigation.down, false, None), // on {r: {a: 1, b: 2}}
+            (keybindings.navigation.right, false, None), // on {a: 1}
+            (keybindings.peek, false, None),
             (
-                &keybindings.peeking.cell_path,
+                keybindings.peeking.cell_path,
                 true,
                 Some(Value::test_cell_path(CellPath {
                     members: vec![
@@ -492,9 +518,9 @@ mod tests {
         run_peeking_scenario(go_in_the_data_and_peek_cell_path, &config, &value);
 
         let peek_at_the_bottom = vec![
-            (&keybindings.navigation.right, false, None), // on l: ["my", "list", "elements"],
-            (&keybindings.navigation.right, false, None), // on "my"
-            (&keybindings.peek, true, Some(Value::test_string("my"))),
+            (keybindings.navigation.right, false, None), // on l: ["my", "list", "elements"],
+            (keybindings.navigation.right, false, None), // on "my"
+            (keybindings.peek, true, Some(Value::test_string("my"))),
         ];
         run_peeking_scenario(peek_at_the_bottom, &config, &value);
     }
