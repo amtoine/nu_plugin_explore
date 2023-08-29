@@ -204,7 +204,7 @@ pub(super) fn try_fg_bg_colors(
     default: &BgFgColorConfig,
 ) -> Result<Option<BgFgColorConfig>, LabeledError> {
     let (columns, span) = match follow_cell_path(value, cell_path).unwrap() {
-        Value::Record { val, span, .. } => (val.cols, span),
+        Value::Record { val: rec, span, .. } => (rec.cols, span),
         x => return Err(invalid_type(&x, cell_path, "record")),
     };
 

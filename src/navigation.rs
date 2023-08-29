@@ -62,21 +62,21 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
             };
             app.cell_path.members.push(new);
         }
-        Ok(Value::Record { val: rec_val, .. }) => {
+        Ok(Value::Record { val: rec, .. }) => {
             let new = match current {
                 Some(PathMember::String {
                     val,
                     span,
                     optional,
                 }) => PathMember::String {
-                    val: if rec_val.cols.is_empty() {
+                    val: if rec.cols.is_empty() {
                         "".into()
                     } else {
-                        let index = rec_val.cols.iter().position(|x| x == &val).unwrap() as i32;
-                        let len = rec_val.cols.len() as i32;
+                        let index = rec.cols.iter().position(|x| x == &val).unwrap() as i32;
+                        let len = rec.cols.len() as i32;
                         let new_index = (index + direction + len) % len;
 
-                        rec_val.cols[new_index as usize].clone()
+                        rec.cols[new_index as usize].clone()
                     },
                     span,
                     optional,
@@ -107,10 +107,10 @@ pub(super) fn go_deeper_in_data(app: &mut App, input: &Value) {
             span: Span::unknown(),
             optional: vals.is_empty(),
         }),
-        Ok(Value::Record { val, .. }) => app.cell_path.members.push(PathMember::String {
-            val: val.cols.get(0).unwrap_or(&"".to_string()).into(),
+        Ok(Value::Record { val: rec, .. }) => app.cell_path.members.push(PathMember::String {
+            val: rec.cols.get(0).unwrap_or(&"".to_string()).into(),
             span: Span::unknown(),
-            optional: val.cols.is_empty(),
+            optional: rec.cols.is_empty(),
         }),
         Err(_) => panic!("unexpected error when following cell path"),
         _ => app.hit_bottom(),

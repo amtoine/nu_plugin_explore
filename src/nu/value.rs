@@ -36,24 +36,24 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
 
             Value::list(vals, Span::unknown())
         }
-        Value::Record { val: rec_val, .. } => {
+        Value::Record { val: rec, .. } => {
             let col = match first {
                 PathMember::String { val, .. } => val.clone(),
                 _ => panic!("first cell path element should be an string"),
             };
             cell_path.members.remove(0);
 
-            let id = rec_val.cols.iter().position(|x| *x == col).unwrap_or(0);
+            let id = rec.cols.iter().position(|x| *x == col).unwrap_or(0);
 
-            let mut vals = rec_val.vals.clone();
+            let mut vals = rec.vals.clone();
             vals[id] = mutate_value_cell(&vals[id], &cell_path, val);
 
-            let mut rec = Record::new();
-            rec_val.cols.iter().zip(vals).for_each(|(col, val)| {
-                rec.push(col, val);
+            let mut record = Record::new();
+            rec.cols.iter().zip(vals).for_each(|(col, val)| {
+                record.push(col, val);
             });
 
-            Value::record(rec, Span::unknown())
+            Value::record(record, Span::unknown())
         }
         _ => val.clone(),
     }

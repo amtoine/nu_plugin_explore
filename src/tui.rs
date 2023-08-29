@@ -181,7 +181,7 @@ fn repr_simple_value(value: &Value) -> DataRowRepr {
 fn repr_value(value: &Value) -> DataRowRepr {
     match value {
         Value::List { vals, .. } => repr_list(vals),
-        Value::Record { val, .. } => repr_record(&val.cols),
+        Value::Record { val: rec, .. } => repr_record(&rec.cols),
         x => repr_simple_value(x),
     }
 }
@@ -203,15 +203,15 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                 vals.iter().map(repr_value).collect::<Vec<DataRowRepr>>()
             }
         }
-        Ok(Value::Record { val, .. }) => {
-            if val.cols.is_empty() {
+        Ok(Value::Record { val: rec, .. }) => {
+            if rec.cols.is_empty() {
                 vec![DataRowRepr {
                     name: None,
                     shape: "record".into(),
                     data: "{}".into(),
                 }]
             } else {
-                val.iter()
+                rec.iter()
                     .map(|(col, val)| {
                         let mut repr = repr_value(val);
                         repr.name = Some(col.to_string());

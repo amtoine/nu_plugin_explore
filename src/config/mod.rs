@@ -226,7 +226,7 @@ impl Config {
                 }
                 "colors" => {
                     let (columns, span) = match follow_cell_path(&value, &["colors"]).unwrap() {
-                        Value::Record { val, span, .. } => (val.cols, span),
+                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                         x => return Err(invalid_type(&x, &["colors"], "record")),
                     };
 
@@ -239,7 +239,7 @@ impl Config {
                                 )
                                 .unwrap()
                                 {
-                                    Value::Record { val, span, .. } => (val.cols, span),
+                                    Value::Record { val: rec, span, .. } => (rec.cols, span),
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -315,7 +315,7 @@ impl Config {
                                     match follow_cell_path(&value, &["colors", "status_bar"])
                                         .unwrap()
                                     {
-                                        Value::Record { val, span, .. } => (val.cols, span),
+                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                                         x => {
                                             return Err(invalid_type(
                                                 &x,
@@ -379,7 +379,7 @@ impl Config {
                                 )
                                 .unwrap()
                                 {
-                                    Value::Record { val, span, .. } => (val.cols, span),
+                                    Value::Record { val: rec, span, .. } => (rec.cols, span),
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -425,7 +425,7 @@ impl Config {
                 "keybindings" => {
                     let (columns, span) = match follow_cell_path(&value, &["keybindings"]).unwrap()
                     {
-                        Value::Record { val, span, .. } => (val.cols, span),
+                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                         x => return Err(invalid_type(&x, &["keybindings"], "record")),
                     };
 
@@ -451,7 +451,7 @@ impl Config {
                                     match follow_cell_path(&value, &["keybindings", "navigation"])
                                         .unwrap()
                                     {
-                                        Value::Record { val, span, .. } => (val.cols, span),
+                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                                         x => {
                                             return Err(invalid_type(
                                                 &x,
@@ -514,7 +514,7 @@ impl Config {
                                     match follow_cell_path(&value, &["keybindings", "peeking"])
                                         .unwrap()
                                     {
-                                        Value::Record { val, span, .. } => (val.cols, span),
+                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
                                         x => {
                                             return Err(invalid_type(
                                                 &x,
