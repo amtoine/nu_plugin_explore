@@ -90,15 +90,107 @@ open Cargo.toml | explore
 ```
 
 # configuration
-the default configuration can be found in [`examples/configuration`](examples/configuration) and can
-be tested as follows
+there is currently no way to use the `$env` configuration from inside a plugin...
+`nu_plugin_explore` thus uses a CLI argument to do that, i.e. you can pass a config record as the
+first positional argument to the `explore` command!
+
+however, doing this by hand each time is not the right way to go with that, so let's find another way.
+
+here is the default config, put it in your `config.nu` :yum:
 ```nushell
-$nu | explore (
-    open examples/configuration/config.nuon
-        | insert colors (open examples/configuration/themes/dark.nuon)
-        | insert keybindings (open examples/configuration/keybindings.nuon)
-)
+$env.explore_config = {
+    show_cell_path: true,  # whether or not to show the current cell path above the status bar
+    show_table_header: true,  # whether or not to show the table header in "table" layout
+    layout: "table",  # the layout of the data, either "table" or "compact"
+
+    # "reset" is used instead of "black" in a dark terminal because, when the terminal is actually
+    # black, "black" is not really black which is ugly, whereas "reset" is really black.
+    colors: {
+        normal: {  # the colors for a normal row
+            name: {
+                background: reset,
+                foreground: green,
+            },
+            data: {
+                background: reset,
+                foreground: white,
+            },
+            shape: {
+                background: reset,
+                foreground: blue,
+            },
+        },
+        selected: {  # the colors for the row under the cursor
+            background: white,
+            foreground: black,
+        },
+        selected_modifier: "bold",  # a modifier to apply onto the row under the cursor
+        selected_symbol: "",  # the symbol to show to the left of the row under the cursor
+        status_bar: {
+            normal: {  # the colors for the status bar in NORMAL mode
+                background: black,
+                foreground: white,
+            },
+            insert: {  # the colors for the status bar in INSERT mode
+                background: black,
+                foreground: lightyellow,
+            },
+            peek: {  # the colors for the status bar in PEEKING mode
+                background: black,
+                foreground: lightgreen,
+            }
+            bottom: {  # the colors for the status bar in BOTTOM mode
+                background: black,
+                foreground: lightmagenta,
+            }
+        }
+        editor: {  # the colors when editing a cell
+            frame: {
+                background: black,
+                foreground: lightcyan,
+            },
+            buffer: {
+                background: reset,
+                foreground: white,
+            },
+        },
+    }
+    keybindings: {
+        quit: 'q',  # quit `explore`
+        insert: 'i',  # go to INSERT mode to modify the data
+        normal: "escape",  # go back to NORMAL mode to navigate through the data
+        navigation: {  # only in NORMAL mode
+            left: 'h',  # go back one level in the data
+            down: 'j',  # go one row down in the current level
+            up: 'k',  # go one row up in the current level
+            right: 'l',  # go one level deeper in the data or hit the bottom
+        },
+        peek: 'p',  # go to PEEKING mode to peek a value
+        peeking: {  # only in PEEKING mode
+            all: 'a',  # peek the whole data, from the top level
+            cell_path: 'c',  # peek the cell path under the cursor
+            under: 'p',  # peek only what's under the cursor
+            view: 'v',  # peek the current view, i.e. what is visible
+        },
+    }
+}
 ```
+
+then in order to avoid having to pass this record everytime we call `explore`, let's define an alias
+> **Note**  
+> this will not have an impact on the CLI interface of `explore` because it does not have any other
+> option or argument than `config: record` as the first positional argument.
+
+```nushell
+alias explore = explore ($env.explore_config? | default {})
+```
+
+now, you can just call `explore` and have your config loaded automatically!
+and you can change `$env.explore_config` as much as you like :partying_face:
+
+> **Note**  
+> if you omit one of the config field of the configuration for `explore`, it's not an issue at all,
+> it will just take the default value instead!
 
 # see the documentation locally
 ```nushell
