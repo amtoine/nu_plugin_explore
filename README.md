@@ -55,14 +55,17 @@ make NUSHELL_PATH=/path/to/nushell/ dev-deps
 there are three ways to do it:
 ## building from source
 - build the plugin
-```nushell
-cargo build --release
+```shell
+make build
 ```
 - register the plugin in [Nushell]
 ```nushell
-register target/release/nu_plugin_explore
+make register
 ```
 - do not forget to restart [Nushell]
+
+> **Note**  
+> alternatively, you can use directly `make install`
 
 ## installing manually
 - define the install root, e.g. `$env.CARGO_HOME` or `/some/where/plugins/`
