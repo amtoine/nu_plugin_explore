@@ -2,6 +2,10 @@ CLIPPY_OPTIONS="-D warnings"
 
 all: check test install
 
+dev-deps:
+	cargo add nu-plugin --path ${NUSHELL_PATH}/crates/nu-plugin/
+	cargo add nu-protocol --path ${NUSHELL_PATH}/crates/nu-protocol/ --features plugin
+
 check:
 	cargo fmt --all -- --check
 	cargo check --workspace --lib
