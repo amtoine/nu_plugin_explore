@@ -211,12 +211,9 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                     data: "{}".into(),
                 }]
             } else {
-                //TODO: You can do this easier now
-                val.cols
-                    .iter()
-                    .zip(val.vals)
+                val.iter()
                     .map(|(col, val)| {
-                        let mut repr = repr_value(&val);
+                        let mut repr = repr_value(val);
                         repr.name = Some(col.to_string());
                         repr
                     })

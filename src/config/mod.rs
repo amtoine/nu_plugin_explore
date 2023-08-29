@@ -620,9 +620,8 @@ mod tests {
 
     #[test]
     fn parse_empty_config() {
-        let rec = Record::new();
         assert_eq!(
-            Config::from_value(Value::test_record(rec)),
+            Config::from_value(Value::test_record(Record::new())),
             Ok(Config::default())
         );
     }
@@ -630,7 +629,7 @@ mod tests {
     #[test]
     fn parse_config_with_invalid_field() {
         let value = Value::test_record(record! {
-        "       x" => Value::test_nothing()
+            "x" => Value::test_nothing()
         });
         let result = Config::from_value(value);
         assert!(result.is_err());

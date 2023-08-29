@@ -49,7 +49,6 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
             vals[id] = mutate_value_cell(&vals[id], &cell_path, val);
 
             let mut rec = Record::new();
-
             rec_val.cols.iter().zip(vals).for_each(|(col, val)| {
                 rec.push(col, val);
             });
