@@ -515,7 +515,7 @@ fn render_data(
 /// this line can be removed through config, see [`crate::config::Config::show_cell_path`]
 ///
 /// # Examples
-/// > :bulb: **Note**
+/// > :bulb: **Note**  
 /// > the `...` are here to signify that the bar might be truncated and the `||` at the start and
 /// the end of the lines are just to represent the borders of the terminal but will not appear in
 /// the TUI.
@@ -559,7 +559,7 @@ fn render_cell_path(frame: &mut Frame<CrosstermBackend<console::Term>>, app: &Ap
 /// the color depending of the mode is completely configurable!
 ///
 /// # Examples
-/// > :bulb: **Note**
+/// > :bulb: **Note**  
 /// > - the `...` are here to signify that the bar might be truncated and the `||` at the start and
 /// the end of the lines are just to represent the borders of the terminal but will not appear in
 /// the TUI.

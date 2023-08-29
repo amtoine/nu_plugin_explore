@@ -19,7 +19,7 @@ pub(super) enum Direction {
 /// return, you'd be able to scroll the list without seeing it as a whole... confusing, right?
 /// - cycle the list indices or the record column names => the index / column will wrap around
 ///
-/// > :bulb: **Note**
+/// > :bulb: **Note**  
 /// > this function will only modify the last element of the state's *cell path* either by
 /// > - not doing anything
 /// > - poping the last element to know where we are and then pushing back the new element
@@ -93,7 +93,7 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
 
 /// go one level deeper in the data
 ///
-/// > :bulb: **Note**
+/// > :bulb: **Note**  
 /// > this function will
 /// > - push a new *cell path* member to the state if there is more depth ahead
 /// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
@@ -119,7 +119,7 @@ pub(super) fn go_deeper_in_data(app: &mut App, input: &Value) {
 
 /// pop one level of depth from the data
 ///
-/// > :bulb: **Note**
+/// > :bulb: **Note**  
 /// > - the state is always marked as *not at the bottom*
 /// > - the state *cell path* can have it's last member popped if possible
 pub(super) fn go_back_in_data(app: &mut App) {
