@@ -28,3 +28,10 @@ register:
 	nu --commands "register target/release/nu_plugin_explore"
 
 install: build register
+
+clean:
+	cargo remove nu-plugin
+	cargo remove nu-protocol
+
+purge: clean
+	cargo clean
