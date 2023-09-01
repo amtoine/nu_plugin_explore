@@ -83,7 +83,7 @@ pub(crate) fn is_table(value: &Value) -> bool {
 mod tests {
     use super::{is_table, mutate_value_cell};
     use crate::nu::cell_path::{to_path_member_vec, PM};
-    use nu_protocol::{ast::CellPath, record, Value};
+    use nu_protocol::{ast::CellPath, record, Config, Value};
 
     #[test]
     fn value_mutation() {
@@ -221,7 +221,12 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(is_table(&table), true);
+        assert_eq!(
+            is_table(&table),
+            true,
+            "{} should be a table",
+            table.into_string(" ", &Config::default())
+        );
 
         let table_with_out_of_order_columns = Value::test_list(vec![
             Value::test_record(record! {
@@ -233,7 +238,12 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(is_table(&table_with_out_of_order_columns), true);
+        assert_eq!(
+            is_table(&table_with_out_of_order_columns),
+            true,
+            "{} should be a table",
+            table_with_out_of_order_columns.into_string(" ", &Config::default())
+        );
 
         let table_with_nulls = Value::test_list(vec![
             Value::test_record(record! {
@@ -245,7 +255,12 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(is_table(&table_with_nulls), true);
+        assert_eq!(
+            is_table(&table_with_nulls),
+            true,
+            "{} should be a table",
+            table_with_nulls.into_string(" ", &Config::default())
+        );
 
         let table_with_number_colum = Value::test_list(vec![
             Value::test_record(record! {
@@ -257,7 +272,10 @@ mod tests {
                 "b" => Value::test_float(2.34),
             }),
         ]);
-        assert_eq!(is_table(&table_with_number_colum), true);
+        assert_eq!(is_table(&table_with_number_colum), true,
+            "{} should be a table",
+            table_with_number_colum.into_string(" ", &Config::default())
+        );
 
         let not_a_table = Value::test_list(vec![
             Value::test_record(record! {
@@ -268,7 +286,12 @@ mod tests {
                 "b" => Value::test_int(1),
             }),
         ]);
-        assert_eq!(is_table(&not_a_table), false);
+        assert_eq!(
+            is_table(&not_a_table),
+            false,
+            "{} should not be a table",
+            not_a_table.into_string(" ", &Config::default())
+        );
 
         assert_eq!(is_table(&Value::test_int(0)), false);
     }
