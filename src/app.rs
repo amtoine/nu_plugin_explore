@@ -45,6 +45,8 @@ pub struct App {
     pub mode: Mode,
     /// the editor to modify the cells of the data
     pub editor: Editor,
+    /// the value that is being explored
+    pub value: Value,
 }
 
 impl Default for App {
@@ -53,6 +55,7 @@ impl Default for App {
             position: CellPath { members: vec![] },
             mode: Mode::default(),
             editor: Editor::default(),
+            value: Value::default(),
         }
     }
 }
@@ -61,9 +64,10 @@ impl App {
     /// Handles the tick event of the terminal.
     pub fn tick(&self) {}
 
-    pub(super) fn from_value(value: &Value) -> Self {
+    pub(super) fn from_value(value: Value) -> Self {
         let mut app = Self::default();
-        match value {
+
+        match &value {
             Value::List { vals, .. } => app.position.members.push(PathMember::Int {
                 val: 0,
                 span: Span::unknown(),
@@ -76,6 +80,8 @@ impl App {
             }),
             _ => {}
         }
+
+        app.value = value;
 
         app
     }
@@ -90,8 +96,24 @@ impl App {
         self.mode = Mode::Bottom;
     }
 
-    pub(super) fn enter_editor(&mut self, value: &Value) {
-        self.mode = Mode::Insert;
-        self.editor = Editor::from_value(value);
+    pub(super) fn enter_editor(&mut self) -> Result<(), String> {
+        let value = self
+            .value
+            .clone()
+            .follow_cell_path(&self.position.members, false)
+            .unwrap();
+
+        if matches!(value, Value::String { .. }) {
+            self.mode = Mode::Insert;
+            self.editor = Editor::from_value(&value);
+
+            Ok(())
+        } else {
+            // TODO: support more diverse cell edition
+            Err(format!(
+                "can only edit string cells, found {}",
+                value.get_type()
+            ))
+        }
     }
 }

@@ -37,7 +37,7 @@ impl Plugin for Explore {
         input: &Value,
     ) -> Result<Value, LabeledError> {
         match name {
-            "explore" => match explore(call, input) {
+            "explore" => match explore(call, input.clone()) {
                 Ok(value) => Ok(value),
                 Err(err) => {
                     match err.downcast_ref::<ShellError>() {

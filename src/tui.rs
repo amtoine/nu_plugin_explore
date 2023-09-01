@@ -7,8 +7,6 @@ use ratatui::Terminal;
 use std::io;
 use std::panic;
 
-use nu_protocol::Value;
-
 use crate::app::App;
 use crate::config::Config;
 use crate::event::EventHandler;
@@ -56,15 +54,9 @@ impl<B: Backend> Tui<B> {
     ///
     /// [`Draw`]: tui::Terminal::draw
     /// [`rendering`]: crate::ui:render
-    pub fn draw(
-        &mut self,
-        app: &mut App,
-        input: &Value,
-        config: &Config,
-        error: Option<&str>,
-    ) -> Result<()> {
+    pub fn draw(&mut self, app: &mut App, config: &Config, error: Option<&str>) -> Result<()> {
         self.terminal
-            .draw(|frame| ui::render_ui(frame, input, app, config, error))?;
+            .draw(|frame| ui::render_ui(frame, app, config, error))?;
         Ok(())
     }
 

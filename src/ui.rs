@@ -20,12 +20,11 @@ use ratatui::{
 /// render the whole ui
 pub(super) fn render_ui<B: Backend>(
     frame: &mut Frame<'_, B>,
-    input: &Value,
     app: &App,
     config: &Config,
     error: Option<&str>,
 ) {
-    render_data(frame, input, app, config);
+    render_data(frame, app, config);
     if config.show_cell_path {
         render_cell_path(frame, app);
     }
@@ -220,7 +219,7 @@ fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
 ///
 /// the data will be rendered on top of the bar, and on top of the cell path in case
 /// [`crate::config::Config::show_cell_path`] is set to `true`.
-fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, config: &Config) {
+fn render_data<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config) {
     let data_frame_height = if config.show_cell_path {
         frame.size().height - 2
     } else {
@@ -235,7 +234,8 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
         None
     };
 
-    let value = data
+    let value = app
+        .value
         .clone()
         .follow_cell_path(&data_path, false)
         .expect("unexpected error when following cell path during rendering");

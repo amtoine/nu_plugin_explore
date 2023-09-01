@@ -23,7 +23,7 @@ pub enum Direction {
 /// > this function will only modify the last element of the state's *cell path* either by
 /// > - not doing anything
 /// > - poping the last element to know where we are and then pushing back the new element
-pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Direction) {
+pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
     if app.is_at_bottom() {
         return;
     }
@@ -35,7 +35,11 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
 
     let current = app.position.members.pop();
 
-    match input.clone().follow_cell_path(&app.position.members, false) {
+    match app
+        .value
+        .clone()
+        .follow_cell_path(&app.position.members, false)
+    {
         Ok(Value::List { vals, .. }) => {
             let new = match current {
                 Some(PathMember::Int {
@@ -94,8 +98,12 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
 /// > this function will
 /// > - push a new *cell path* member to the state if there is more depth ahead
 /// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
-pub(super) fn go_deeper_in_data(app: &mut App, input: &Value) {
-    match input.clone().follow_cell_path(&app.position.members, false) {
+pub(super) fn go_deeper_in_data(app: &mut App) {
+    match app
+        .value
+        .clone()
+        .follow_cell_path(&app.position.members, false)
+    {
         Ok(Value::List { vals, .. }) => app.position.members.push(PathMember::Int {
             val: 0,
             span: Span::unknown(),
@@ -153,7 +161,7 @@ mod tests {
             Value::test_nothing(),
             Value::test_nothing(),
         ]);
-        let mut app = App::from_value(&value);
+        let mut app = App::from_value(value);
 
         let sequence = vec![
             (Direction::Down, 1),
@@ -164,7 +172,7 @@ mod tests {
             (Direction::Up, 0),
         ];
         for (direction, id) in sequence {
-            go_up_or_down_in_data(&mut app, &value, direction);
+            go_up_or_down_in_data(&mut app, direction);
             let expected = vec![test_int_pathmember(id)];
             assert_eq!(app.position.members, expected);
         }
@@ -177,7 +185,7 @@ mod tests {
             "b" => Value::test_nothing(),
             "c" => Value::test_nothing(),
         });
-        let mut app = App::from_value(&value);
+        let mut app = App::from_value(value);
 
         let sequence = vec![
             (Direction::Down, "b"),
@@ -188,7 +196,7 @@ mod tests {
             (Direction::Up, "a"),
         ];
         for (direction, id) in sequence {
-            go_up_or_down_in_data(&mut app, &value, direction);
+            go_up_or_down_in_data(&mut app, direction);
             let expected = vec![test_string_pathmember(id)];
             assert_eq!(app.position.members, expected);
         }
@@ -199,16 +207,16 @@ mod tests {
         let value = Value::test_list(vec![Value::test_record(record! {
             "a" => Value::test_list(vec![Value::test_nothing()]),
         })]);
-        let mut app = App::from_value(&value);
+        let mut app = App::from_value(value);
 
         let mut expected = vec![test_int_pathmember(0)];
         assert_eq!(app.position.members, expected);
 
-        go_deeper_in_data(&mut app, &value);
+        go_deeper_in_data(&mut app);
         expected.push(test_string_pathmember("a"));
         assert_eq!(app.position.members, expected);
 
-        go_deeper_in_data(&mut app, &value);
+        go_deeper_in_data(&mut app);
         expected.push(test_int_pathmember(0));
         assert_eq!(app.position.members, expected);
     }
@@ -216,11 +224,11 @@ mod tests {
     #[test]
     fn hit_bottom() {
         let value = Value::test_nothing();
-        let mut app = App::from_value(&value);
+        let mut app = App::from_value(value);
 
         assert!(!app.is_at_bottom());
 
-        go_deeper_in_data(&mut app, &value);
+        go_deeper_in_data(&mut app);
         assert!(app.is_at_bottom());
     }
 
@@ -229,7 +237,7 @@ mod tests {
         let value = Value::test_list(vec![Value::test_record(record! {
             "a" => Value::test_list(vec![Value::test_nothing()]),
         })]);
-        let mut app = App::from_value(&value);
+        let mut app = App::from_value(value);
         app.position.members = vec![
             test_int_pathmember(0),
             test_string_pathmember("a"),

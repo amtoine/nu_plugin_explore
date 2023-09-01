@@ -40,7 +40,7 @@ use tui::Tui;
 /// the application loop
 /// 1. renders the TUI with [`tui`]
 /// 1. reads the user's input keys and transition the [`App`] accordingly
-pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
+pub fn explore(call: &EvaluatedCall, input: Value) -> Result<Value> {
     let empty_custom_config = Value::record(Record::new(), Span::unknown());
     let config = match Config::from_value(call.opt(0).unwrap().unwrap_or(empty_custom_config)) {
         Ok(cfg) => cfg,
@@ -54,27 +54,30 @@ pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
     tui.init()?;
 
     let mut app = App::from_value(input);
-    let mut value = input.clone();
 
     loop {
         if app.mode == Mode::Insert {
             app.editor.set_width(tui.size().unwrap().width as usize)
         }
 
-        tui.draw(&mut app, &value, &config, None)?;
+        tui.draw(&mut app, &config, None)?;
 
         match tui.events.next()? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
                 if key_event.kind == KeyEventKind::Press {
-                    match handle_key_events(key_event, &mut app, &config, &value)? {
+                    match handle_key_events(key_event, &mut app, &config)? {
                         TransitionResult::Quit => break,
                         TransitionResult::Continue => {}
-                        TransitionResult::Edit(val) => {
-                            value = crate::nu::value::mutate_value_cell(&value, &app.position, &val)
+                        TransitionResult::Edit(cell) => {
+                            app.value = crate::nu::value::mutate_value_cell(
+                                &app.value,
+                                &app.position,
+                                &cell,
+                            )
                         }
                         TransitionResult::Error(error) => {
-                            tui.draw(&mut app, &value, &config, Some(&error))?;
+                            tui.draw(&mut app, &config, Some(&error))?;
                             loop {
                                 if let Event::Key(_) = tui.events.next()? {
                                     break;
