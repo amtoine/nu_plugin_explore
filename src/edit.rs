@@ -92,7 +92,6 @@ impl Editor {
         self.move_cursor_right();
     }
 
-    /// TODO: documentation
     fn delete_char(&mut self, offset: i32) {
         let position = (self.position() as i32 + offset) as usize;
 
@@ -118,7 +117,6 @@ impl Editor {
         self.delete_char(0);
     }
 
-    /// TODO: documentation
     pub(super) fn handle_key(&mut self, key: &KeyCode) -> Option<Option<Value>> {
         match key {
             KeyCode::Left => self.move_cursor_left(),
