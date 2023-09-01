@@ -60,23 +60,22 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
 }
 
 /// TODO: documentation
-pub(crate) fn is_table(value: &Value, cell_path: &[PathMember]) -> Option<bool> {
-    match value.clone().follow_cell_path(cell_path, false) {
-        Ok(Value::List { vals, .. }) => {
+pub(crate) fn is_table(value: &Value) -> bool {
+    match value {
+        Value::List { vals, .. } => {
             if vals.is_empty() {
-                Some(false)
+                false
             } else {
                 match vals[0] {
                     Value::Record { .. } => {
                         let first = vals[0].get_type().to_string();
-                        Some(vals.iter().all(|v| v.get_type().to_string() == first))
+                        vals.iter().all(|v| v.get_type().to_string() == first)
                     }
-                    _ => Some(false),
+                    _ => false,
                 }
             }
         }
-        Ok(_) => Some(false),
-        Err(_) => None,
+        _ => false,
     }
 }
 
@@ -223,7 +222,7 @@ mod tests {
                 "b" => Value::test_int(1),
             }),
         ]);
-        assert_eq!(is_table(&table, &[]), Some(true));
+        assert_eq!(is_table(&table), true);
 
         #[rustfmt::skip]
         let not_a_table = Value::test_list(vec![
@@ -235,8 +234,8 @@ mod tests {
                 "b" => Value::test_int(1),
             }),
         ]);
-        assert_eq!(is_table(&not_a_table, &[]), Some(false));
+        assert_eq!(is_table(&not_a_table), false);
 
-        assert_eq!(is_table(&Value::test_int(0), &[]), Some(false));
+        assert_eq!(is_table(&Value::test_int(0)), false);
     }
 }

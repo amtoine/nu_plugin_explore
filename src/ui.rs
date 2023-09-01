@@ -222,10 +222,9 @@ fn repr_value(value: &Value) -> DataRowRepr {
 /// compute the row / item representation of a complete Nushell Value
 ///
 /// > see the tests for detailed examples
-fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
-    match data.clone().follow_cell_path(cell_path, false) {
-        Err(_) => panic!("unexpected error when following cell path during rendering"),
-        Ok(Value::List { vals, .. }) => {
+fn repr_data(data: &Value) -> Vec<DataRowRepr> {
+    match data {
+        Value::List { vals, .. } => {
             if vals.is_empty() {
                 vec![DataRowRepr {
                     name: None,
@@ -236,7 +235,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                 vals.iter().map(repr_value).collect::<Vec<DataRowRepr>>()
             }
         }
-        Ok(Value::Record { val: rec, .. }) => {
+        Value::Record { val: rec, .. } => {
             if rec.cols.is_empty() {
                 vec![DataRowRepr {
                     name: None,
@@ -253,7 +252,7 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
                     .collect::<Vec<DataRowRepr>>()
             }
         }
-        Ok(value) => vec![repr_simple_value(&value)],
+        value => vec![repr_simple_value(value)],
     }
 }
 
@@ -301,6 +300,11 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
         None
     };
 
+    let value = data
+        .clone()
+        .follow_cell_path(&data_path, false)
+        .expect("unexpected error when following cell path during rendering");
+
     let normal_name_style = Style::default()
         .fg(config.colors.normal.name.foreground)
         .bg(config.colors.normal.name.background);
@@ -317,23 +321,14 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
 
     let selected = match current {
         Some(PathMember::Int { val, .. }) => val,
-        Some(PathMember::String { val, .. }) => data
-            .clone()
-            .follow_cell_path(&data_path, false)
-            .expect("unexpected error when following cell path during rendering")
-            .columns()
-            .iter()
-            .position(|x| x == &val)
-            .unwrap_or(0),
+        Some(PathMember::String { val, .. }) => {
+            value.columns().iter().position(|x| x == &val).unwrap_or(0)
+        }
         None => 0,
     };
 
-    if is_table(data, &data_path).expect("cell path is invalid when checking for table") {
-        let (columns, shapes, cells) = match data
-            .clone()
-            .follow_cell_path(&data_path, false)
-            .expect("cell path invalid when rendering table")
-        {
+    if is_table(&value) {
+        let (columns, shapes, cells) = match value {
             Value::List { vals, .. } => repr_table(&vals),
             _ => panic!("value is a table but is not a list"),
         };
@@ -384,7 +379,7 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
 
     match config.layout {
         Layout::Compact => {
-            let items: Vec<ListItem> = repr_data(data, &data_path)
+            let items: Vec<ListItem> = repr_data(&value)
                 .iter()
                 .cloned()
                 .map(|row| {
@@ -413,16 +408,15 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
             )
         }
         Layout::Table => {
-            let (header, rows, constraints) = match data.clone().follow_cell_path(&data_path, false)
-            {
-                Ok(Value::List { .. }) => {
+            let (header, rows, constraints) = match value {
+                Value::List { .. } => {
                     let header = Row::new(vec![
                         Cell::from("item")
                             .style(normal_data_style.add_modifier(Modifier::REVERSED)),
                         Cell::from("shape")
                             .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
                     ]);
-                    let rows: Vec<Row> = repr_data(data, &data_path)
+                    let rows: Vec<Row> = repr_data(&value)
                         .iter()
                         .cloned()
                         .map(|row| {
@@ -442,7 +436,7 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
 
                     (header, rows, constraints)
                 }
-                Ok(Value::Record { .. }) => {
+                Value::Record { .. } => {
                     let header = Row::new(vec![
                         Cell::from("key").style(normal_name_style.add_modifier(Modifier::REVERSED)),
                         Cell::from("field")
@@ -451,7 +445,7 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
                             .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
                     ]);
 
-                    let rows: Vec<Row> = repr_data(data, &data_path)
+                    let rows: Vec<Row> = repr_data(&value)
                         .iter()
                         .cloned()
                         .map(|row| {
@@ -476,7 +470,7 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
 
                     (header, rows, constraints)
                 }
-                Ok(v) => {
+                v => {
                     let repr = repr_simple_value(&v);
                     let spans = vec![
                         Span::styled(repr.data, normal_data_style),
@@ -492,7 +486,6 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
                     );
                     return;
                 }
-                Err(_) => panic!("unexpected error when following cell path during rendering"),
             };
 
             let table = if config.show_table_header {
@@ -741,7 +734,7 @@ mod tests {
             "i" => Value::test_int(123),
         });
 
-        let result = repr_data(&data, &[]);
+        let result = repr_data(&data);
         let expected: Vec<DataRowRepr> = vec![
             DataRowRepr::named("l", "[3 items]", "list"),
             DataRowRepr::named("r", "{2 fields}", "record"),
