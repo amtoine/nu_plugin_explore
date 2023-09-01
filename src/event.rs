@@ -19,12 +19,11 @@ pub enum Event {
 
 /// Terminal event handler.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct EventHandler {
     /// Event sender channel.
-    #[allow(dead_code)]
     sender: mpsc::Sender<Event>,
     /// Event receiver channel.
-    #[allow(dead_code)]
     receiver: mpsc::Receiver<Event>,
     /// Event handler thread.
     handler: thread::JoinHandle<()>,
