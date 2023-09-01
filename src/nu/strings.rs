@@ -17,7 +17,7 @@ impl std::fmt::Display for SpecialString {
 
 /// TODO: documentation
 impl SpecialString {
-    fn parse(input: &str) -> Option<Self> {
+    pub(crate) fn parse(input: &str) -> Option<Self> {
         if let Ok(url) = url::Url::parse(input) {
             if url.scheme() == "file" {
                 Some(Self::Path)
