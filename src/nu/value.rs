@@ -211,7 +211,6 @@ mod tests {
 
     #[test]
     fn is_a_table() {
-        #[rustfmt::skip]
         let table = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_string("a"),
@@ -224,7 +223,6 @@ mod tests {
         ]);
         assert_eq!(is_table(&table), true);
 
-        #[rustfmt::skip]
         let not_a_table = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_string("a"),
