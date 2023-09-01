@@ -15,7 +15,6 @@ pub enum Mode {
     Insert,
     /// the PEEKING mode lets the user *peek* data out of the application, to be reused later
     Peeking,
-    /// TODO: documentation
     Bottom,
 }
 
@@ -86,12 +85,10 @@ impl App {
         app
     }
 
-    /// TODO: documentation
     pub fn is_at_bottom(&self) -> bool {
         matches!(self.mode, Mode::Bottom)
     }
 
-    /// TODO: documentation
     pub fn hit_bottom(&mut self) {
         self.mode = Mode::Bottom;
     }

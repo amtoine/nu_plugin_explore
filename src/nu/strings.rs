@@ -1,4 +1,3 @@
-/// TODO: documentation
 #[derive(Debug, PartialEq)]
 pub(crate) enum SpecialString {
     Url,
@@ -15,7 +14,6 @@ impl std::fmt::Display for SpecialString {
     }
 }
 
-/// TODO: documentation
 impl SpecialString {
     pub(crate) fn parse(input: &str) -> Option<Self> {
         if let Ok(url) = url::Url::parse(input) {

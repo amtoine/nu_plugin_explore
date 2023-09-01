@@ -1,10 +1,8 @@
-//! TODO: documentation
 use nu_protocol::{
     ast::{CellPath, PathMember},
     Record, Span, Value,
 };
 
-/// TODO: documentation
 pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
     if cell_path.members.is_empty() {
         return cell.clone();
@@ -59,7 +57,6 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
     }
 }
 
-/// TODO: documentation
 pub(crate) fn is_table(value: &Value) -> bool {
     match value {
         Value::List { vals, .. } => {
