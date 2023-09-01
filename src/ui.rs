@@ -681,7 +681,6 @@ mod tests {
 
     #[test]
     fn table() {
-        #[rustfmt::skip]
         let table = vec![
             Value::test_record(record! {
                 "a" => Value::test_string("x"),
