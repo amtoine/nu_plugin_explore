@@ -64,15 +64,15 @@ pub(crate) fn is_table(value: &Value) -> bool {
     match value {
         Value::List { vals, .. } => {
             if vals.is_empty() {
-                false
-            } else {
-                match vals[0] {
-                    Value::Record { .. } => {
-                        let first = vals[0].get_type().to_string();
-                        vals.iter().all(|v| v.get_type().to_string() == first)
-                    }
-                    _ => false,
+                return false;
+            }
+
+            match vals[0] {
+                Value::Record { .. } => {
+                    let first = vals[0].get_type().to_string();
+                    vals.iter().all(|v| v.get_type().to_string() == first)
                 }
+                _ => false,
             }
         }
         _ => false,
