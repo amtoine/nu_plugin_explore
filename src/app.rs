@@ -40,7 +40,7 @@ impl std::fmt::Display for Mode {
 /// the complete state of the application
 pub struct App {
     /// the full current path in the data
-    pub cell_path: CellPath,
+    pub position: CellPath,
     /// the current [`Mode`]
     pub mode: Mode,
     /// the editor to modify the cells of the data
@@ -50,7 +50,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            cell_path: CellPath { members: vec![] },
+            position: CellPath { members: vec![] },
             mode: Mode::default(),
             editor: Editor::default(),
         }
@@ -64,12 +64,12 @@ impl App {
     pub(super) fn from_value(value: &Value) -> Self {
         let mut app = Self::default();
         match value {
-            Value::List { vals, .. } => app.cell_path.members.push(PathMember::Int {
+            Value::List { vals, .. } => app.position.members.push(PathMember::Int {
                 val: 0,
                 span: Span::unknown(),
                 optional: vals.is_empty(),
             }),
-            Value::Record { val: rec, .. } => app.cell_path.members.push(PathMember::String {
+            Value::Record { val: rec, .. } => app.position.members.push(PathMember::String {
                 val: rec.cols.get(0).unwrap_or(&"".to_string()).into(),
                 span: Span::unknown(),
                 optional: rec.cols.is_empty(),

@@ -40,7 +40,7 @@ pub fn handle_key_events(
             } else if key_event.code == config.keybindings.insert {
                 let value = &value
                     .clone()
-                    .follow_cell_path(&app.cell_path.members, false)
+                    .follow_cell_path(&app.position.members, false)
                     .unwrap();
 
                 match value {
@@ -100,21 +100,21 @@ pub fn handle_key_events(
             } else if key_event.code == config.keybindings.peeking.all {
                 return Ok(TransitionResult::Return(value.clone()));
             } else if key_event.code == config.keybindings.peeking.view {
-                app.cell_path.members.pop();
+                app.position.members.pop();
                 return Ok(TransitionResult::Return(
                     value
                         .clone()
-                        .follow_cell_path(&app.cell_path.members, false)?,
+                        .follow_cell_path(&app.position.members, false)?,
                 ));
             } else if key_event.code == config.keybindings.peeking.under {
                 return Ok(TransitionResult::Return(
                     value
                         .clone()
-                        .follow_cell_path(&app.cell_path.members, false)?,
+                        .follow_cell_path(&app.position.members, false)?,
                 ));
             } else if key_event.code == config.keybindings.peeking.cell_path {
                 return Ok(TransitionResult::Return(Value::cell_path(
-                    app.cell_path.clone(),
+                    app.position.clone(),
                     Span::unknown(),
                 )));
             }
@@ -129,7 +129,7 @@ pub fn handle_key_events(
                 return Ok(TransitionResult::Return(
                     value
                         .clone()
-                        .follow_cell_path(&app.cell_path.members, false)?,
+                        .follow_cell_path(&app.position.members, false)?,
                 ));
             }
         }
@@ -295,7 +295,7 @@ mod tests {
         let mut app = App::from_value(&value);
 
         assert!(!app.is_at_bottom());
-        assert_eq!(app.cell_path.members, to_path_member_vec(vec![PM::S("l")]));
+        assert_eq!(app.position.members, to_path_member_vec(vec![PM::S("l")]));
 
         let transitions = vec![
             (nav.up, vec![PM::S("i")], false),
@@ -376,11 +376,11 @@ mod tests {
                 );
             }
             assert_eq!(
-                app.cell_path.members,
+                app.position.members,
                 expected,
                 "expected to be at {:?}, found {:?}",
                 repr_path_member_vec(&expected),
-                repr_path_member_vec(&app.cell_path.members)
+                repr_path_member_vec(&app.position.members)
             );
         }
     }

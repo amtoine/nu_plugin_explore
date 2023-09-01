@@ -33,12 +33,9 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
         Direction::Down => 1,
     };
 
-    let current = app.cell_path.members.pop();
+    let current = app.position.members.pop();
 
-    match input
-        .clone()
-        .follow_cell_path(&app.cell_path.members, false)
-    {
+    match input.clone().follow_cell_path(&app.position.members, false) {
         Ok(Value::List { vals, .. }) => {
             let new = match current {
                 Some(PathMember::Int {
@@ -60,7 +57,7 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
                 None => panic!("unexpected error when unpacking current cell path"),
                 _ => panic!("current should be an integer path member"),
             };
-            app.cell_path.members.push(new);
+            app.position.members.push(new);
         }
         Ok(Value::Record { val: rec, .. }) => {
             let new = match current {
@@ -84,7 +81,7 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
                 None => panic!("unexpected error when unpacking current cell path"),
                 _ => panic!("current should be an string path member"),
             };
-            app.cell_path.members.push(new);
+            app.position.members.push(new);
         }
         Err(_) => panic!("unexpected error when following cell path"),
         _ => {}
@@ -98,16 +95,13 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, input: &Value, direction: Dir
 /// > - push a new *cell path* member to the state if there is more depth ahead
 /// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
 pub(super) fn go_deeper_in_data(app: &mut App, input: &Value) {
-    match input
-        .clone()
-        .follow_cell_path(&app.cell_path.members, false)
-    {
-        Ok(Value::List { vals, .. }) => app.cell_path.members.push(PathMember::Int {
+    match input.clone().follow_cell_path(&app.position.members, false) {
+        Ok(Value::List { vals, .. }) => app.position.members.push(PathMember::Int {
             val: 0,
             span: Span::unknown(),
             optional: vals.is_empty(),
         }),
-        Ok(Value::Record { val: rec, .. }) => app.cell_path.members.push(PathMember::String {
+        Ok(Value::Record { val: rec, .. }) => app.position.members.push(PathMember::String {
             val: rec.cols.get(0).unwrap_or(&"".to_string()).into(),
             span: Span::unknown(),
             optional: rec.cols.is_empty(),
@@ -123,8 +117,8 @@ pub(super) fn go_deeper_in_data(app: &mut App, input: &Value) {
 /// > - the state is always marked as *not at the bottom*
 /// > - the state *cell path* can have it's last member popped if possible
 pub(super) fn go_back_in_data(app: &mut App) {
-    if !app.is_at_bottom() & (app.cell_path.members.len() > 1) {
-        app.cell_path.members.pop();
+    if !app.is_at_bottom() & (app.position.members.len() > 1) {
+        app.position.members.pop();
     }
     app.mode = Mode::Normal;
 }
@@ -172,7 +166,7 @@ mod tests {
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, &value, direction);
             let expected = vec![test_int_pathmember(id)];
-            assert_eq!(app.cell_path.members, expected);
+            assert_eq!(app.position.members, expected);
         }
     }
 
@@ -196,7 +190,7 @@ mod tests {
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, &value, direction);
             let expected = vec![test_string_pathmember(id)];
-            assert_eq!(app.cell_path.members, expected);
+            assert_eq!(app.position.members, expected);
         }
     }
 
@@ -208,15 +202,15 @@ mod tests {
         let mut app = App::from_value(&value);
 
         let mut expected = vec![test_int_pathmember(0)];
-        assert_eq!(app.cell_path.members, expected);
+        assert_eq!(app.position.members, expected);
 
         go_deeper_in_data(&mut app, &value);
         expected.push(test_string_pathmember("a"));
-        assert_eq!(app.cell_path.members, expected);
+        assert_eq!(app.position.members, expected);
 
         go_deeper_in_data(&mut app, &value);
         expected.push(test_int_pathmember(0));
-        assert_eq!(app.cell_path.members, expected);
+        assert_eq!(app.position.members, expected);
     }
 
     #[test]
@@ -236,27 +230,27 @@ mod tests {
             "a" => Value::test_list(vec![Value::test_nothing()]),
         })]);
         let mut app = App::from_value(&value);
-        app.cell_path.members = vec![
+        app.position.members = vec![
             test_int_pathmember(0),
             test_string_pathmember("a"),
             test_int_pathmember(0),
         ];
         app.hit_bottom();
 
-        let mut expected = app.cell_path.members.clone();
+        let mut expected = app.position.members.clone();
 
         go_back_in_data(&mut app);
-        assert_eq!(app.cell_path.members, expected);
-
-        go_back_in_data(&mut app);
-        expected.pop();
-        assert_eq!(app.cell_path.members, expected);
+        assert_eq!(app.position.members, expected);
 
         go_back_in_data(&mut app);
         expected.pop();
-        assert_eq!(app.cell_path.members, expected);
+        assert_eq!(app.position.members, expected);
 
         go_back_in_data(&mut app);
-        assert_eq!(app.cell_path.members, expected);
+        expected.pop();
+        assert_eq!(app.position.members, expected);
+
+        go_back_in_data(&mut app);
+        assert_eq!(app.position.members, expected);
     }
 }

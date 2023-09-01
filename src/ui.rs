@@ -228,7 +228,7 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, data: &Value, app: &App, co
     };
     let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
-    let mut data_path = app.cell_path.members.clone();
+    let mut data_path = app.position.members.clone();
     let current = if !app.is_at_bottom() {
         data_path.pop()
     } else {
@@ -463,7 +463,7 @@ fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, app: &App) {
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
-        app.cell_path
+        app.position
             .members
             .iter()
             .map(|m| {

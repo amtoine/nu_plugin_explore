@@ -71,8 +71,7 @@ pub fn explore(call: &EvaluatedCall, input: &Value) -> Result<Value> {
                         TransitionResult::Quit => break,
                         TransitionResult::Continue => {}
                         TransitionResult::Edit(val) => {
-                            value =
-                                crate::nu::value::mutate_value_cell(&value, &app.cell_path, &val)
+                            value = crate::nu::value::mutate_value_cell(&value, &app.position, &val)
                         }
                         TransitionResult::Error(error) => {
                             tui.draw(&mut app, &value, &config, Some(&error))?;
