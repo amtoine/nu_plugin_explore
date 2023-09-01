@@ -213,15 +213,51 @@ mod tests {
     fn is_a_table() {
         let table = Value::test_list(vec![
             Value::test_record(record! {
-                "a" => Value::test_string("a"),
+                "a" => Value::test_string("foo"),
                 "b" => Value::test_int(1),
             }),
             Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
+                "a" => Value::test_string("bar"),
+                "b" => Value::test_int(2),
             }),
         ]);
         assert_eq!(is_table(&table), true);
+
+        let table_with_out_of_order_columns = Value::test_list(vec![
+            Value::test_record(record! {
+                "b" => Value::test_int(1),
+                "a" => Value::test_string("foo"),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("bar"),
+                "b" => Value::test_int(2),
+            }),
+        ]);
+        assert_eq!(is_table(&table_with_out_of_order_columns), true);
+
+        let table_with_nulls = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_nothing(),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("bar"),
+                "b" => Value::test_int(2),
+            }),
+        ]);
+        assert_eq!(is_table(&table_with_nulls), true);
+
+        let table_with_number_colum = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("foo"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("bar"),
+                "b" => Value::test_float(2.34),
+            }),
+        ]);
+        assert_eq!(is_table(&table_with_number_colum), true);
 
         let not_a_table = Value::test_list(vec![
             Value::test_record(record! {
