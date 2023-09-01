@@ -150,6 +150,8 @@ impl SpecialString {
             } else {
                 Some(Self::Url)
             }
+        } else if input.contains('\n') {
+            None
         } else if input.contains('/') {
             Some(Self::Path)
         } else {
@@ -174,6 +176,7 @@ mod special_strings_tests {
             ("../../relative/path/", Some(SpecialString::Path)),
             ("file:", Some(SpecialString::Path)),
             ("normal string with a / inside", Some(SpecialString::Path)),
+            ("normal string with \na / inside", None),
         ];
 
         for (input, expected) in cases {
