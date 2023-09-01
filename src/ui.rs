@@ -71,7 +71,7 @@ struct DataRowRepr {
 }
 
 impl DataRowRepr {
-    #[allow(dead_code)]
+    #[cfg(test)]
     fn unnamed(data: impl Into<String>, shape: impl Into<String>) -> Self {
         Self {
             name: None,
@@ -80,7 +80,7 @@ impl DataRowRepr {
         }
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     fn named(name: impl Into<String>, data: impl Into<String>, shape: impl Into<String>) -> Self {
         Self {
             name: Some(name.into()),
