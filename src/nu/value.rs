@@ -85,6 +85,10 @@ mod tests {
     use crate::nu::cell_path::{to_path_member_vec, PM};
     use nu_protocol::{ast::CellPath, record, Config, Value};
 
+    fn default_value_repr(value: &Value) -> String {
+        value.into_string(" ", &Config::default())
+    }
+
     #[test]
     fn value_mutation() {
         let list = Value::test_list(vec![
@@ -201,11 +205,20 @@ mod tests {
 
         for (value, members, cell, expected) in cases {
             let cell_path = CellPath {
-                members: to_path_member_vec(members),
+                members: to_path_member_vec(&members),
             };
 
-            // TODO: add proper error messages
-            assert_eq!(mutate_value_cell(&value, &cell_path, &cell), expected);
+            let result = mutate_value_cell(&value, &cell_path, &cell);
+            assert_eq!(
+                result,
+                expected,
+                "mutating {} at {:?} with {} should give {}, found {}",
+                default_value_repr(&value),
+                PM::as_cell_path(&members),
+                default_value_repr(&cell),
+                default_value_repr(&expected),
+                default_value_repr(&result)
+            );
         }
     }
 
@@ -225,7 +238,7 @@ mod tests {
             is_table(&table),
             true,
             "{} should be a table",
-            table.into_string(" ", &Config::default())
+            default_value_repr(&table)
         );
 
         let table_with_out_of_order_columns = Value::test_list(vec![
@@ -242,7 +255,7 @@ mod tests {
             is_table(&table_with_out_of_order_columns),
             true,
             "{} should be a table",
-            table_with_out_of_order_columns.into_string(" ", &Config::default())
+            default_value_repr(&table_with_out_of_order_columns)
         );
 
         let table_with_nulls = Value::test_list(vec![
@@ -259,7 +272,7 @@ mod tests {
             is_table(&table_with_nulls),
             true,
             "{} should be a table",
-            table_with_nulls.into_string(" ", &Config::default())
+            default_value_repr(&table_with_nulls)
         );
 
         let table_with_number_colum = Value::test_list(vec![
@@ -272,9 +285,11 @@ mod tests {
                 "b" => Value::test_float(2.34),
             }),
         ]);
-        assert_eq!(is_table(&table_with_number_colum), true,
+        assert_eq!(
+            is_table(&table_with_number_colum),
+            true,
             "{} should be a table",
-            table_with_number_colum.into_string(" ", &Config::default())
+            default_value_repr(&table_with_number_colum)
         );
 
         let not_a_table = Value::test_list(vec![
@@ -290,7 +305,7 @@ mod tests {
             is_table(&not_a_table),
             false,
             "{} should not be a table",
-            not_a_table.into_string(" ", &Config::default())
+            default_value_repr(&not_a_table)
         );
 
         assert_eq!(is_table(&Value::test_int(0)), false);
