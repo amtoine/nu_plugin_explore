@@ -1,4 +1,6 @@
 //! the module responsible for rendering the TUI
+use crate::nu::value::is_table;
+
 use super::config::{repr_keycode, Layout};
 use super::{App, Config, Mode};
 use crossterm::event::KeyCode;
@@ -220,27 +222,6 @@ fn repr_data(data: &Value, cell_path: &[PathMember]) -> Vec<DataRowRepr> {
             }
         }
         Ok(value) => vec![repr_simple_value(&value)],
-    }
-}
-
-/// TODO: documentation
-fn is_table(value: &Value, cell_path: &[PathMember]) -> Option<bool> {
-    match value.clone().follow_cell_path(cell_path, false) {
-        Ok(Value::List { vals, .. }) => {
-            if vals.is_empty() {
-                Some(false)
-            } else {
-                match vals[0] {
-                    Value::Record { .. } => {
-                        let first = vals[0].get_type().to_string();
-                        Some(vals.iter().all(|v| v.get_type().to_string() == first))
-                    }
-                    _ => Some(false),
-                }
-            }
-        }
-        Ok(_) => Some(false),
-        Err(_) => None,
     }
 }
 
@@ -648,9 +629,7 @@ fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &C
 mod tests {
     use nu_protocol::{record, Value};
 
-    use super::{
-        is_table, repr_data, repr_list, repr_record, repr_simple_value, repr_table, DataRowRepr,
-    };
+    use super::{repr_data, repr_list, repr_record, repr_simple_value, repr_table, DataRowRepr};
 
     #[test]
     fn simple_value() {
@@ -749,36 +728,6 @@ mod tests {
             DataRowRepr::named("i", "123", "int"),
         ];
         assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn is_a_table() {
-        #[rustfmt::skip]
-        let table = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-        ]);
-        assert_eq!(is_table(&table, &[]), Some(true));
-
-        #[rustfmt::skip]
-        let not_a_table = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-            }),
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-        ]);
-        assert_eq!(is_table(&not_a_table, &[]), Some(false));
-
-        assert_eq!(is_table(&Value::test_int(0), &[]), Some(false));
     }
 
     #[test]

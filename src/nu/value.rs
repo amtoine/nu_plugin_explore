@@ -59,9 +59,30 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
     }
 }
 
+/// TODO: documentation
+pub(crate) fn is_table(value: &Value, cell_path: &[PathMember]) -> Option<bool> {
+    match value.clone().follow_cell_path(cell_path, false) {
+        Ok(Value::List { vals, .. }) => {
+            if vals.is_empty() {
+                Some(false)
+            } else {
+                match vals[0] {
+                    Value::Record { .. } => {
+                        let first = vals[0].get_type().to_string();
+                        Some(vals.iter().all(|v| v.get_type().to_string() == first))
+                    }
+                    _ => Some(false),
+                }
+            }
+        }
+        Ok(_) => Some(false),
+        Err(_) => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::mutate_value_cell;
+    use super::{is_table, mutate_value_cell};
     use crate::nu::cell_path::{to_path_member_vec, PM};
     use nu_protocol::{ast::CellPath, record, Value};
 
@@ -187,5 +208,35 @@ mod tests {
             // TODO: add proper error messages
             assert_eq!(mutate_value_cell(&value, &cell_path, &cell), expected);
         }
+    }
+
+    #[test]
+    fn is_a_table() {
+        #[rustfmt::skip]
+        let table = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+        ]);
+        assert_eq!(is_table(&table, &[]), Some(true));
+
+        #[rustfmt::skip]
+        let not_a_table = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+        ]);
+        assert_eq!(is_table(&not_a_table, &[]), Some(false));
+
+        assert_eq!(is_table(&Value::test_int(0), &[]), Some(false));
     }
 }
