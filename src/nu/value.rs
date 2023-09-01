@@ -5,9 +5,9 @@ use nu_protocol::{
 };
 
 /// TODO: documentation
-pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value) -> Value {
+pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
     if cell_path.members.is_empty() {
-        return val.clone();
+        return cell.clone();
     }
 
     if value
@@ -32,7 +32,7 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
             cell_path.members.remove(0);
 
             let mut vals = vals.clone();
-            vals[id] = mutate_value_cell(&vals[id], &cell_path, val);
+            vals[id] = mutate_value_cell(&vals[id], &cell_path, cell);
 
             Value::list(vals, Span::unknown())
         }
@@ -46,7 +46,7 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
             let id = rec.cols.iter().position(|x| *x == col).unwrap_or(0);
 
             let mut vals = rec.vals.clone();
-            vals[id] = mutate_value_cell(&vals[id], &cell_path, val);
+            vals[id] = mutate_value_cell(&vals[id], &cell_path, cell);
 
             let mut record = Record::new();
             rec.cols.iter().zip(vals).for_each(|(col, val)| {
@@ -55,7 +55,7 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, val: &Value
 
             Value::record(record, Span::unknown())
         }
-        _ => val.clone(),
+        _ => cell.clone(),
     }
 }
 
