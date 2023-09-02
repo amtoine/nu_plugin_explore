@@ -26,7 +26,9 @@ build:
 register:
 	nu --commands "register target/release/nu_plugin_explore"
 
-install: build register
+install:
+	cargo install --path .
+	nu --commands "register ${CARGO_HOME}/bin/nu_plugin_explore"
 
 clean:
 	cargo remove nu-plugin
