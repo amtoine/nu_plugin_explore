@@ -750,7 +750,7 @@ mod tests {
         let expected = (
             vec!["b".into(), "a".into()],
             vec!["int".into(), "string".into()],
-            vec![vec!["2".into(), "y".into()], vec!["1".into(), "x".into()]],
+            vec![vec!["1".into(), "x".into()], vec!["2".into(), "y".into()]],
         );
 
         assert_eq!(repr_table(&table), expected);
