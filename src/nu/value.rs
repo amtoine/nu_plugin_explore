@@ -100,11 +100,10 @@ pub(crate) fn is_table(value: &Value) -> bool {
                                     if v.is_numeric() && ty.is_numeric() {
                                     } else if (!v.is_numeric() && ty.is_numeric())
                                         | (v.is_numeric() && !ty.is_numeric())
-                                    {
-                                        return false;
-                                    } else if v != ty {
                                         // NOTE: this might need a bit more work to include more
                                         // tables
+                                        | (v != ty)
+                                    {
                                         return false;
                                     }
                                 }
