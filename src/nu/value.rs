@@ -333,7 +333,7 @@ mod tests {
             default_value_repr(&table_with_number_colum)
         );
 
-        let not_a_table = Value::test_list(vec![
+        let not_a_table_missing_field = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_string("a"),
             }),
@@ -343,10 +343,27 @@ mod tests {
             }),
         ]);
         assert_eq!(
-            is_table(&not_a_table),
+            is_table(&not_a_table_missing_field),
             false,
             "{} should not be a table",
-            default_value_repr(&not_a_table)
+            default_value_repr(&not_a_table_missing_field)
+        );
+
+        let not_a_table_incompatible_types = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_list(vec![Value::test_int(1)]),
+            }),
+        ]);
+        assert_eq!(
+            is_table(&not_a_table_incompatible_types),
+            false,
+            "{} should not be a table",
+            default_value_repr(&not_a_table_incompatible_types)
         );
 
         assert_eq!(is_table(&Value::test_int(0)), false);
