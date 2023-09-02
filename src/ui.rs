@@ -680,7 +680,7 @@ mod tests {
     }
 
     #[test]
-    fn table() {
+    fn repr_simple_table() {
         let table = vec![
             Value::test_record(record! {
                 "a" => Value::test_string("x"),
@@ -696,6 +696,97 @@ mod tests {
             vec!["a".into(), "b".into()],
             vec!["string".into(), "int".into()],
             vec![vec!["x".into(), "1".into()], vec!["y".into(), "2".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_table_with_empty_column() {
+        let table = vec![
+            Value::test_record(record! {
+                "a" => Value::test_nothing(),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_nothing(),
+                "b" => Value::test_int(2),
+            }),
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["nothing".into(), "int".into()],
+            vec![vec!["".into(), "1".into()], vec!["".into(), "2".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_table_with_shuffled_columns() {
+        let table = vec![
+            Value::test_record(record! {
+                "b" => Value::test_int(1),
+                "a" => Value::test_string("x"),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("y"),
+                "b" => Value::test_int(2),
+            }),
+        ];
+
+        let expected = (
+            vec!["b".into(), "a".into()],
+            vec!["int".into(), "string".into()],
+            vec![vec!["2".into(), "y".into()], vec!["1".into(), "x".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_table_with_holes() {
+        let table = vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("x"),
+                "b" => Value::test_nothing(),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_nothing(),
+                "b" => Value::test_int(2),
+            }),
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["string".into(), "int".into()],
+            vec![vec!["x".into(), "".into()], vec!["".into(), "2".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_table_with_mixed_numeric_types() {
+        let table = vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("x"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("y"),
+                "b" => Value::test_float(2.34),
+            }),
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["string".into(), "number".into()],
+            vec![
+                vec!["x".into(), "1".into()],
+                vec!["y".into(), "2.34".into()],
+            ],
         );
 
         assert_eq!(repr_table(&table), expected);
