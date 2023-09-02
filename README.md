@@ -49,7 +49,7 @@ in version `0.xx.1`, only the stable `0.xx.0` :open_mouth:
 - clone the [Nushell repository][nushell/nushell] somewhere
 - setup the dependencies
 ```shell
-make NUSHELL_PATH=/path/to/nushell/ dev-deps
+make dev-deps
 ```
 
 there are three ways to do it:
