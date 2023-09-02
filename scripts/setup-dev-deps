@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+if [[ -z "$NUSHELL_PATH" ]]; then
+    path=$(cargo install --list | grep '^nu v' | sed 's/^.*(//; s/):$//')
+
+    [[ -z "$path" ]] && {
+        echo "couldn't find path to nushell source, please set \`NUSHELL_PATH\` manually"
+        exit 0
+    }
+else
+    path="$NUSHELL_PATH"
+fi
+
+cargo add nu-plugin --path "$path/crates/nu-plugin/"
+cargo add nu-protocol --path "$path/crates/nu-protocol/" --features plugin
