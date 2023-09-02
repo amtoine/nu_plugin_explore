@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use nu_protocol::{
     ast::{CellPath, PathMember},
-    Record, Span, Value,
+    Record, Span, Type, Value,
 };
 
 pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
@@ -64,13 +66,56 @@ pub(crate) fn is_table(value: &Value) -> bool {
                 return false;
             }
 
-            match vals[0] {
-                Value::Record { .. } => {
-                    let first = vals[0].get_type().to_string();
-                    vals.iter().all(|v| v.get_type().to_string() == first)
-                }
-                _ => false,
+            // extract the columns of each row as hashmaps for easier access
+            let mut rows = Vec::new();
+            for val in vals {
+                match val.get_type() {
+                    Type::Record(fields) => {
+                        rows.push(fields.into_iter().collect::<HashMap<String, Type>>())
+                    }
+                    _ => return false,
+                };
             }
+
+            // check the number of columns for each row
+            let n = rows[0].keys().len();
+            for row in rows.iter().skip(1) {
+                if row.keys().len() != n {
+                    return false;
+                }
+            }
+
+            // check the actual types for each column
+            // - if a row has a null, it doesn't count as "not a table"
+            // - if two rows are numeric, then the check can continue
+            for (key, val) in rows[0].iter() {
+                let mut ty = val;
+
+                for row in rows.iter().skip(1) {
+                    match row.get(key) {
+                        Some(v) => match ty {
+                            Type::Nothing => ty = v,
+                            _ => {
+                                if !matches!(v, Type::Nothing) {
+                                    if v.is_numeric() && ty.is_numeric() {
+                                    } else if (!v.is_numeric() && ty.is_numeric())
+                                        | (v.is_numeric() && !ty.is_numeric())
+                                    {
+                                        return false;
+                                    } else if v != ty {
+                                        // NOTE: this might need a bit more work to include more
+                                        // tables
+                                        return false;
+                                    }
+                                }
+                            }
+                        },
+                        None => return false,
+                    }
+                }
+            }
+
+            true
         }
         _ => false,
     }
