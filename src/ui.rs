@@ -5,7 +5,7 @@ use super::config::{repr_keycode, Layout};
 use super::{App, Config, Mode};
 use crossterm::event::KeyCode;
 use nu_protocol::ast::PathMember;
-use nu_protocol::Value;
+use nu_protocol::{Type, Value};
 use ratatui::prelude::Backend;
 use ratatui::{
     prelude::{Alignment, Constraint, Rect},
@@ -194,23 +194,34 @@ fn repr_data(data: &Value) -> Vec<DataRowRepr> {
 ///
 /// > see the tests for detailed examples
 fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
-    let shapes = table[0]
-        .columns()
-        .iter()
-        .map(|c| table[0].get_data_by_key(c).unwrap().get_type().to_string())
-        .collect();
+    let columns = table[0].columns();
+    let mut shapes = vec![Type::Nothing; columns.len()];
 
-    let rows = table
-        .iter()
-        .map(|v| {
-            v.columns()
-                .iter()
-                .map(|c| repr_value(&v.get_data_by_key(c).unwrap()).data)
-                .collect::<Vec<String>>()
-        })
-        .collect::<Vec<Vec<String>>>();
+    let mut rows = vec![vec![]; table.len()];
 
-    (table[0].columns().to_vec(), shapes, rows)
+    for (i, row) in table.iter().enumerate() {
+        for (j, col) in columns.iter().enumerate() {
+            // NOTE: because `table` is a valid table, this should always be a `Some`
+            let val = row.get_data_by_key(col).unwrap();
+
+            let cell_type = val.get_type();
+            if !matches!(cell_type, Type::Nothing) {
+                if shapes[j].is_numeric() && cell_type.is_numeric() && (shapes[j] != cell_type) {
+                    shapes[j] = Type::Number;
+                } else {
+                    shapes[j] = cell_type;
+                }
+            }
+
+            rows[i].push(repr_value(&val).data);
+        }
+    }
+
+    (
+        columns.to_vec(),
+        shapes.iter().map(|s| s.to_string()).collect(),
+        rows,
+    )
 }
 
 /// render the whole data
@@ -680,7 +691,7 @@ mod tests {
     }
 
     #[test]
-    fn table() {
+    fn repr_simple_table() {
         let table = vec![
             Value::test_record(record! {
                 "a" => Value::test_string("x"),
@@ -696,6 +707,97 @@ mod tests {
             vec!["a".into(), "b".into()],
             vec!["string".into(), "int".into()],
             vec![vec!["x".into(), "1".into()], vec!["y".into(), "2".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_table_with_empty_column() {
+        let table = vec![
+            Value::test_record(record! {
+                "a" => Value::test_nothing(),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_nothing(),
+                "b" => Value::test_int(2),
+            }),
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["nothing".into(), "int".into()],
+            vec![vec!["".into(), "1".into()], vec!["".into(), "2".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_table_with_shuffled_columns() {
+        let table = vec![
+            Value::test_record(record! {
+                "b" => Value::test_int(1),
+                "a" => Value::test_string("x"),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("y"),
+                "b" => Value::test_int(2),
+            }),
+        ];
+
+        let expected = (
+            vec!["b".into(), "a".into()],
+            vec!["int".into(), "string".into()],
+            vec![vec!["1".into(), "x".into()], vec!["2".into(), "y".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_table_with_holes() {
+        let table = vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("x"),
+                "b" => Value::test_nothing(),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_nothing(),
+                "b" => Value::test_int(2),
+            }),
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["string".into(), "int".into()],
+            vec![vec!["x".into(), "".into()], vec!["".into(), "2".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_table_with_mixed_numeric_types() {
+        let table = vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("x"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("y"),
+                "b" => Value::test_float(2.34),
+            }),
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["string".into(), "number".into()],
+            vec![
+                vec!["x".into(), "1".into()],
+                vec!["y".into(), "2.34".into()],
+            ],
         );
 
         assert_eq!(repr_table(&table), expected);

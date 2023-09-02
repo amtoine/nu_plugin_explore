@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use nu_protocol::{
     ast::{CellPath, PathMember},
-    Record, Span, Value,
+    Record, Span, Type, Value,
 };
 
 pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
@@ -61,16 +63,58 @@ pub(crate) fn is_table(value: &Value) -> bool {
     match value {
         Value::List { vals, .. } => {
             if vals.is_empty() {
-                false
-            } else {
-                match vals[0] {
-                    Value::Record { .. } => {
-                        let first = vals[0].get_type().to_string();
-                        vals.iter().all(|v| v.get_type().to_string() == first)
+                return false;
+            }
+
+            // extract the columns of each row as hashmaps for easier access
+            let mut rows = Vec::new();
+            for val in vals {
+                match val.get_type() {
+                    Type::Record(fields) => {
+                        rows.push(fields.into_iter().collect::<HashMap<String, Type>>())
                     }
-                    _ => false,
+                    _ => return false,
+                };
+            }
+
+            // check the number of columns for each row
+            let n = rows[0].keys().len();
+            for row in rows.iter().skip(1) {
+                if row.keys().len() != n {
+                    return false;
                 }
             }
+
+            // check the actual types for each column
+            // - if a row has a null, it doesn't count as "not a table"
+            // - if two rows are numeric, then the check can continue
+            for (key, val) in rows[0].iter() {
+                let mut ty = val;
+
+                for row in rows.iter().skip(1) {
+                    match row.get(key) {
+                        Some(v) => match ty {
+                            Type::Nothing => ty = v,
+                            _ => {
+                                if !matches!(v, Type::Nothing) {
+                                    if v.is_numeric() && ty.is_numeric() {
+                                    } else if (!v.is_numeric() && ty.is_numeric())
+                                        | (v.is_numeric() && !ty.is_numeric())
+                                        // NOTE: this might need a bit more work to include more
+                                        // tables
+                                        | (v != ty)
+                                    {
+                                        return false;
+                                    }
+                                }
+                            }
+                        },
+                        None => return false,
+                    }
+                }
+            }
+
+            true
         }
         _ => false,
     }
@@ -80,7 +124,11 @@ pub(crate) fn is_table(value: &Value) -> bool {
 mod tests {
     use super::{is_table, mutate_value_cell};
     use crate::nu::cell_path::{to_path_member_vec, PM};
-    use nu_protocol::{ast::CellPath, record, Value};
+    use nu_protocol::{ast::CellPath, record, Config, Value};
+
+    fn default_value_repr(value: &Value) -> String {
+        value.into_string(" ", &Config::default())
+    }
 
     #[test]
     fn value_mutation() {
@@ -198,11 +246,20 @@ mod tests {
 
         for (value, members, cell, expected) in cases {
             let cell_path = CellPath {
-                members: to_path_member_vec(members),
+                members: to_path_member_vec(&members),
             };
 
-            // TODO: add proper error messages
-            assert_eq!(mutate_value_cell(&value, &cell_path, &cell), expected);
+            let result = mutate_value_cell(&value, &cell_path, &cell);
+            assert_eq!(
+                result,
+                expected,
+                "mutating {} at {:?} with {} should give {}, found {}",
+                default_value_repr(&value),
+                PM::as_cell_path(&members),
+                default_value_repr(&cell),
+                default_value_repr(&expected),
+                default_value_repr(&result)
+            );
         }
     }
 
@@ -210,17 +267,73 @@ mod tests {
     fn is_a_table() {
         let table = Value::test_list(vec![
             Value::test_record(record! {
-                "a" => Value::test_string("a"),
+                "a" => Value::test_string("foo"),
                 "b" => Value::test_int(1),
             }),
             Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
+                "a" => Value::test_string("bar"),
+                "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(is_table(&table), true);
+        assert_eq!(
+            is_table(&table),
+            true,
+            "{} should be a table",
+            default_value_repr(&table)
+        );
 
-        let not_a_table = Value::test_list(vec![
+        let table_with_out_of_order_columns = Value::test_list(vec![
+            Value::test_record(record! {
+                "b" => Value::test_int(1),
+                "a" => Value::test_string("foo"),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("bar"),
+                "b" => Value::test_int(2),
+            }),
+        ]);
+        assert_eq!(
+            is_table(&table_with_out_of_order_columns),
+            true,
+            "{} should be a table",
+            default_value_repr(&table_with_out_of_order_columns)
+        );
+
+        let table_with_nulls = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_nothing(),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("bar"),
+                "b" => Value::test_int(2),
+            }),
+        ]);
+        assert_eq!(
+            is_table(&table_with_nulls),
+            true,
+            "{} should be a table",
+            default_value_repr(&table_with_nulls)
+        );
+
+        let table_with_number_colum = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("foo"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("bar"),
+                "b" => Value::test_float(2.34),
+            }),
+        ]);
+        assert_eq!(
+            is_table(&table_with_number_colum),
+            true,
+            "{} should be a table",
+            default_value_repr(&table_with_number_colum)
+        );
+
+        let not_a_table_missing_field = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_string("a"),
             }),
@@ -229,7 +342,29 @@ mod tests {
                 "b" => Value::test_int(1),
             }),
         ]);
-        assert_eq!(is_table(&not_a_table), false);
+        assert_eq!(
+            is_table(&not_a_table_missing_field),
+            false,
+            "{} should not be a table",
+            default_value_repr(&not_a_table_missing_field)
+        );
+
+        let not_a_table_incompatible_types = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_list(vec![Value::test_int(1)]),
+            }),
+        ]);
+        assert_eq!(
+            is_table(&not_a_table_incompatible_types),
+            false,
+            "{} should not be a table",
+            default_value_repr(&not_a_table_incompatible_types)
+        );
 
         assert_eq!(is_table(&Value::test_int(0)), false);
     }

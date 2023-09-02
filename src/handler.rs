@@ -272,7 +272,7 @@ mod tests {
         let mut app = App::from_value(value.clone());
 
         assert!(!app.is_at_bottom());
-        assert_eq!(app.position.members, to_path_member_vec(vec![PM::S("l")]));
+        assert_eq!(app.position.members, to_path_member_vec(&[PM::S("l")]));
 
         let transitions = vec![
             (nav.up, vec![PM::S("i")], false),
@@ -330,7 +330,7 @@ mod tests {
         ];
 
         for (key, cell_path, bottom) in transitions {
-            let expected = to_path_member_vec(cell_path);
+            let expected = to_path_member_vec(&cell_path);
             handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
                 .unwrap();
 

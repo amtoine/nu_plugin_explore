@@ -8,7 +8,7 @@ pub(crate) enum PM<'a> {
     I(usize),
 }
 
-pub(crate) fn to_path_member_vec(cell_path: Vec<PM>) -> Vec<PathMember> {
+pub(crate) fn to_path_member_vec(cell_path: &[PM]) -> Vec<PathMember> {
     cell_path
         .iter()
         .map(|x| match *x {
@@ -24,4 +24,22 @@ pub(crate) fn to_path_member_vec(cell_path: Vec<PM>) -> Vec<PathMember> {
             },
         })
         .collect::<Vec<_>>()
+}
+
+impl<'a> PM<'a> {
+    pub(crate) fn as_cell_path(members: &[Self]) -> String {
+        format!(
+            "$.{}",
+            members
+                .iter()
+                .map(|m| {
+                    match m {
+                        Self::I(val) => val.to_string(),
+                        Self::S(val) => val.to_string(),
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(".")
+        )
+    }
 }
