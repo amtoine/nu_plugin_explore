@@ -156,9 +156,9 @@ $env.explore_config = {
                 background: black,
                 foreground: lightgreen,
             }
-            bottom: {  # the colors for the status bar in BOTTOM mode
+            bottom: {  # the colors for the status bar when hitting the bottom of the data
                 background: black,
-                foreground: lightmagenta,
+                foreground: white,
             }
         }
         editor: {  # the colors when editing a cell

@@ -169,7 +169,7 @@ impl Default for Config {
                     },
                     bottom: BgFgColorConfig {
                         background: Color::Black,
-                        foreground: Color::LightMagenta,
+                        foreground: Color::White,
                     },
                 },
                 editor: EditorColorConfig {
