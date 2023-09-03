@@ -1,7 +1,7 @@
 //! navigate in the data in all directions
 use nu_protocol::{ast::PathMember, Span, Value};
 
-use crate::app::{App, Mode};
+use crate::app::App;
 
 /// specify a vertical direction in which to go in the data
 pub enum Direction {
@@ -24,7 +24,7 @@ pub enum Direction {
 /// > - not doing anything
 /// > - poping the last element to know where we are and then pushing back the new element
 pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
-    if app.is_at_bottom() {
+    if app.is_at_bottom {
         return;
     }
 
@@ -115,7 +115,7 @@ pub(super) fn go_deeper_in_data(app: &mut App) {
             optional: rec.cols.is_empty(),
         }),
         Err(_) => panic!("unexpected error when following cell path"),
-        _ => app.hit_bottom(),
+        _ => app.is_at_bottom = true,
     }
 }
 
@@ -125,10 +125,11 @@ pub(super) fn go_deeper_in_data(app: &mut App) {
 /// > - the state is always marked as *not at the bottom*
 /// > - the state *cell path* can have it's last member popped if possible
 pub(super) fn go_back_in_data(app: &mut App) {
-    if !app.is_at_bottom() & (app.position.members.len() > 1) {
+    if !app.is_at_bottom & (app.position.members.len() > 1) {
         app.position.members.pop();
     }
-    app.mode = Mode::Normal;
+
+    app.is_at_bottom = false;
 }
 
 // TODO: add proper assert error messages
@@ -226,10 +227,10 @@ mod tests {
         let value = Value::test_nothing();
         let mut app = App::from_value(value);
 
-        assert!(!app.is_at_bottom());
+        assert!(!app.is_at_bottom);
 
         go_deeper_in_data(&mut app);
-        assert!(app.is_at_bottom());
+        assert!(app.is_at_bottom);
     }
 
     #[test]
@@ -243,7 +244,7 @@ mod tests {
             test_string_pathmember("a"),
             test_int_pathmember(0),
         ];
-        app.hit_bottom();
+        app.is_at_bottom = true;
 
         let mut expected = app.position.members.clone();
 

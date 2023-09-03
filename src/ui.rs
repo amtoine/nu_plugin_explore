@@ -239,7 +239,7 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config)
     let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
     let mut data_path = app.position.members.clone();
-    let current = if !app.is_at_bottom() {
+    let current = if !app.is_at_bottom {
         data_path.pop()
     } else {
         None
@@ -522,59 +522,68 @@ fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, app: &App) {
 fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
-    let bg_style = match app.mode {
-        Mode::Normal => Style::default().bg(config.colors.status_bar.normal.background),
-        Mode::Insert => Style::default().bg(config.colors.status_bar.insert.background),
-        Mode::Peeking => Style::default().bg(config.colors.status_bar.peek.background),
-        Mode::Bottom => Style::default().bg(config.colors.status_bar.bottom.background),
+    let bg_style = if app.is_at_bottom {
+        Style::default().bg(config.colors.status_bar.bottom.background)
+    } else {
+        match app.mode {
+            Mode::Normal => Style::default().bg(config.colors.status_bar.normal.background),
+            Mode::Insert => Style::default().bg(config.colors.status_bar.insert.background),
+            Mode::Peeking => Style::default().bg(config.colors.status_bar.peek.background),
+        }
     };
 
-    let style = match app.mode {
-        Mode::Normal => bg_style.fg(config.colors.status_bar.normal.foreground),
-        Mode::Insert => bg_style.fg(config.colors.status_bar.insert.foreground),
-        Mode::Peeking => bg_style.fg(config.colors.status_bar.peek.foreground),
-        Mode::Bottom => bg_style.fg(config.colors.status_bar.bottom.foreground),
+    let style = if app.is_at_bottom {
+        bg_style.fg(config.colors.status_bar.bottom.foreground)
+    } else {
+        match app.mode {
+            Mode::Normal => bg_style.fg(config.colors.status_bar.normal.foreground),
+            Mode::Insert => bg_style.fg(config.colors.status_bar.insert.foreground),
+            Mode::Peeking => bg_style.fg(config.colors.status_bar.peek.foreground),
+        }
     };
 
-    let hints = match app.mode {
-        Mode::Normal => format!(
-            "{} to {} | {}{}{}{} to move around | {} to peek | {} to quit",
-            repr_keycode(&config.keybindings.insert),
-            Mode::Insert,
-            repr_keycode(&config.keybindings.navigation.left),
-            repr_keycode(&config.keybindings.navigation.down),
-            repr_keycode(&config.keybindings.navigation.up),
-            repr_keycode(&config.keybindings.navigation.right),
-            repr_keycode(&config.keybindings.peek),
-            repr_keycode(&config.keybindings.quit),
-        ),
-        Mode::Insert => format!(
-            "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",
-            repr_keycode(&KeyCode::Esc),
-            repr_keycode(&KeyCode::Left),
-            repr_keycode(&KeyCode::Right),
-            repr_keycode(&KeyCode::Up),
-            repr_keycode(&KeyCode::Down),
-            repr_keycode(&KeyCode::Backspace),
-            repr_keycode(&KeyCode::Delete),
-            repr_keycode(&KeyCode::Enter),
-        ),
-        Mode::Peeking => format!(
-            "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to peek the cell path",
-            repr_keycode(&config.keybindings.normal),
-            Mode::Normal,
-            repr_keycode(&config.keybindings.peeking.all),
-            repr_keycode(&config.keybindings.peeking.view),
-            repr_keycode(&config.keybindings.peeking.under),
-            repr_keycode(&config.keybindings.peeking.cell_path),
-        ),
-        Mode::Bottom => format!(
+    let hints = if app.is_at_bottom {
+        format!(
             "{} to {} | {} to peek | {} to quit",
             repr_keycode(&config.keybindings.navigation.left),
             Mode::Normal,
             repr_keycode(&config.keybindings.peek),
             repr_keycode(&config.keybindings.quit),
-        ),
+        )
+    } else {
+        match app.mode {
+            Mode::Normal => format!(
+                "{} to {} | {}{}{}{} to move around | {} to peek | {} to quit",
+                repr_keycode(&config.keybindings.insert),
+                Mode::Insert,
+                repr_keycode(&config.keybindings.navigation.left),
+                repr_keycode(&config.keybindings.navigation.down),
+                repr_keycode(&config.keybindings.navigation.up),
+                repr_keycode(&config.keybindings.navigation.right),
+                repr_keycode(&config.keybindings.peek),
+                repr_keycode(&config.keybindings.quit),
+            ),
+            Mode::Insert => format!(
+                "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",
+                repr_keycode(&KeyCode::Esc),
+                repr_keycode(&KeyCode::Left),
+                repr_keycode(&KeyCode::Right),
+                repr_keycode(&KeyCode::Up),
+                repr_keycode(&KeyCode::Down),
+                repr_keycode(&KeyCode::Backspace),
+                repr_keycode(&KeyCode::Delete),
+                repr_keycode(&KeyCode::Enter),
+            ),
+            Mode::Peeking => format!(
+                "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to peek the cell path",
+                repr_keycode(&config.keybindings.normal),
+                Mode::Normal,
+                repr_keycode(&config.keybindings.peeking.all),
+                repr_keycode(&config.keybindings.peeking.view),
+                repr_keycode(&config.keybindings.peeking.under),
+                repr_keycode(&config.keybindings.peeking.cell_path),
+            ),
+    }
     };
 
     let left = Line::from(Span::styled(

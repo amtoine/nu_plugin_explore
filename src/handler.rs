@@ -32,6 +32,21 @@ pub fn handle_key_events(
     app: &mut App,
     config: &Config,
 ) -> Result<TransitionResult, ShellError> {
+    if app.is_at_bottom {
+        if key_event.code == config.keybindings.quit {
+            return Ok(TransitionResult::Quit);
+        } else if key_event.code == config.keybindings.navigation.left {
+            app.is_at_bottom = false;
+            return Ok(TransitionResult::Continue);
+        } else if key_event.code == config.keybindings.peek {
+            return Ok(TransitionResult::Return(
+                app.value
+                    .clone()
+                    .follow_cell_path(&app.position.members, false)?,
+            ));
+        }
+    }
+
     match app.mode {
         Mode::Normal => {
             if key_event.code == config.keybindings.quit {
@@ -102,20 +117,6 @@ pub fn handle_key_events(
                     app.position.clone(),
                     Span::unknown(),
                 )));
-            }
-        }
-        Mode::Bottom => {
-            if key_event.code == config.keybindings.quit {
-                return Ok(TransitionResult::Quit);
-            } else if key_event.code == config.keybindings.navigation.left {
-                app.mode = Mode::Normal;
-                return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.peek {
-                return Ok(TransitionResult::Return(
-                    app.value
-                        .clone()
-                        .follow_cell_path(&app.position.members, false)?,
-                ));
             }
         }
     }
@@ -271,7 +272,7 @@ mod tests {
         let value = test_value();
         let mut app = App::from_value(value.clone());
 
-        assert!(!app.is_at_bottom());
+        assert!(!app.is_at_bottom);
         assert_eq!(app.position.members, to_path_member_vec(&[PM::S("l")]));
 
         let transitions = vec![
@@ -336,13 +337,13 @@ mod tests {
 
             if bottom {
                 assert!(
-                    app.is_at_bottom(),
+                    app.is_at_bottom,
                     "expected to be at the bottom after pressing {}",
                     repr_keycode(&key)
                 );
             } else {
                 assert!(
-                    !app.is_at_bottom(),
+                    !app.is_at_bottom,
                     "expected NOT to be at the bottom after pressing {}",
                     repr_keycode(&key)
                 );
