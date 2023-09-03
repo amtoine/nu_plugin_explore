@@ -46,6 +46,7 @@ pub struct App {
     pub value: Value,
 
     pub is_at_bottom: bool,
+    pub is_table: bool,
 }
 
 impl Default for App {
@@ -56,6 +57,7 @@ impl Default for App {
             editor: Editor::default(),
             value: Value::default(),
             is_at_bottom: false,
+            is_table: false,
         }
     }
 }
