@@ -15,7 +15,6 @@ pub enum Mode {
     Insert,
     /// the PEEKING mode lets the user *peek* data out of the application, to be reused later
     Peeking,
-    Bottom,
 }
 
 impl Default for Mode {
@@ -30,7 +29,6 @@ impl std::fmt::Display for Mode {
             Self::Normal => "NORMAL",
             Self::Insert => "INSERT",
             Self::Peeking => "PEEKING",
-            Self::Bottom => "BOTTOM",
         };
         write!(f, "{}", repr)
     }
@@ -46,6 +44,8 @@ pub struct App {
     pub editor: Editor,
     /// the value that is being explored
     pub value: Value,
+
+    pub is_at_bottom: bool,
 }
 
 impl Default for App {
@@ -55,6 +55,7 @@ impl Default for App {
             mode: Mode::default(),
             editor: Editor::default(),
             value: Value::default(),
+            is_at_bottom: false,
         }
     }
 }
@@ -83,14 +84,6 @@ impl App {
         app.value = value;
 
         app
-    }
-
-    pub fn is_at_bottom(&self) -> bool {
-        matches!(self.mode, Mode::Bottom)
-    }
-
-    pub fn hit_bottom(&mut self) {
-        self.mode = Mode::Bottom;
     }
 
     pub(super) fn enter_editor(&mut self) -> Result<(), String> {
