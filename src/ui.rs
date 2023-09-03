@@ -544,9 +544,8 @@ fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &C
 
     let hints = if app.is_at_bottom {
         format!(
-            "{} to {} | {} to peek | {} to quit",
+            "{} to go back | {} to peek | {} to quit",
             repr_keycode(&config.keybindings.navigation.left),
-            Mode::Normal,
             repr_keycode(&config.keybindings.peek),
             repr_keycode(&config.keybindings.quit),
         )
