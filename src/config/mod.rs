@@ -228,8 +228,8 @@ impl Config {
                 }
                 "colors" => {
                     let cell = follow_cell_path(&value, &["colors"]).unwrap();
-                    let columns = match cell {
-                        Value::Record { val: rec, .. } => rec.cols,
+                    let columns = match &cell {
+                        Value::Record { val: rec, .. } => &rec.cols,
                         x => return Err(invalid_type(&x, &["colors"], "record")),
                     };
 
@@ -237,8 +237,8 @@ impl Config {
                         match column.as_str() {
                             "normal" => {
                                 let cell = follow_cell_path(&value, &["colors", "normal"]).unwrap();
-                                let columns = match cell {
-                                    Value::Record { val: rec, .. } => rec.cols,
+                                let columns = match &cell {
+                                    Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -312,8 +312,8 @@ impl Config {
                             "status_bar" => {
                                 let cell =
                                     follow_cell_path(&value, &["colors", "status_bar"]).unwrap();
-                                let columns = match cell {
-                                    Value::Record { val: rec, .. } => rec.cols,
+                                let columns = match &cell {
+                                    Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -372,8 +372,8 @@ impl Config {
                             }
                             "editor" => {
                                 let cell = follow_cell_path(&value, &["colors", "editor"]).unwrap();
-                                let columns = match cell {
-                                    Value::Record { val: rec, .. } => rec.cols,
+                                let columns = match &cell {
+                                    Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -418,8 +418,8 @@ impl Config {
                 }
                 "keybindings" => {
                     let cell = follow_cell_path(&value, &["keybindings"]).unwrap();
-                    let columns = match cell {
-                        Value::Record { val: rec, .. } => rec.cols,
+                    let columns = match &cell {
+                        Value::Record { val: rec, .. } => &rec.cols,
                         x => return Err(invalid_type(&x, &["keybindings"], "record")),
                     };
 
@@ -443,8 +443,8 @@ impl Config {
                             "navigation" => {
                                 let cell = follow_cell_path(&value, &["keybindings", "navigation"])
                                     .unwrap();
-                                let columns = match cell {
-                                    Value::Record { val: rec, .. } => rec.cols,
+                                let columns = match &cell {
+                                    Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -505,8 +505,8 @@ impl Config {
                             "peeking" => {
                                 let cell =
                                     follow_cell_path(&value, &["keybindings", "peeking"]).unwrap();
-                                let columns = match cell {
-                                    Value::Record { val: rec, .. } => rec.cols,
+                                let columns = match &cell {
+                                    Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
                                             &x,
