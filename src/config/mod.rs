@@ -227,21 +227,18 @@ impl Config {
                     }
                 }
                 "colors" => {
-                    let (columns, span) = match follow_cell_path(&value, &["colors"]).unwrap() {
-                        Value::Record { val: rec, span, .. } => (rec.cols, span),
+                    let cell = follow_cell_path(&value, &["colors"]).unwrap();
+                    let columns = match cell {
+                        Value::Record { val: rec, .. } => rec.cols,
                         x => return Err(invalid_type(&x, &["colors"], "record")),
                     };
 
                     for column in columns {
                         match column.as_str() {
                             "normal" => {
-                                let (columns, span) = match follow_cell_path(
-                                    &value,
-                                    &["colors", "normal"],
-                                )
-                                .unwrap()
-                                {
-                                    Value::Record { val: rec, span, .. } => (rec.cols, span),
+                                let cell = follow_cell_path(&value, &["colors", "normal"]).unwrap();
+                                let columns = match cell {
+                                    Value::Record { val: rec, .. } => rec.cols,
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -283,7 +280,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "normal", x],
-                                                Some(span),
+                                                Some(cell.span()),
                                             ))
                                         }
                                     }
@@ -313,19 +310,18 @@ impl Config {
                                 }
                             }
                             "status_bar" => {
-                                let (columns, span) =
-                                    match follow_cell_path(&value, &["colors", "status_bar"])
-                                        .unwrap()
-                                    {
-                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
-                                        x => {
-                                            return Err(invalid_type(
-                                                &x,
-                                                &["colors", "status_bar"],
-                                                "record",
-                                            ))
-                                        }
-                                    };
+                                let cell =
+                                    follow_cell_path(&value, &["colors", "status_bar"]).unwrap();
+                                let columns = match cell {
+                                    Value::Record { val: rec, .. } => rec.cols,
+                                    x => {
+                                        return Err(invalid_type(
+                                            &x,
+                                            &["colors", "status_bar"],
+                                            "record",
+                                        ))
+                                    }
+                                };
 
                                 for column in columns {
                                     match column.as_str() {
@@ -368,20 +364,16 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "status_bar", x],
-                                                Some(span),
+                                                Some(cell.span()),
                                             ))
                                         }
                                     }
                                 }
                             }
                             "editor" => {
-                                let (columns, span) = match follow_cell_path(
-                                    &value,
-                                    &["colors", "editor"],
-                                )
-                                .unwrap()
-                                {
-                                    Value::Record { val: rec, span, .. } => (rec.cols, span),
+                                let cell = follow_cell_path(&value, &["colors", "editor"]).unwrap();
+                                let columns = match cell {
+                                    Value::Record { val: rec, .. } => rec.cols,
                                     x => {
                                         return Err(invalid_type(
                                             &x,
@@ -414,20 +406,20 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "editor", x],
-                                                Some(span),
+                                                Some(cell.span()),
                                             ))
                                         }
                                     }
                                 }
                             }
-                            x => return Err(invalid_field(&["colors", x], Some(span))),
+                            x => return Err(invalid_field(&["colors", x], Some(cell.span()))),
                         }
                     }
                 }
                 "keybindings" => {
-                    let (columns, span) = match follow_cell_path(&value, &["keybindings"]).unwrap()
-                    {
-                        Value::Record { val: rec, span, .. } => (rec.cols, span),
+                    let cell = follow_cell_path(&value, &["keybindings"]).unwrap();
+                    let columns = match cell {
+                        Value::Record { val: rec, .. } => rec.cols,
                         x => return Err(invalid_type(&x, &["keybindings"], "record")),
                     };
 
@@ -449,19 +441,18 @@ impl Config {
                                 }
                             }
                             "navigation" => {
-                                let (columns, span) =
-                                    match follow_cell_path(&value, &["keybindings", "navigation"])
-                                        .unwrap()
-                                    {
-                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
-                                        x => {
-                                            return Err(invalid_type(
-                                                &x,
-                                                &["keybindings", "navigation"],
-                                                "record",
-                                            ))
-                                        }
-                                    };
+                                let cell = follow_cell_path(&value, &["keybindings", "navigation"])
+                                    .unwrap();
+                                let columns = match cell {
+                                    Value::Record { val: rec, .. } => rec.cols,
+                                    x => {
+                                        return Err(invalid_type(
+                                            &x,
+                                            &["keybindings", "navigation"],
+                                            "record",
+                                        ))
+                                    }
+                                };
 
                                 for column in columns {
                                     match column.as_str() {
@@ -500,7 +491,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["keybindings", "navigation", x],
-                                                Some(span),
+                                                Some(cell.span()),
                                             ));
                                         }
                                     }
@@ -512,19 +503,18 @@ impl Config {
                                 }
                             }
                             "peeking" => {
-                                let (columns, span) =
-                                    match follow_cell_path(&value, &["keybindings", "peeking"])
-                                        .unwrap()
-                                    {
-                                        Value::Record { val: rec, span, .. } => (rec.cols, span),
-                                        x => {
-                                            return Err(invalid_type(
-                                                &x,
-                                                &["keybindings", "peeking"],
-                                                "record",
-                                            ))
-                                        }
-                                    };
+                                let cell =
+                                    follow_cell_path(&value, &["keybindings", "peeking"]).unwrap();
+                                let columns = match cell {
+                                    Value::Record { val: rec, .. } => rec.cols,
+                                    x => {
+                                        return Err(invalid_type(
+                                            &x,
+                                            &["keybindings", "peeking"],
+                                            "record",
+                                        ))
+                                    }
+                                };
 
                                 for column in columns {
                                     match column.as_str() {
@@ -562,13 +552,13 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["keybindings", "peeking", x],
-                                                Some(span),
+                                                Some(cell.span()),
                                             ));
                                         }
                                     }
                                 }
                             }
-                            x => return Err(invalid_field(&["keybindings", x], Some(span))),
+                            x => return Err(invalid_field(&["keybindings", x], Some(cell.span()))),
                         }
                     }
                 }

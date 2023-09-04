@@ -127,10 +127,7 @@ impl Editor {
             KeyCode::Backspace => self.delete_char_before_cursor(),
             KeyCode::Delete => self.delete_char_under_cursor(),
             KeyCode::Enter => {
-                let val = Value::String {
-                    val: self.buffer.clone(),
-                    span: Span::unknown(),
-                };
+                let val = Value::string(self.buffer.clone(), Span::unknown());
                 return Some(Some(val));
             }
             KeyCode::Esc => return Some(None),
