@@ -197,8 +197,9 @@ pub fn try_fg_bg_colors(
     cell_path: &[&str],
     default: &BgFgColorConfig,
 ) -> Result<Option<BgFgColorConfig>, LabeledError> {
-    let (columns, span) = match follow_cell_path(value, cell_path).unwrap() {
-        Value::Record { val: rec, span, .. } => (rec.cols, span),
+    let cell = follow_cell_path(value, cell_path).unwrap();
+    let columns = match cell.clone() {
+        Value::Record { val: rec, .. } => rec.cols,
         x => return Err(invalid_type(&x, cell_path, "record")),
     };
 
@@ -223,7 +224,7 @@ pub fn try_fg_bg_colors(
             x => {
                 let mut cell_path = cell_path.to_vec();
                 cell_path.push(x);
-                return Err(invalid_field(&cell_path, Some(span)));
+                return Err(invalid_field(&cell_path, Some(cell.span())));
             }
         }
     }
