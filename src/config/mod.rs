@@ -230,7 +230,7 @@ impl Config {
                     let cell = follow_cell_path(&value, &["colors"]).unwrap();
                     let columns = match &cell {
                         Value::Record { val: rec, .. } => &rec.cols,
-                        x => return Err(invalid_type(&x, &["colors"], "record")),
+                        x => return Err(invalid_type(x, &["colors"], "record")),
                     };
 
                     for column in columns {
@@ -241,7 +241,7 @@ impl Config {
                                     Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
-                                            &x,
+                                            x,
                                             &["colors", "normal"],
                                             "record",
                                         ))
@@ -316,7 +316,7 @@ impl Config {
                                     Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
-                                            &x,
+                                            x,
                                             &["colors", "status_bar"],
                                             "record",
                                         ))
@@ -376,7 +376,7 @@ impl Config {
                                     Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
-                                            &x,
+                                            x,
                                             &["colors", "editor"],
                                             "record",
                                         ))
@@ -420,7 +420,7 @@ impl Config {
                     let cell = follow_cell_path(&value, &["keybindings"]).unwrap();
                     let columns = match &cell {
                         Value::Record { val: rec, .. } => &rec.cols,
-                        x => return Err(invalid_type(&x, &["keybindings"], "record")),
+                        x => return Err(invalid_type(x, &["keybindings"], "record")),
                     };
 
                     for column in columns {
@@ -447,7 +447,7 @@ impl Config {
                                     Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
-                                            &x,
+                                            x,
                                             &["keybindings", "navigation"],
                                             "record",
                                         ))
@@ -509,7 +509,7 @@ impl Config {
                                     Value::Record { val: rec, .. } => &rec.cols,
                                     x => {
                                         return Err(invalid_type(
-                                            &x,
+                                            x,
                                             &["keybindings", "peeking"],
                                             "record",
                                         ))
