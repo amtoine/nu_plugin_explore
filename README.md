@@ -173,7 +173,7 @@ in order to help, you can have a look at
 - [x] give different colors to names and type
 - [x] show true tables as such
 - [ ] get the config from `$env.config` => can parse configuration from CLI
-- [ ] add check for the config to make sure it's valid
+- [x] add check for the config to make sure it's valid
 - [ ] support for editing cells in INSERT mode
   - [x] string cells
   - [ ] other simple cells
