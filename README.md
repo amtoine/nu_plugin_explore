@@ -123,7 +123,7 @@ $env.explore_config = {
 ## an example
 if you do not like the Vim bindings by default you can replace the navigation part with
 ```nushell
-$env.explore_config.keybindins.navigation = {
+$env.explore_config.keybindings.navigation = {
     left: 'left',
     down: 'down',
     up: 'up',
