@@ -7,7 +7,7 @@ struct Explore;
 
 impl Plugin for Explore {
     fn signature(&self) -> Vec<PluginSignature> {
-        vec![PluginSignature::build("explore")
+        vec![PluginSignature::build("nu_plugin_explore")
             .usage("interactively explore Nushell structured data")
             .input_output_type(Type::Any, Type::Any)
             .optional(
@@ -37,7 +37,7 @@ impl Plugin for Explore {
         input: &Value,
     ) -> Result<Value, LabeledError> {
         match name {
-            "explore" => match explore(call, input.clone()) {
+            "nu_plugin_explore" => match explore(call, input.clone()) {
                 Ok(value) => Ok(value),
                 Err(err) => {
                     match err.downcast_ref::<ShellError>() {

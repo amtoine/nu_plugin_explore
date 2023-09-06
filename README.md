@@ -102,11 +102,11 @@ nupm install --path .
 # usage
 - get some help
 ```nushell
-help explore
+help nu_plugin_explore
 ```
 - run the command
 ```nushell
-open Cargo.toml | explore
+open Cargo.toml | nu_plugin_explore
 ```
 
 # configuration
@@ -115,7 +115,7 @@ you can find it in [`default.nuon`](./examples/config/default.nuon).
 
 you can copy-paste it in your `config.nu` and set `$env.explore_config` to it:
 ```nushell
-$env.explore_config = {
+$env.nu_plugin_explore_config = {
     # content of the default config
 }
 ```
@@ -123,7 +123,7 @@ $env.explore_config = {
 ## an example
 if you do not like the Vim bindings by default you can replace the navigation part with
 ```nushell
-$env.explore_config.keybindings.navigation = {
+$env.nu_plugin_explore_config.keybindings.navigation = {
     left: 'left',
     down: 'down',
     up: 'up',
@@ -135,7 +135,7 @@ and voila :yum:
 ## some convenience
 there is currently no way to use the `$env` configuration from inside a plugin...
 `nu_plugin_explore` thus uses a CLI argument to do that, i.e. you can pass a config record as the
-first positional argument to the `explore` command!
+first positional argument to the `nu_plugin_explore` command!
 
 however, doing this by hand each time is not the right way to go with that, so let's find another way.
 
@@ -145,11 +145,11 @@ in order to avoid having to pass this record everytime we call `explore`, let's 
 > option or argument than `config: record` as the first positional argument.
 
 ```nushell
-alias explore = explore ($env.explore_config? | default {})
+alias nu_plugin_explore = nu_plugin_explore ($env.nu_plugin_explore_config? | default {})
 ```
 
-now, you can just call `explore` and have your config loaded automatically!
-and you can change `$env.explore_config` as much as you like :partying_face:
+now, you can just call `nu_plugin_explore` and have your config loaded automatically!
+and you can change `$env.nu_plugin_explore_config` as much as you like :partying_face:
 
 > **Note**  
 > if you omit one of the config field of the configuration for `explore`, it's not an issue at all,
