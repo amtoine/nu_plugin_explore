@@ -6,7 +6,7 @@ dev-deps:
 	./scripts/setup-dev-deps
 
 check:
-	cargo fmt --all -- --check
+	cargo fmt --all --verbose -- --check --verbose
 	cargo check --workspace --lib
 	cargo check --workspace --tests
 	cargo clippy --workspace -- "${CLIPPY_OPTIONS}"
@@ -15,7 +15,7 @@ test: check
 	cargo test --workspace
 
 fmt:
-	cargo fmt --all
+	cargo fmt --all --verbose
 
 doc:
 	cargo doc --document-private-items --no-deps --open
