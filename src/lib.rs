@@ -24,22 +24,6 @@ use event::{Event, EventHandler};
 use handler::{handle_key_events, TransitionResult};
 use tui::Tui;
 
-/// the entry point of the `explore` command
-///
-/// this function
-/// 1. parses the config and default to the [`config::Config::default`] otherwise
-/// 1. sets the terminal up (see [`terminal::setup`])
-/// 1. runs the application (see [`app::run`])
-/// 1. restores the terminal (see [`terminal::restore`])
-///
-/// # running the application
-///
-/// 1. creates the initial [`App`]
-/// 1. runs the main application loop
-///
-/// the application loop
-/// 1. renders the TUI with [`tui`]
-/// 1. reads the user's input keys and transition the [`App`] accordingly
 pub fn explore(call: &EvaluatedCall, input: Value) -> Result<Value> {
     let empty_custom_config = Value::record(Record::new(), Span::unknown());
     let config = match Config::from_value(call.opt(0)?.unwrap_or(empty_custom_config)) {
