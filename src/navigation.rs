@@ -33,20 +33,32 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
         Direction::Down => 1,
     };
 
-    let current = app.position.members.pop();
+    let current = app
+        .position
+        .members
+        .pop()
+        .unwrap_or_else(|| panic!("unexpected error: position is empty"));
 
-    match app
+    let cell = app
         .value
         .clone()
         .follow_cell_path(&app.position.members, false)
-    {
-        Ok(Value::List { vals, .. }) => {
+        .unwrap_or_else(|_| {
+            panic!(
+                "unexpected error when following {:?} in {}",
+                app.position.members,
+                app.value.into_string(" ", &nu_protocol::Config::default())
+            )
+        });
+
+    match cell {
+        Value::List { vals, .. } => {
             let new = match current {
-                Some(PathMember::Int {
+                PathMember::Int {
                     val,
                     span,
                     optional,
-                }) => PathMember::Int {
+                } => PathMember::Int {
                     val: if vals.is_empty() {
                         val
                     } else {
@@ -58,18 +70,17 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                     span,
                     optional,
                 },
-                None => panic!("unexpected error when unpacking current cell path"),
                 _ => panic!("current should be an integer path member"),
             };
             app.position.members.push(new);
         }
-        Ok(Value::Record { val: rec, .. }) => {
+        Value::Record { val: rec, .. } => {
             let new = match current {
-                Some(PathMember::String {
+                PathMember::String {
                     val,
                     span,
                     optional,
-                }) => PathMember::String {
+                } => PathMember::String {
                     val: if rec.cols.is_empty() {
                         "".into()
                     } else {
@@ -82,12 +93,10 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                     span,
                     optional,
                 },
-                None => panic!("unexpected error when unpacking current cell path"),
                 _ => panic!("current should be an string path member"),
             };
             app.position.members.push(new);
         }
-        Err(_) => panic!("unexpected error when following cell path"),
         _ => {}
     }
 }
@@ -99,22 +108,29 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
 /// > - push a new *cell path* member to the state if there is more depth ahead
 /// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
 pub(super) fn go_deeper_in_data(app: &mut App) {
-    match app
+    let cell = app
         .value
         .clone()
         .follow_cell_path(&app.position.members, false)
-    {
-        Ok(Value::List { vals, .. }) => app.position.members.push(PathMember::Int {
+        .unwrap_or_else(|_| {
+            panic!(
+                "unexpected error when following {:?} in {}",
+                app.position.members,
+                app.value.into_string(" ", &nu_protocol::Config::default())
+            )
+        });
+
+    match cell {
+        Value::List { vals, .. } => app.position.members.push(PathMember::Int {
             val: 0,
             span: Span::unknown(),
             optional: vals.is_empty(),
         }),
-        Ok(Value::Record { val: rec, .. }) => app.position.members.push(PathMember::String {
+        Value::Record { val: rec, .. } => app.position.members.push(PathMember::String {
             val: rec.cols.get(0).unwrap_or(&"".to_string()).into(),
             span: Span::unknown(),
             optional: rec.cols.is_empty(),
         }),
-        Err(_) => panic!("unexpected error when following cell path"),
         _ => app.hit_bottom(),
     }
 }
