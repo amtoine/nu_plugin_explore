@@ -149,19 +149,39 @@ pub(crate) fn is_table(value: &Value) -> bool {
 /// }
 /// ```
 pub(crate) fn transpose(value: &Value) -> Value {
-    if value.columns()
-        == (1..(value.columns().len()))
-            .map(|i| format!("{i}"))
-            .collect::<Vec<String>>()
-    {
-        if value.columns().len() == 2 {
-            return value.clone();
-        } else {
-            return value.clone();
-        }
-    }
-
     if is_table(value) {
+        let rows = match value {
+            Value::List { vals, .. } => vals,
+            _ => return value.clone(),
+        };
+
+        let foo = (1..(rows[0].columns().len()))
+            .map(|i| format!("{i}"))
+            .collect::<Vec<String>>();
+
+        if rows[0].columns() == foo {
+            if rows[0].columns().len() == 2 {
+                match value {
+                    Value::List { vals: rows, .. } => {
+                        let cols: Vec<String> = rows
+                            .iter()
+                            .map(|row| row.get_data_by_key("1").unwrap().as_string().unwrap())
+                            .collect();
+
+                        let vals: Vec<Value> = rows
+                            .iter()
+                            .map(|row| row.get_data_by_key("2").unwrap())
+                            .collect();
+
+                        return Value::record(Record { cols, vals }, Span::unknown());
+                    }
+                    _ => return value.clone(),
+                }
+            } else {
+                return value.clone();
+            }
+        }
+
         return value.clone();
     }
 
