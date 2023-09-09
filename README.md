@@ -111,7 +111,7 @@ open Cargo.toml | nu_plugin_explore
 ```
 
 ## demo
-![simple demo][examples/demo.mp4]
+![simple demo](examples/demo.gif)
 
 # configuration
 ## default configuration
