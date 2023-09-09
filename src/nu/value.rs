@@ -575,5 +575,18 @@ mod tests {
             default_value_repr(&table),
             default_value_repr(&result)
         );
+
+        assert_eq!(
+            transpose(&Value::test_string("foo")),
+            Value::test_string("foo")
+        );
+
+        assert_eq!(
+            transpose(&Value::test_list(vec![
+                Value::test_int(1),
+                Value::test_int(2)
+            ])),
+            Value::test_list(vec![Value::test_int(1), Value::test_int(2)])
+        );
     }
 }
