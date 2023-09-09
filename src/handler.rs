@@ -1,11 +1,15 @@
 use crossterm::event::KeyEvent;
 
-use nu_protocol::{ShellError, Span, Value};
+use nu_protocol::{
+    ast::{CellPath, PathMember},
+    ShellError, Span, Value,
+};
 
 use crate::{
     app::{App, Mode},
     config::Config,
     navigation::{self, Direction},
+    nu::value::transpose,
 };
 
 /// the result of a state transition
@@ -14,7 +18,7 @@ pub enum TransitionResult {
     Quit,
     Continue,
     Return(Value),
-    Edit(Value),
+    Mutate(Value, CellPath),
     Error(String),
 }
 
@@ -56,6 +60,34 @@ pub fn handle_key_events(
             } else if key_event.code == config.keybindings.navigation.left {
                 navigation::go_back_in_data(app);
                 return Ok(TransitionResult::Continue);
+            } else if key_event.code == config.keybindings.transpose {
+                let mut path = app.position.clone();
+                path.members.pop();
+
+                let view = app.value.clone().follow_cell_path(&path.members, false)?;
+                let transpose = transpose(&view);
+
+                if transpose != view {
+                    match transpose.clone() {
+                        Value::Record { val: rec, .. } => {
+                            *app.position.members.last_mut().unwrap() = PathMember::String {
+                                val: rec.cols.get(0).unwrap_or(&"".to_string()).to_string(),
+                                span: Span::unknown(),
+                                optional: rec.cols.is_empty(),
+                            };
+                        }
+                        _ => {
+                            *app.position.members.last_mut().unwrap() = PathMember::Int {
+                                val: 0,
+                                span: Span::unknown(),
+                                optional: false,
+                            };
+                        }
+                    }
+                    return Ok(TransitionResult::Mutate(transpose, path));
+                }
+
+                return Ok(TransitionResult::Continue);
             }
         }
         Mode::Insert => {
@@ -67,7 +99,7 @@ pub fn handle_key_events(
             match app.editor.handle_key(&key_event.code) {
                 Some(Some(v)) => {
                     app.mode = Mode::Normal;
-                    return Ok(TransitionResult::Edit(v));
+                    return Ok(TransitionResult::Mutate(v, app.position.clone()));
                 }
                 Some(None) => {
                     app.mode = Mode::Normal;
@@ -495,5 +527,54 @@ mod tests {
             (keybindings.peek, true, Some(Value::test_string("my"))),
         ];
         run_peeking_scenario(peek_at_the_bottom, &config, value);
+    }
+
+    #[test]
+    fn transpose_the_data() {
+        let config = Config::default();
+        let kmap = config.clone().keybindings;
+
+        let value = Value::test_record(record!(
+            "a" => Value::test_int(1),
+            "b" => Value::test_int(2),
+            "c" => Value::test_int(3),
+        ));
+        let mut app = App::from_value(value.clone());
+
+        assert!(!app.is_at_bottom());
+        assert_eq!(app.position.members, to_path_member_vec(&[PM::S("a")]));
+
+        let transitions = vec![
+            (kmap.navigation.down, vec![PM::S("b")]),
+            (kmap.transpose, vec![PM::I(0)]),
+            (kmap.navigation.up, vec![PM::I(2)]),
+            (kmap.transpose, vec![PM::S("a")]),
+        ];
+
+        for (key, cell_path) in transitions {
+            let expected = to_path_member_vec(&cell_path);
+            match handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
+                .unwrap()
+            {
+                TransitionResult::Mutate(cell, path) => {
+                    app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
+                }
+                _ => {}
+            }
+
+            assert!(
+                !app.is_at_bottom(),
+                "expected NOT to be at the bottom after pressing {}",
+                repr_keycode(&key)
+            );
+
+            assert_eq!(
+                app.position.members,
+                expected,
+                "expected to be at {:?}, found {:?}",
+                repr_path_member_vec(&expected),
+                repr_path_member_vec(&app.position.members)
+            );
+        }
     }
 }

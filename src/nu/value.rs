@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
-    Record, Span, Type, Value,
+    record, Record, Span, Type, Value,
 };
 
 pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
@@ -120,10 +120,139 @@ pub(crate) fn is_table(value: &Value) -> bool {
     }
 }
 
+/// this effectively implements the following idempotent `transpose` command written in Nushell
+/// ```nushell
+/// alias "core transpose" = transpose
+///
+/// def transpose []: [table -> any, record -> table] {
+///     let data = $in
+///
+///     if ($data | columns) == (seq 1 ($data | columns | length) | into string) {
+///         if ($data | columns | length) == 2 {
+///             return ($data | core transpose --header-row | into record)
+///         } else {
+///             return ($data | core transpose --header-row)
+///         }
+///     }
+///
+///     $data | core transpose | rename --block {
+///         ($in | str replace "column" "" | into int) + 1 | into string
+///     }
+/// }
+///
+/// #[test]
+/// def transposition [] {
+///     use std assert
+///
+///     assert equal (ls | transpose explore | transpose) (ls)
+///     assert equal (open Cargo.toml | transpose | transpose) (open Cargo.toml)
+/// }
+/// ```
+pub(crate) fn transpose(value: &Value) -> Value {
+    if is_table(value) {
+        let rows = match value {
+            Value::List { vals, .. } => vals,
+            _ => return value.clone(),
+        };
+
+        let full_columns = (1..=(rows[0].columns().len()))
+            .map(|i| format!("{i}"))
+            .collect::<Vec<String>>();
+
+        if rows[0].columns() == full_columns {
+            if rows[0].columns().len() == 2 {
+                match value {
+                    Value::List { vals: rows, .. } => {
+                        let cols: Vec<String> = rows
+                            .iter()
+                            .map(|row| row.get_data_by_key("1").unwrap().as_string().unwrap())
+                            .collect();
+
+                        let vals: Vec<Value> = rows
+                            .iter()
+                            .map(|row| row.get_data_by_key("2").unwrap())
+                            .collect();
+
+                        return Value::record(Record { cols, vals }, Span::unknown());
+                    }
+                    _ => return value.clone(),
+                }
+            } else {
+                match value {
+                    Value::List { vals, .. } => {
+                        let mut rows = vec![];
+                        let cols: Vec<String> = vals
+                            .iter()
+                            .map(|v| v.get_data_by_key("1").unwrap().as_string().unwrap())
+                            .collect();
+
+                        for i in 0..(vals[0].columns().len() - 1) {
+                            rows.push(Value::record(
+                                Record {
+                                    cols: cols.clone(),
+                                    vals: vals
+                                        .iter()
+                                        .map(|v| v.get_data_by_key(&format!("{}", i + 2)).unwrap())
+                                        .collect(),
+                                },
+                                Span::unknown(),
+                            ));
+                        }
+
+                        return Value::list(rows, Span::unknown());
+                    }
+                    _ => return value.clone(),
+                }
+            }
+        }
+
+        match value {
+            Value::List { vals, .. } => {
+                let mut rows = vec![];
+                for col in vals[0].columns() {
+                    let mut cols = vec!["1".into()];
+                    let mut vs = vec![Value::string(col, Span::unknown())];
+
+                    for (i, v) in vals.iter().enumerate() {
+                        cols.push(format!("{}", i + 2));
+                        vs.push(v.get_data_by_key(col).unwrap());
+                    }
+
+                    rows.push(Value::record(Record { cols, vals: vs }, Span::unknown()));
+                }
+
+                return Value::list(rows, Span::unknown());
+            }
+            _ => return value.clone(),
+        }
+    }
+
+    match value {
+        Value::Record { val: rec, .. } => {
+            let mut rows = vec![];
+            for (col, val) in rec.iter() {
+                rows.push(Value::record(
+                    record! {
+                        "1" => Value::string(col, Span::unknown()),
+                        "2" => val.clone(),
+                    },
+                    Span::unknown(),
+                ));
+            }
+
+            Value::list(rows, Span::unknown())
+        }
+        _ => value.clone(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{is_table, mutate_value_cell};
-    use crate::nu::cell_path::{to_path_member_vec, PM};
+    use crate::nu::{
+        cell_path::{to_path_member_vec, PM},
+        value::transpose,
+    };
     use nu_protocol::{ast::CellPath, record, Config, Value};
 
     fn default_value_repr(value: &Value) -> String {
@@ -367,5 +496,97 @@ mod tests {
         );
 
         assert_eq!(is_table(&Value::test_int(0)), false);
+    }
+
+    #[test]
+    fn transposition() {
+        let record = Value::test_record(record! {
+            "a" => Value::test_int(1),
+            "b" => Value::test_int(2),
+        });
+        let expected = Value::test_list(vec![
+            Value::test_record(record! {
+                "1" => Value::test_string("a"),
+                "2" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "1" => Value::test_string("b"),
+                "2" => Value::test_int(2),
+            }),
+        ]);
+        let result = transpose(&record);
+        assert_eq!(
+            result,
+            expected,
+            "transposing {} should give {}, found {}",
+            default_value_repr(&record),
+            default_value_repr(&expected),
+            default_value_repr(&result)
+        );
+        // make sure `transpose` is an *involution*
+        let result = transpose(&expected);
+        assert_eq!(
+            result,
+            record,
+            "transposing {} should give {}, found {}",
+            default_value_repr(&expected),
+            default_value_repr(&record),
+            default_value_repr(&result)
+        );
+
+        let table = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_int(1),
+                "b" => Value::test_int(2),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_int(3),
+                "b" => Value::test_int(4),
+            }),
+        ]);
+        let expected = Value::test_list(vec![
+            Value::test_record(record! {
+                "1" => Value::test_string("a"),
+                "2" => Value::test_int(1),
+                "3" => Value::test_int(3),
+            }),
+            Value::test_record(record! {
+                "1" => Value::test_string("b"),
+                "2" => Value::test_int(2),
+                "3" => Value::test_int(4),
+            }),
+        ]);
+        let result = transpose(&table);
+        assert_eq!(
+            result,
+            expected,
+            "transposing {} should give {}, found {}",
+            default_value_repr(&table),
+            default_value_repr(&expected),
+            default_value_repr(&result)
+        );
+        // make sure `transpose` is an *involution*
+        let result = transpose(&expected);
+        assert_eq!(
+            result,
+            table,
+            "transposing {} should give {}, found {}",
+            default_value_repr(&expected),
+            default_value_repr(&table),
+            default_value_repr(&result)
+        );
+
+        assert_eq!(
+            transpose(&Value::test_string("foo")),
+            Value::test_string("foo")
+        );
+
+        assert_eq!(
+            transpose(&Value::test_list(vec![
+                Value::test_int(1),
+                Value::test_int(2)
+            ])),
+            Value::test_list(vec![Value::test_int(1), Value::test_int(2)])
+        );
     }
 }

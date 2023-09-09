@@ -104,6 +104,7 @@ pub struct KeyBindingsMap {
     /// go into PEEKING mode (see [crate::app::Mode::Peeking])
     pub peek: KeyCode,
     pub peeking: PeekingBindingsMap,
+    pub transpose: KeyCode,
 }
 
 /// the layout of the application
@@ -200,6 +201,7 @@ impl Default for Config {
                     under: KeyCode::Char('p'),
                     view: KeyCode::Char('v'),
                 },
+                transpose: KeyCode::Char('t'),
             },
         }
     }
@@ -556,6 +558,11 @@ impl Config {
                                             ));
                                         }
                                     }
+                                }
+                            }
+                            "transpose" => {
+                                if let Some(val) = try_key(&value, &["keybindings", "tranpose"])? {
+                                    config.keybindings.transpose = val
                                 }
                             }
                             x => return Err(invalid_field(&["keybindings", x], Some(cell.span()))),

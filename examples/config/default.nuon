@@ -72,5 +72,6 @@
             under: 'p',  # peek only what's under the cursor
             view: 'v',  # peek the current view, i.e. what is visible
         },
+        tranpose: 't',  # tranpose the data if it's a table or a record, this is an *involution*
     }
 }
