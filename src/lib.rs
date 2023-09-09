@@ -31,10 +31,10 @@ pub fn explore(call: &EvaluatedCall, input: Value) -> Result<Value> {
         Err(err) => return Err(ShellError::from(err).into()),
     };
 
-    let backend = CrosstermBackend::new(io::stderr());
-    let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(250);
-    let mut tui = Tui::new(terminal, events);
+    let mut tui = Tui::new(
+        Terminal::new(CrosstermBackend::new(io::stderr()))?,
+        EventHandler::new(250),
+    );
     tui.init()?;
 
     let mut app = App::from_value(input);
