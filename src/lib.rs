@@ -42,7 +42,7 @@ use tui::Tui;
 /// 1. reads the user's input keys and transition the [`App`] accordingly
 pub fn explore(call: &EvaluatedCall, input: Value) -> Result<Value> {
     let empty_custom_config = Value::record(Record::new(), Span::unknown());
-    let config = match Config::from_value(call.opt(0).unwrap().unwrap_or(empty_custom_config)) {
+    let config = match Config::from_value(call.opt(0)?.unwrap_or(empty_custom_config)) {
         Ok(cfg) => cfg,
         Err(err) => return Err(ShellError::from(err).into()),
     };
@@ -57,7 +57,7 @@ pub fn explore(call: &EvaluatedCall, input: Value) -> Result<Value> {
 
     loop {
         if app.mode == Mode::Insert {
-            app.editor.set_width(tui.size().unwrap().width as usize)
+            app.editor.set_width(tui.size()?.width as usize)
         }
 
         tui.draw(&mut app, &config, None)?;
