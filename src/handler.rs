@@ -60,7 +60,8 @@ pub fn handle_key_events(
             } else if key_event.code == config.keybindings.transpose {
                 let mut path = app.position.clone();
                 path.members.pop();
-                return Ok(TransitionResult::Edit(transpose(&app.value), path));
+                let view = app.value.clone().follow_cell_path(&path.members, false)?;
+                return Ok(TransitionResult::Edit(transpose(&view), path));
             }
         }
         Mode::Insert => {
