@@ -538,7 +538,7 @@ fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &C
 
     let hints = match app.mode {
         Mode::Normal => format!(
-            "{} to {} | {}{}{}{} to move around | {} to peek | {} to quit",
+            "{} to {} | {}{}{}{} to move around | {} to peek | {} to transpose | {} to quit",
             repr_keycode(&config.keybindings.insert),
             Mode::Insert,
             repr_keycode(&config.keybindings.navigation.left),
@@ -546,6 +546,7 @@ fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &C
             repr_keycode(&config.keybindings.navigation.up),
             repr_keycode(&config.keybindings.navigation.right),
             repr_keycode(&config.keybindings.peek),
+            repr_keycode(&config.keybindings.transpose),
             repr_keycode(&config.keybindings.quit),
         ),
         Mode::Insert => format!(

@@ -6,6 +6,7 @@ use crate::{
     app::{App, Mode},
     config::Config,
     navigation::{self, Direction},
+    nu::value::transpose,
 };
 
 /// the result of a state transition
@@ -56,6 +57,8 @@ pub fn handle_key_events(
             } else if key_event.code == config.keybindings.navigation.left {
                 navigation::go_back_in_data(app);
                 return Ok(TransitionResult::Continue);
+            } else if key_event.code == config.keybindings.transpose {
+                return Ok(TransitionResult::Edit(transpose(&app.value)));
             }
         }
         Mode::Insert => {
