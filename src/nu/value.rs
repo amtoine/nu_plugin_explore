@@ -149,7 +149,7 @@ pub(crate) fn is_table(value: &Value) -> bool {
 /// }
 /// ```
 pub(crate) fn transpose(value: &Value) -> Value {
-    value.clone()
+    Value::string("this cell has been transposed", value.span())
 }
 
 #[cfg(test)]
