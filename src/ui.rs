@@ -249,7 +249,13 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config)
         .value
         .clone()
         .follow_cell_path(&data_path, false)
-        .expect("unexpected error when following cell path during rendering");
+        .unwrap_or_else(|_| {
+            panic!(
+                "unexpected error when following {:?} in {}",
+                app.position.members,
+                app.value.into_string(" ", &nu_protocol::Config::default())
+            )
+        });
 
     let normal_name_style = Style::default()
         .fg(config.colors.normal.name.foreground)
