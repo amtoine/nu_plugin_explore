@@ -182,7 +182,25 @@ pub(crate) fn transpose(value: &Value) -> Value {
             }
         }
 
-        return value.clone();
+        match value {
+            Value::List { vals, .. } => {
+                let mut rows = vec![];
+                for col in vals[0].columns() {
+                    let mut cols = vec!["1".into()];
+                    let mut vs = vec![Value::string(col, Span::unknown())];
+
+                    for (i, v) in vals.iter().enumerate() {
+                        cols.push(format!("{}", i + 2));
+                        vs.push(v.get_data_by_key(col).unwrap());
+                    }
+
+                    rows.push(Value::record(Record { cols, vals: vs }, Span::unknown()));
+                }
+
+                return Value::list(rows, Span::unknown());
+            }
+            _ => return value.clone(),
+        }
     }
 
     match value {
