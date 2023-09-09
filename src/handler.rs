@@ -1,6 +1,9 @@
 use crossterm::event::KeyEvent;
 
-use nu_protocol::{ast::CellPath, ShellError, Span, Value};
+use nu_protocol::{
+    ast::{CellPath, PathMember},
+    ShellError, Span, Value,
+};
 
 use crate::{
     app::{App, Mode},
@@ -60,8 +63,31 @@ pub fn handle_key_events(
             } else if key_event.code == config.keybindings.transpose {
                 let mut path = app.position.clone();
                 path.members.pop();
+
                 let view = app.value.clone().follow_cell_path(&path.members, false)?;
-                return Ok(TransitionResult::Mutate(transpose(&view), path));
+                let transpose = transpose(&view);
+
+                if transpose != view {
+                    match transpose.clone() {
+                        Value::Record { val: rec, .. } => {
+                            *app.position.members.last_mut().unwrap() = PathMember::String {
+                                val: rec.cols.get(0).unwrap_or(&"".to_string()).to_string(),
+                                span: Span::unknown(),
+                                optional: rec.cols.is_empty(),
+                            };
+                        }
+                        _ => {
+                            *app.position.members.last_mut().unwrap() = PathMember::Int {
+                                val: 0,
+                                span: Span::unknown(),
+                                optional: false,
+                            };
+                        }
+                    }
+                    return Ok(TransitionResult::Mutate(transpose, path));
+                }
+
+                return Ok(TransitionResult::Continue);
             }
         }
         Mode::Insert => {
