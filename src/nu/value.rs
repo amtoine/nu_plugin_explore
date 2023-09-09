@@ -149,6 +149,22 @@ pub(crate) fn is_table(value: &Value) -> bool {
 /// }
 /// ```
 pub(crate) fn transpose(value: &Value) -> Value {
+    if value.columns()
+        == &(1..(value.columns().len()))
+            .map(|i| format!("{i}"))
+            .collect::<Vec<String>>()
+    {
+        if value.columns().len() == 2 {
+            return value.clone();
+        } else {
+            return value.clone();
+        }
+    }
+
+    if is_table(value) {
+        return value.clone();
+    }
+
     match value {
         Value::Record { val: rec, .. } => {
             let mut rows = vec![];
