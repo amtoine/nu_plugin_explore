@@ -120,10 +120,45 @@ pub(crate) fn is_table(value: &Value) -> bool {
     }
 }
 
+/// this effectively implements the following idempotent `transpose` command written in Nushell
+/// ```nushell
+/// alias "core transpose" = transpose
+///
+/// def transpose []: [table -> any, record -> table] {
+///     let data = $in
+///
+///     if ($data | columns) == (seq 1 ($data | columns | length) | into string) {
+///         if ($data | columns | length) == 2 {
+///             return ($data | core transpose --header-row | into record)
+///         } else {
+///             return ($data | core transpose --header-row)
+///         }
+///     }
+///
+///     $data | core transpose | rename --block {
+///         ($in | str replace "column" "" | into int) + 1 | into string
+///     }
+/// }
+///
+/// #[test]
+/// def transposition [] {
+///     use std assert
+///
+///     assert equal (ls | transpose explore | transpose) (ls)
+///     assert equal (open Cargo.toml | transpose | transpose) (open Cargo.toml)
+/// }
+/// ```
+pub(crate) fn transpose(value: &Value) -> Value {
+    value.clone()
+}
+
 #[cfg(test)]
 mod tests {
     use super::{is_table, mutate_value_cell};
-    use crate::nu::cell_path::{to_path_member_vec, PM};
+    use crate::nu::{
+        cell_path::{to_path_member_vec, PM},
+        value::transpose,
+    };
     use nu_protocol::{ast::CellPath, record, Config, Value};
 
     fn default_value_repr(value: &Value) -> String {
@@ -367,5 +402,52 @@ mod tests {
         );
 
         assert_eq!(is_table(&Value::test_int(0)), false);
+    }
+
+    #[test]
+    fn transposition() {
+        let record = Value::test_record(record! {
+            "a" => Value::test_int(1),
+            "b" => Value::test_int(2),
+        });
+        let expected = Value::test_list(vec![
+            Value::test_record(record! {
+                "1" => Value::test_string("a"),
+                "2" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "1" => Value::test_string("b"),
+                "2" => Value::test_int(2),
+            }),
+        ]);
+        assert_eq!(transpose(&record), expected);
+        // make sure `transpose` is an *involution*
+        assert_eq!(transpose(&expected), record);
+
+        let table = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_int(1),
+                "b" => Value::test_int(2),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_int(3),
+                "b" => Value::test_int(4),
+            }),
+        ]);
+        let expected = Value::test_list(vec![
+            Value::test_record(record! {
+                "1" => Value::test_string("a"),
+                "2" => Value::test_int(1),
+                "3" => Value::test_int(3),
+            }),
+            Value::test_record(record! {
+                "1" => Value::test_string("b"),
+                "2" => Value::test_int(2),
+                "3" => Value::test_int(4),
+            }),
+        ]);
+        assert_eq!(transpose(&table), expected);
+        // make sure `transpose` is an *involution*
+        assert_eq!(transpose(&expected), table);
     }
 }
