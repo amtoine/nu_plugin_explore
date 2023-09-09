@@ -155,11 +155,11 @@ pub(crate) fn transpose(value: &Value) -> Value {
             _ => return value.clone(),
         };
 
-        let foo = (1..=(rows[0].columns().len()))
+        let full_columns = (1..=(rows[0].columns().len()))
             .map(|i| format!("{i}"))
             .collect::<Vec<String>>();
 
-        if rows[0].columns() == foo {
+        if rows[0].columns() == full_columns {
             if rows[0].columns().len() == 2 {
                 match value {
                     Value::List { vals: rows, .. } => {
