@@ -70,6 +70,7 @@ pub fn handle_key_events(
                 if transpose != view {
                     match transpose.clone() {
                         Value::Record { val: rec, .. } => {
+                            // NOTE: app.position.members should never be empty by construction
                             *app.position.members.last_mut().unwrap() = PathMember::String {
                                 val: rec.cols.get(0).unwrap_or(&"".to_string()).to_string(),
                                 span: Span::unknown(),
@@ -77,6 +78,7 @@ pub fn handle_key_events(
                             };
                         }
                         _ => {
+                            // NOTE: app.position.members should never be empty by construction
                             *app.position.members.last_mut().unwrap() = PathMember::Int {
                                 val: 0,
                                 span: Span::unknown(),
