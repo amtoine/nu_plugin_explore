@@ -15,7 +15,7 @@ pub enum TransitionResult {
     Quit,
     Continue,
     Return(Value),
-    Edit(Value, CellPath),
+    Mutate(Value, CellPath),
     Error(String),
 }
 
@@ -61,7 +61,7 @@ pub fn handle_key_events(
                 let mut path = app.position.clone();
                 path.members.pop();
                 let view = app.value.clone().follow_cell_path(&path.members, false)?;
-                return Ok(TransitionResult::Edit(transpose(&view), path));
+                return Ok(TransitionResult::Mutate(transpose(&view), path));
             }
         }
         Mode::Insert => {
@@ -73,7 +73,7 @@ pub fn handle_key_events(
             match app.editor.handle_key(&key_event.code) {
                 Some(Some(v)) => {
                     app.mode = Mode::Normal;
-                    return Ok(TransitionResult::Edit(v, app.position.clone()));
+                    return Ok(TransitionResult::Mutate(v, app.position.clone()));
                 }
                 Some(None) => {
                     app.mode = Mode::Normal;

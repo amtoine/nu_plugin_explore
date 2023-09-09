@@ -69,8 +69,9 @@ pub fn explore(call: &EvaluatedCall, input: Value) -> Result<Value> {
                     match handle_key_events(key_event, &mut app, &config)? {
                         TransitionResult::Quit => break,
                         TransitionResult::Continue => {}
-                        TransitionResult::Edit(cell, path) => {
-                            app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
+                        TransitionResult::Mutate(cell, path) => {
+                            app.value =
+                                crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
                         }
                         TransitionResult::Error(error) => {
                             tui.draw(&mut app, &config, Some(&error))?;
