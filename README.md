@@ -3,13 +3,14 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
 
 # table of content
 - [*introduction*](#introduction)
-  - [*the idea behind an explorer*](#the-idea-behind-an-explorer)
-  - [*why not `nu-explore`?*](#why-not-nu-explore)
+    - [*the idea behind an explorer*](#the-idea-behind-an-explorer)
+    - [*why not `nu-explore`?*](#why-not-nu-explore)
 - [*installation*](#installation)
-  - [*building from source*](#building-from-source)
-  - [*installing manually*](#installing-manually)
-  - [*using `nupm install` (recommended)*](#using-nupm-install-recommended)
+    - [*building from source*](#building-from-source)
+    - [*installing manually*](#installing-manually)
+    - [*using `nupm install` (recommended)*](#using-nupm-install-recommended)
 - [*usage*](#usage)
+    - [*demo*](#demo)
 - [*configuration*](#configuration)
     - [*default configuration*](#default-configuration)
     - [*an example*](#an-example)
@@ -17,8 +18,8 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
 - [*see the documentation locally*](#see-the-documentation-locally)
 - [*contributing*](#contributing)
 - [*TODO*](#todo)
-  - [*features*](#features)
-  - [*internal*](#internal)
+    - [*features*](#features)
+    - [*internal*](#internal)
 
 # introduction
 ## the idea behind an *explorer*
@@ -108,6 +109,9 @@ help nu_plugin_explore
 ```nushell
 open Cargo.toml | nu_plugin_explore
 ```
+
+## demo
+![simple demo][examples/demo.mp4]
 
 # configuration
 ## default configuration
