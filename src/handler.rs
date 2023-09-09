@@ -1,6 +1,6 @@
 use crossterm::event::KeyEvent;
 
-use nu_protocol::{ShellError, Span, Value};
+use nu_protocol::{ast::CellPath, ShellError, Span, Value};
 
 use crate::{
     app::{App, Mode},
@@ -15,7 +15,7 @@ pub enum TransitionResult {
     Quit,
     Continue,
     Return(Value),
-    Edit(Value),
+    Edit(Value, CellPath),
     Error(String),
 }
 
@@ -58,7 +58,9 @@ pub fn handle_key_events(
                 navigation::go_back_in_data(app);
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.transpose {
-                return Ok(TransitionResult::Edit(transpose(&app.value)));
+                let mut path = app.position.clone();
+                path.members.pop();
+                return Ok(TransitionResult::Edit(transpose(&app.value), path));
             }
         }
         Mode::Insert => {
@@ -70,7 +72,7 @@ pub fn handle_key_events(
             match app.editor.handle_key(&key_event.code) {
                 Some(Some(v)) => {
                     app.mode = Mode::Normal;
-                    return Ok(TransitionResult::Edit(v));
+                    return Ok(TransitionResult::Edit(v, app.position.clone()));
                 }
                 Some(None) => {
                     app.mode = Mode::Normal;
