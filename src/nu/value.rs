@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
-    Record, Span, Type, Value,
+    record, Record, Span, Type, Value,
 };
 
 pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
@@ -149,7 +149,23 @@ pub(crate) fn is_table(value: &Value) -> bool {
 /// }
 /// ```
 pub(crate) fn transpose(value: &Value) -> Value {
-    Value::string("this cell has been transposed", value.span())
+    match value {
+        Value::Record { val: rec, .. } => {
+            let mut rows = vec![];
+            for (col, val) in rec.iter() {
+                rows.push(Value::record(
+                    record! {
+                        "1" => Value::string(col, Span::unknown()),
+                        "2" => val.clone(),
+                    },
+                    Span::unknown(),
+                ));
+            }
+
+            Value::list(rows, Span::unknown())
+        }
+        _ => value.clone(),
+    }
 }
 
 #[cfg(test)]
