@@ -452,9 +452,25 @@ mod tests {
                 "2" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(transpose(&record), expected);
+        let result = transpose(&record);
+        assert_eq!(
+            result,
+            expected,
+            "transposing {} should give {}, found {}",
+            default_value_repr(&record),
+            default_value_repr(&expected),
+            default_value_repr(&result)
+        );
         // make sure `transpose` is an *involution*
-        assert_eq!(transpose(&expected), record);
+        let result = transpose(&expected);
+        assert_eq!(
+            result,
+            record,
+            "transposing {} should give {}, found {}",
+            default_value_repr(&expected),
+            default_value_repr(&record),
+            default_value_repr(&result)
+        );
 
         let table = Value::test_list(vec![
             Value::test_record(record! {
@@ -478,8 +494,24 @@ mod tests {
                 "3" => Value::test_int(4),
             }),
         ]);
-        assert_eq!(transpose(&table), expected);
+        let result = transpose(&table);
+        assert_eq!(
+            result,
+            expected,
+            "transposing {} should give {}, found {}",
+            default_value_repr(&table),
+            default_value_repr(&expected),
+            default_value_repr(&result)
+        );
         // make sure `transpose` is an *involution*
-        assert_eq!(transpose(&expected), table);
+        let result = transpose(&expected);
+        assert_eq!(
+            result,
+            table,
+            "transposing {} should give {}, found {}",
+            default_value_repr(&expected),
+            default_value_repr(&table),
+            default_value_repr(&result)
+        );
     }
 }
