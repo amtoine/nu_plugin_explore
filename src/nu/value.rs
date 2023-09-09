@@ -155,7 +155,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             _ => return value.clone(),
         };
 
-        let foo = (1..(rows[0].columns().len()))
+        let foo = (1..=(rows[0].columns().len()))
             .map(|i| format!("{i}"))
             .collect::<Vec<String>>();
 
