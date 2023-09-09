@@ -150,81 +150,66 @@ pub(crate) fn is_table(value: &Value) -> bool {
 /// ```
 pub(crate) fn transpose(value: &Value) -> Value {
     if is_table(value) {
-        let rows = match value {
+        let value_rows = match value {
             Value::List { vals, .. } => vals,
             _ => return value.clone(),
         };
 
-        let full_columns = (1..=(rows[0].columns().len()))
+        let full_columns = (1..=(value_rows[0].columns().len()))
             .map(|i| format!("{i}"))
             .collect::<Vec<String>>();
 
-        if rows[0].columns() == full_columns {
-            if rows[0].columns().len() == 2 {
-                match value {
-                    Value::List { vals: rows, .. } => {
-                        let cols: Vec<String> = rows
-                            .iter()
-                            .map(|row| row.get_data_by_key("1").unwrap().as_string().unwrap())
-                            .collect();
+        if value_rows[0].columns() == full_columns {
+            if value_rows[0].columns().len() == 2 {
+                let cols: Vec<String> = value_rows
+                    .iter()
+                    .map(|row| row.get_data_by_key("1").unwrap().as_string().unwrap())
+                    .collect();
 
-                        let vals: Vec<Value> = rows
-                            .iter()
-                            .map(|row| row.get_data_by_key("2").unwrap())
-                            .collect();
+                let vals: Vec<Value> = value_rows
+                    .iter()
+                    .map(|row| row.get_data_by_key("2").unwrap())
+                    .collect();
 
-                        return Value::record(Record { cols, vals }, Span::unknown());
-                    }
-                    _ => return value.clone(),
-                }
+                return Value::record(Record { cols, vals }, Span::unknown());
             } else {
-                match value {
-                    Value::List { vals, .. } => {
-                        let mut rows = vec![];
-                        let cols: Vec<String> = vals
-                            .iter()
-                            .map(|v| v.get_data_by_key("1").unwrap().as_string().unwrap())
-                            .collect();
-
-                        for i in 0..(vals[0].columns().len() - 1) {
-                            rows.push(Value::record(
-                                Record {
-                                    cols: cols.clone(),
-                                    vals: vals
-                                        .iter()
-                                        .map(|v| v.get_data_by_key(&format!("{}", i + 2)).unwrap())
-                                        .collect(),
-                                },
-                                Span::unknown(),
-                            ));
-                        }
-
-                        return Value::list(rows, Span::unknown());
-                    }
-                    _ => return value.clone(),
-                }
-            }
-        }
-
-        match value {
-            Value::List { vals, .. } => {
                 let mut rows = vec![];
-                for col in vals[0].columns() {
-                    let mut cols = vec!["1".into()];
-                    let mut vs = vec![Value::string(col, Span::unknown())];
+                let cols: Vec<String> = value_rows
+                    .iter()
+                    .map(|v| v.get_data_by_key("1").unwrap().as_string().unwrap())
+                    .collect();
 
-                    for (i, v) in vals.iter().enumerate() {
-                        cols.push(format!("{}", i + 2));
-                        vs.push(v.get_data_by_key(col).unwrap());
-                    }
-
-                    rows.push(Value::record(Record { cols, vals: vs }, Span::unknown()));
+                for i in 0..(value_rows[0].columns().len() - 1) {
+                    rows.push(Value::record(
+                        Record {
+                            cols: cols.clone(),
+                            vals: value_rows
+                                .iter()
+                                .map(|v| v.get_data_by_key(&format!("{}", i + 2)).unwrap())
+                                .collect(),
+                        },
+                        Span::unknown(),
+                    ));
                 }
 
                 return Value::list(rows, Span::unknown());
             }
-            _ => return value.clone(),
         }
+
+        let mut rows = vec![];
+        for col in value_rows[0].columns() {
+            let mut cols = vec!["1".into()];
+            let mut vs = vec![Value::string(col, Span::unknown())];
+
+            for (i, v) in value_rows.iter().enumerate() {
+                cols.push(format!("{}", i + 2));
+                vs.push(v.get_data_by_key(col).unwrap());
+            }
+
+            rows.push(Value::record(Record { cols, vals: vs }, Span::unknown()));
+        }
+
+        return Value::list(rows, Span::unknown());
     }
 
     match value {
