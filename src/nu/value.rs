@@ -150,7 +150,7 @@ pub(crate) fn is_table(value: &Value) -> bool {
 /// ```
 pub(crate) fn transpose(value: &Value) -> Value {
     if value.columns()
-        == &(1..(value.columns().len()))
+        == (1..(value.columns().len()))
             .map(|i| format!("{i}"))
             .collect::<Vec<String>>()
     {
