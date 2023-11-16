@@ -155,12 +155,14 @@ pub(crate) fn transpose(value: &Value) -> Value {
             _ => return value.clone(),
         };
 
-        let full_columns = (1..=(value_rows[0].columns().len()))
+        let first_row = value_rows[0].as_record().unwrap();
+
+        let full_columns = (1..=(first_row.len()))
             .map(|i| format!("{i}"))
             .collect::<Vec<String>>();
 
-        if value_rows[0].columns() == full_columns {
-            if value_rows[0].columns().len() == 2 {
+        if first_row.cols == full_columns {
+            if first_row.len() == 2 {
                 let cols: Vec<String> = value_rows
                     .iter()
                     .map(|row| row.get_data_by_key("1").unwrap().as_string().unwrap())
@@ -179,7 +181,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
                     .map(|v| v.get_data_by_key("1").unwrap().as_string().unwrap())
                     .collect();
 
-                for i in 0..(value_rows[0].columns().len() - 1) {
+                for i in 0..(first_row.len() - 1) {
                     rows.push(Value::record(
                         Record {
                             cols: cols.clone(),

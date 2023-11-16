@@ -5,7 +5,7 @@ use super::config::{repr_keycode, Layout};
 use super::{App, Config, Mode};
 use crossterm::event::KeyCode;
 use nu_protocol::ast::PathMember;
-use nu_protocol::{Type, Value};
+use nu_protocol::{Record, Type, Value};
 use ratatui::prelude::Backend;
 use ratatui::{
     prelude::{Alignment, Constraint, Rect},
@@ -193,16 +193,15 @@ fn repr_data(data: &Value) -> Vec<DataRowRepr> {
 /// compute the representation of a complete Nushell table
 ///
 /// > see the tests for detailed examples
-fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
-    let columns = table[0].columns();
-    let mut shapes = vec![Type::Nothing; columns.len()];
+fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
+    let mut shapes = vec![Type::Nothing; table[0].len()];
 
     let mut rows = vec![vec![]; table.len()];
 
     for (i, row) in table.iter().enumerate() {
-        for (j, col) in columns.iter().enumerate() {
+        for (j, col) in table[0].cols.iter().enumerate() {
             // NOTE: because `table` is a valid table, this should always be a `Some`
-            let val = row.get_data_by_key(col).unwrap();
+            let val = row.get(col).unwrap();
 
             let cell_type = val.get_type();
             if !matches!(cell_type, Type::Nothing) {
@@ -213,12 +212,12 @@ fn repr_table(table: &[Value]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
                 }
             }
 
-            rows[i].push(repr_value(&val).data);
+            rows[i].push(repr_value(val).data);
         }
     }
 
     (
-        columns.to_vec(),
+        table[0].cols.clone(),
         shapes.iter().map(|s| s.to_string()).collect(),
         rows,
     )
@@ -274,14 +273,20 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config)
     let selected = match current {
         Some(PathMember::Int { val, .. }) => val,
         Some(PathMember::String { val, .. }) => {
-            value.columns().iter().position(|x| x == &val).unwrap_or(0)
+            value.columns().position(|x| x == &val).unwrap_or(0)
         }
         None => 0,
     };
 
     if is_table(&value) {
         let (columns, shapes, cells) = match value {
-            Value::List { vals, .. } => repr_table(&vals),
+            Value::List { vals, .. } => {
+                let recs = vals
+                    .iter()
+                    .map(|v| v.as_record().unwrap().clone())
+                    .collect::<Vec<Record>>();
+                repr_table(&recs)
+            }
             _ => panic!("value is a table but is not a list"),
         };
 
@@ -700,14 +705,14 @@ mod tests {
     #[test]
     fn repr_simple_table() {
         let table = vec![
-            Value::test_record(record! {
+            record! {
                 "a" => Value::test_string("x"),
                 "b" => Value::test_int(1),
-            }),
-            Value::test_record(record! {
+            },
+            record! {
                 "a" => Value::test_string("y"),
                 "b" => Value::test_int(2),
-            }),
+            },
         ];
 
         let expected = (
@@ -722,14 +727,14 @@ mod tests {
     #[test]
     fn repr_table_with_empty_column() {
         let table = vec![
-            Value::test_record(record! {
+            record! {
                 "a" => Value::test_nothing(),
                 "b" => Value::test_int(1),
-            }),
-            Value::test_record(record! {
+            },
+            record! {
                 "a" => Value::test_nothing(),
                 "b" => Value::test_int(2),
-            }),
+            },
         ];
 
         let expected = (
@@ -744,14 +749,14 @@ mod tests {
     #[test]
     fn repr_table_with_shuffled_columns() {
         let table = vec![
-            Value::test_record(record! {
+            record! {
                 "b" => Value::test_int(1),
                 "a" => Value::test_string("x"),
-            }),
-            Value::test_record(record! {
+            },
+            record! {
                 "a" => Value::test_string("y"),
                 "b" => Value::test_int(2),
-            }),
+            },
         ];
 
         let expected = (
@@ -766,14 +771,14 @@ mod tests {
     #[test]
     fn repr_table_with_holes() {
         let table = vec![
-            Value::test_record(record! {
+            record! {
                 "a" => Value::test_string("x"),
                 "b" => Value::test_nothing(),
-            }),
-            Value::test_record(record! {
+            },
+            record! {
                 "a" => Value::test_nothing(),
                 "b" => Value::test_int(2),
-            }),
+            },
         ];
 
         let expected = (
@@ -788,14 +793,14 @@ mod tests {
     #[test]
     fn repr_table_with_mixed_numeric_types() {
         let table = vec![
-            Value::test_record(record! {
+            record! {
                 "a" => Value::test_string("x"),
                 "b" => Value::test_int(1),
-            }),
-            Value::test_record(record! {
+            },
+            record! {
                 "a" => Value::test_string("y"),
                 "b" => Value::test_float(2.34),
-            }),
+            },
         ];
 
         let expected = (
