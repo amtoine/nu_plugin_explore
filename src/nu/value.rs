@@ -45,15 +45,21 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
 
             let id = rec.cols.iter().position(|x| *x == col).unwrap_or(0);
 
-            let mut vals = rec.vals.clone();
-            vals[id] = mutate_value_cell(&vals[id], &cell_path, cell);
+            let cols = rec.columns().cloned().collect();
+            let vals = rec
+                .values()
+                .cloned()
+                .enumerate()
+                .map(|(i, v)| {
+                    if i == id {
+                        mutate_value_cell(&v, &cell_path, cell)
+                    } else {
+                        v
+                    }
+                })
+                .collect();
 
-            let mut record = Record::new();
-            rec.cols.iter().zip(vals).for_each(|(col, val)| {
-                record.push(col, val);
-            });
-
-            Value::record(record, Span::unknown())
+            Value::record(Record::from_raw_cols_vals(cols, vals), Span::unknown())
         }
         _ => cell.clone(),
     }
@@ -173,7 +179,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
                     .map(|row| row.get_data_by_key("2").unwrap())
                     .collect();
 
-                return Value::record(Record { cols, vals }, Span::unknown());
+                return Value::record(Record::from_raw_cols_vals(cols, vals), Span::unknown());
             } else {
                 let mut rows = vec![];
                 let cols: Vec<String> = value_rows
@@ -183,13 +189,13 @@ pub(crate) fn transpose(value: &Value) -> Value {
 
                 for i in 0..(first_row.len() - 1) {
                     rows.push(Value::record(
-                        Record {
-                            cols: cols.clone(),
-                            vals: value_rows
+                        Record::from_raw_cols_vals(
+                            cols.clone(),
+                            value_rows
                                 .iter()
                                 .map(|v| v.get_data_by_key(&format!("{}", i + 2)).unwrap())
                                 .collect(),
-                        },
+                        ),
                         Span::unknown(),
                     ));
                 }
@@ -208,7 +214,10 @@ pub(crate) fn transpose(value: &Value) -> Value {
                 vs.push(v.get_data_by_key(col).unwrap());
             }
 
-            rows.push(Value::record(Record { cols, vals: vs }, Span::unknown()));
+            rows.push(Value::record(
+                Record::from_raw_cols_vals(cols, vs),
+                Span::unknown(),
+            ));
         }
 
         return Value::list(rows, Span::unknown());
