@@ -73,7 +73,7 @@ impl App {
                 optional: vals.is_empty(),
             }),
             Value::Record { val: rec, .. } => app.position.members.push(PathMember::String {
-                val: rec.cols.get(0).unwrap_or(&"".to_string()).into(),
+                val: rec.cols.first().unwrap_or(&"".to_string()).into(),
                 span: Span::unknown(),
                 optional: rec.cols.is_empty(),
             }),
