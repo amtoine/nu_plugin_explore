@@ -119,15 +119,19 @@ you can find it in [`default.nuon`](./examples/config/default.nuon).
 
 you can copy-paste it in your `config.nu` and set `$env.explore_config` to it:
 ```nushell
-$env.nu_plugin_explore_config = {
+$env.config.plugins.explore = {
     # content of the default config
 }
+```
+alternately, you can copy-paste the default config file to `$nu.default-config-dir` and add the following line to your `config.nu`
+```nushell
+$env.config.plugins.explore = (open ($nu.default-config-dir | path join "nu_plugin_explore.nu"))
 ```
 
 ## an example
 if you do not like the Vim bindings by default you can replace the navigation part with
 ```nushell
-$env.nu_plugin_explore_config.keybindings.navigation = {
+$env.config.plugins.explore.keybindings.navigation = {
     left: 'left',
     down: 'down',
     up: 'up',
@@ -135,29 +139,6 @@ $env.nu_plugin_explore_config.keybindings.navigation = {
 }
 ```
 and voila :yum:
-
-## some convenience
-there is currently no way to use the `$env` configuration from inside a plugin...
-`nu_plugin_explore` thus uses a CLI argument to do that, i.e. you can pass a config record as the
-first positional argument to the `nu_plugin_explore` command!
-
-however, doing this by hand each time is not the right way to go with that, so let's find another way.
-
-in order to avoid having to pass this record everytime we call `explore`, let's define an alias
-> **Note**  
-> this will not have an impact on the CLI interface of `explore` because it does not have any other
-> option or argument than `config: record` as the first positional argument.
-
-```nushell
-alias nu_plugin_explore = nu_plugin_explore ($env.nu_plugin_explore_config? | default {})
-```
-
-now, you can just call `nu_plugin_explore` and have your config loaded automatically!
-and you can change `$env.nu_plugin_explore_config` as much as you like :partying_face:
-
-> **Note**  
-> if you omit one of the config field of the configuration for `explore`, it's not an issue at all,
-> it will just take the default value instead!
 
 # see the documentation locally
 ```nushell
