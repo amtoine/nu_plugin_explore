@@ -59,7 +59,10 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
                 })
                 .collect();
 
-            Value::record(Record::from_raw_cols_vals(cols, vals), Span::unknown())
+            Value::record(
+                Record::from_raw_cols_vals(cols, vals, Span::unknown(), Span::unknown()).unwrap(),
+                Span::unknown(),
+            )
         }
         _ => cell.clone(),
     }
@@ -179,7 +182,11 @@ pub(crate) fn transpose(value: &Value) -> Value {
                     .map(|row| row.get_data_by_key("2").unwrap())
                     .collect();
 
-                return Value::record(Record::from_raw_cols_vals(cols, vals), Span::unknown());
+                return Value::record(
+                    Record::from_raw_cols_vals(cols, vals, Span::unknown(), Span::unknown())
+                        .unwrap(),
+                    Span::unknown(),
+                );
             } else {
                 let mut rows = vec![];
                 let cols: Vec<String> = value_rows
@@ -195,7 +202,10 @@ pub(crate) fn transpose(value: &Value) -> Value {
                                 .iter()
                                 .map(|v| v.get_data_by_key(&format!("{}", i + 2)).unwrap())
                                 .collect(),
-                        ),
+                            Span::unknown(),
+                            Span::unknown(),
+                        )
+                        .unwrap(),
                         Span::unknown(),
                     ));
                 }
@@ -215,7 +225,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             }
 
             rows.push(Value::record(
-                Record::from_raw_cols_vals(cols, vs),
+                Record::from_raw_cols_vals(cols, vs, Span::unknown(), Span::unknown()).unwrap(),
                 Span::unknown(),
             ));
         }
