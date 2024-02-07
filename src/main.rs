@@ -1,6 +1,6 @@
 use nu_plugin::{serve_plugin, EvaluatedCall, LabeledError, MsgPackSerializer, Plugin};
 use nu_plugin_explore::explore;
-use nu_protocol::{Category, PluginExample, PluginSignature, ShellError, SyntaxShape, Type, Value};
+use nu_protocol::{Category, PluginExample, PluginSignature, ShellError, Type, Value};
 
 /// the main structure of the [Nushell](https://nushell.sh) plugin
 struct Explore;
@@ -10,11 +10,6 @@ impl Plugin for Explore {
         vec![PluginSignature::build("nu_plugin_explore")
             .usage("interactively explore Nushell structured data")
             .input_output_type(Type::Any, Type::Any)
-            .optional(
-                "config",
-                SyntaxShape::Record(vec![]),
-                "a config record to configure everything in explore",
-            )
             .plugin_examples(vec![
                 PluginExample {
                     example: "open Cargo.toml | explore".into(),
@@ -33,11 +28,12 @@ impl Plugin for Explore {
     fn run(
         &mut self,
         name: &str,
+        config: &Option<Value>,
         call: &EvaluatedCall,
         input: &Value,
     ) -> Result<Value, LabeledError> {
         match name {
-            "nu_plugin_explore" => match explore(call, input.clone()) {
+            "nu_plugin_explore" => match explore(config, input.clone()) {
                 Ok(value) => Ok(value),
                 Err(err) => {
                     match err.downcast_ref::<ShellError>() {
