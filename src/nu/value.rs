@@ -135,11 +135,9 @@ pub(crate) fn is_table(value: &Value) -> Table {
                             }
                         },
                         None => {
-                            return Table::RowInvalidKey(
-                                i + 1,
-                                key.clone(),
-                                row.keys().cloned().collect(),
-                            )
+                            let mut keys = row.keys().cloned().collect::<Vec<String>>();
+                            keys.sort();
+                            return Table::RowInvalidKey(i + 1, key.clone(), keys);
                         }
                     }
                 }
