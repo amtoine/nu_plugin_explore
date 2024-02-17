@@ -79,29 +79,29 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
     }
 }
 
-pub(crate) fn is_table(value: &Value) -> bool {
+pub(crate) fn is_table(value: &Value) -> Table {
     match value {
         Value::List { vals, .. } => {
             if vals.is_empty() {
-                return false;
+                return Table::Empty;
             }
 
             // extract the columns of each row as hashmaps for easier access
             let mut rows = Vec::new();
-            for val in vals {
+            for (i, val) in vals.iter().enumerate() {
                 match val.get_type() {
                     Type::Record(fields) => {
                         rows.push(fields.into_iter().collect::<HashMap<String, Type>>())
                     }
-                    _ => return false,
+                    t => return Table::RowNotARecord(i, t),
                 };
             }
 
             // check the number of columns for each row
             let n = rows[0].keys().len();
-            for row in rows.iter().skip(1) {
+            for (i, row) in rows.iter().skip(1).enumerate() {
                 if row.keys().len() != n {
-                    return false;
+                    return Table::RowIncompatibleLen(i + 1, row.keys().len(), n);
                 }
             }
 
@@ -111,7 +111,7 @@ pub(crate) fn is_table(value: &Value) -> bool {
             for (key, val) in rows[0].iter() {
                 let mut ty = val;
 
-                for row in rows.iter().skip(1) {
+                for (i, row) in rows.iter().skip(1).enumerate() {
                     match row.get(key) {
                         Some(v) => match ty {
                             Type::Nothing => ty = v,
@@ -124,19 +124,30 @@ pub(crate) fn is_table(value: &Value) -> bool {
                                         // tables
                                         | (v != ty)
                                     {
-                                        return false;
+                                        return Table::RowIncompatibleType(
+                                            i + 1,
+                                            key.clone(),
+                                            v.clone(),
+                                            ty.clone(),
+                                        );
                                     }
                                 }
                             }
                         },
-                        None => return false,
+                        None => {
+                            return Table::RowInvalidKey(
+                                i + 1,
+                                key.clone(),
+                                row.keys().cloned().collect(),
+                            )
+                        }
                     }
                 }
             }
 
-            true
+            Table::IsTable
         }
-        _ => false,
+        _ => Table::NotAList,
     }
 }
 
