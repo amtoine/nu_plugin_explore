@@ -5,6 +5,17 @@ use nu_protocol::{
     record, Record, Span, Type, Value,
 };
 
+#[derive(Debug, PartialEq)]
+pub(crate) enum Table {
+    Empty,
+    RowNotARecord(usize, Type),
+    RowIncompatibleLen(usize, usize, usize),
+    RowIncompatibleType(usize, String, Type, Type),
+    RowInvalidKey(usize, String, Vec<String>),
+    IsTable,
+    NotAList,
+}
+
 pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
     if cell_path.members.is_empty() {
         return cell.clone();
