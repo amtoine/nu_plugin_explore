@@ -54,6 +54,10 @@
                 foreground: white,
             },
         },
+        warning: {
+            foreground: red,
+            background: yellow,
+        }
     }
     keybindings: {
         quit: 'q',  # quit `explore`
