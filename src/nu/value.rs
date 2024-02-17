@@ -529,6 +529,39 @@ mod tests {
         );
 
         assert_eq!(is_table(&Value::test_int(0)), Table::NotAList);
+
+        assert_eq!(is_table(&Value::test_list(vec![])), Table::Empty);
+
+        let not_a_table_row_not_record = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_int(0),
+        ]);
+        assert_eq!(
+            is_table(&not_a_table_row_not_record),
+            Table::RowNotARecord(1, Type::Int),
+            "{} should not be a table",
+            default_value_repr(&not_a_table_row_not_record)
+        );
+
+        let not_a_table_row_invalid_key = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "c" => Value::test_int(2),
+            }),
+        ]);
+        assert_eq!(
+            is_table(&not_a_table_row_invalid_key),
+            Table::RowInvalidKey(1, "b".into(), vec!["a".into(), "c".into()]),
+            "{} should not be a table",
+            default_value_repr(&not_a_table_row_invalid_key)
+        );
     }
 
     #[test]
