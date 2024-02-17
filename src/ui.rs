@@ -279,7 +279,11 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
             frame.render_widget(
                 Paragraph::new(msg.unwrap())
                     .alignment(Alignment::Right)
-                    .style(Style::default().bg(Color::Yellow).fg(Color::Red)),
+                    .style(
+                        Style::default()
+                            .bg(config.colors.warning.background)
+                            .fg(config.colors.warning.foreground),
+                    ),
                 Rect::new(0, data_frame_height, frame.size().width, 1),
             );
         }
