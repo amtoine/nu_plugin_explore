@@ -224,13 +224,6 @@ fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) 
 /// the data will be rendered on top of the bar, and on top of the cell path in case
 /// [`crate::config::Config::show_cell_path`] is set to `true`.
 fn render_data(frame: &mut Frame, app: &App, config: &Config) {
-    let data_frame_height = if config.show_cell_path {
-        frame.size().height - 2
-    } else {
-        frame.size().height - 1
-    };
-    let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
-
     let mut data_path = app.position.members.clone();
     let current = if !app.is_at_bottom() {
         data_path.pop()
@@ -250,6 +243,48 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
                     .to_expanded_string(" ", &nu_protocol::Config::default())
             )
         });
+
+    let table_type = is_table(&value);
+    let is_a_table = matches!(table_type, crate::nu::value::Table::IsTable);
+
+    let mut data_frame_height = if config.show_cell_path {
+        frame.size().height - 2
+    } else {
+        frame.size().height - 1
+    };
+    if !is_a_table {
+        let msg = match table_type {
+            crate::nu::value::Table::Empty => None,
+            crate::nu::value::Table::RowNotARecord(i, t) => {
+                Some(format!("row $.{} is not a record: {}", i, t))
+            }
+            crate::nu::value::Table::RowIncompatibleLen(i, l, e) => Some(format!(
+                "row $.{} has incompatible length with first row: expected {} found {}",
+                i, e, l
+            )),
+            crate::nu::value::Table::RowIncompatibleType(i, k, t, e) => Some(format!(
+                "cell $.{}.{} has incompatible type with first row: expected {} found {}",
+                i, k, e, t
+            )),
+            crate::nu::value::Table::RowInvalidKey(i, k, ks) => Some(format!(
+                "row $.{} does not contain key '{}': list of keys {:?}",
+                i, k, ks
+            )),
+            crate::nu::value::Table::NotAList => None,
+            crate::nu::value::Table::IsTable => unreachable!(),
+        };
+
+        if msg.is_some() {
+            data_frame_height -= 1;
+            frame.render_widget(
+                Paragraph::new(msg.unwrap())
+                    .alignment(Alignment::Right)
+                    .style(Style::default().bg(Color::Yellow).fg(Color::Red)),
+                Rect::new(0, data_frame_height, frame.size().width, 1),
+            );
+        }
+    }
+    let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
     let normal_name_style = Style::default()
         .fg(config.colors.normal.name.foreground)
@@ -273,7 +308,7 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
         None => 0,
     };
 
-    if matches!(is_table(&value), crate::nu::value::Table::IsTable) {
+    if is_a_table {
         let (columns, shapes, cells) = match value {
             Value::List { vals, .. } => {
                 let recs = vals
