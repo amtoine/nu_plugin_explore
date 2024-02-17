@@ -245,7 +245,7 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
         });
 
     let table_type = is_table(&value);
-    let is_a_table = matches!(table_type, crate::nu::value::Table::IsTable);
+    let is_a_table = matches!(table_type, crate::nu::value::Table::IsValid);
 
     let mut data_frame_height = if config.show_cell_path {
         frame.size().height - 2
@@ -271,19 +271,17 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
                 i, k, ks
             )),
             crate::nu::value::Table::NotAList => None,
-            crate::nu::value::Table::IsTable => unreachable!(),
+            crate::nu::value::Table::IsValid => unreachable!(),
         };
 
-        if msg.is_some() {
+        if let Some(msg) = msg {
             data_frame_height -= 1;
             frame.render_widget(
-                Paragraph::new(msg.unwrap())
-                    .alignment(Alignment::Right)
-                    .style(
-                        Style::default()
-                            .bg(config.colors.warning.background)
-                            .fg(config.colors.warning.foreground),
-                    ),
+                Paragraph::new(msg).alignment(Alignment::Right).style(
+                    Style::default()
+                        .bg(config.colors.warning.background)
+                        .fg(config.colors.warning.foreground),
+                ),
                 Rect::new(0, data_frame_height, frame.size().width, 1),
             );
         }
