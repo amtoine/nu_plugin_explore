@@ -6,7 +6,6 @@ use super::{App, Config, Mode};
 use crossterm::event::KeyCode;
 use nu_protocol::ast::PathMember;
 use nu_protocol::{Record, Type, Value};
-use ratatui::prelude::Backend;
 use ratatui::{
     prelude::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style},
@@ -18,12 +17,7 @@ use ratatui::{
 };
 
 /// render the whole ui
-pub(super) fn render_ui<B: Backend>(
-    frame: &mut Frame<'_, B>,
-    app: &App,
-    config: &Config,
-    error: Option<&str>,
-) {
+pub(super) fn render_ui(frame: &mut Frame, app: &App, config: &Config, error: Option<&str>) {
     render_data(frame, app, config);
     if config.show_cell_path {
         render_cell_path(frame, app);
@@ -41,7 +35,7 @@ pub(super) fn render_ui<B: Backend>(
     }
 }
 
-pub(super) fn render_error<B: Backend>(frame: &mut Frame<'_, B>, error: &str) {
+pub(super) fn render_error(frame: &mut Frame, error: &str) {
     let bottom_two_lines = Rect::new(0, frame.size().height - 2, frame.size().width, 2);
 
     let lines = vec![
@@ -229,7 +223,7 @@ fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) 
 ///
 /// the data will be rendered on top of the bar, and on top of the cell path in case
 /// [`crate::config::Config::show_cell_path`] is set to `true`.
-fn render_data<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config) {
+fn render_data(frame: &mut Frame, app: &App, config: &Config) {
     let data_frame_height = if config.show_cell_path {
         frame.size().height - 2
     } else {
@@ -318,12 +312,11 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config)
             .map(|r| Row::new(r.iter().cloned().map(Cell::from).collect::<Vec<Cell>>()))
             .collect();
 
-        let table = Table::new(rows)
+        let table = Table::new(rows, widths)
             .header(header)
             .block(Block::default().borders(Borders::ALL))
             .highlight_style(highlight_style)
-            .highlight_symbol(&config.colors.selected_symbol)
-            .widths(&widths);
+            .highlight_symbol(config.colors.selected_symbol.clone());
 
         frame.render_stateful_widget(
             table,
@@ -446,14 +439,13 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config)
             };
 
             let table = if config.show_table_header {
-                Table::new(rows).header(header.height(1))
+                Table::new(rows, constraints).header(header.height(1))
             } else {
-                Table::new(rows)
+                Table::new(rows, constraints)
             }
             .block(Block::default().borders(Borders::ALL))
             .highlight_style(highlight_style)
-            .highlight_symbol(&config.colors.selected_symbol)
-            .widths(&constraints);
+            .highlight_symbol(config.colors.selected_symbol.clone());
 
             frame.render_stateful_widget(
                 table,
@@ -481,7 +473,7 @@ fn render_data<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config)
 /// ```text
 /// ||cell path: $.foo.bar.2.baz    ...||
 /// ```
-fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, app: &App) {
+fn render_cell_path(frame: &mut Frame, app: &App) {
     let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
@@ -530,7 +522,7 @@ fn render_cell_path<B: Backend>(frame: &mut Frame<'_, B>, app: &App) {
 /// ```text
 /// ||PEEKING ... <esc> to NORMAL | a to peek all | c to peek current view | u to peek under cursor | q to quit||
 /// ```
-fn render_status_bar<B: Backend>(frame: &mut Frame<'_, B>, app: &App, config: &Config) {
+fn render_status_bar(frame: &mut Frame, app: &App, config: &Config) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
     let bg_style = match app.mode {
