@@ -132,7 +132,7 @@ fn repr_simple_value(value: &Value) -> DataRowRepr {
         name: None,
         shape,
         // FIXME: use a real config
-        data: value.into_string(" ", &nu_protocol::Config::default()),
+        data: value.to_abbreviated_string(&nu_protocol::Config::default()),
     }
 }
 
@@ -246,7 +246,8 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
             panic!(
                 "unexpected error when following {:?} in {}",
                 app.position.members,
-                app.value.into_string(" ", &nu_protocol::Config::default())
+                app.value
+                    .to_abbreviated_string(&nu_protocol::Config::default())
             )
         });
 
@@ -461,7 +462,7 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
 /// this line can be removed through config, see [`crate::config::Config::show_cell_path`]
 ///
 /// # Examples
-/// > :bulb: **Note**  
+/// > :bulb: **Note**
 /// > the `...` are here to signify that the bar might be truncated and the `||` at the start and
 /// the end of the lines are just to represent the borders of the terminal but will not appear in
 /// the TUI.
@@ -505,7 +506,7 @@ fn render_cell_path(frame: &mut Frame, app: &App) {
 /// the color depending of the mode is completely configurable!
 ///
 /// # Examples
-/// > :bulb: **Note**  
+/// > :bulb: **Note**
 /// > - the `...` are here to signify that the bar might be truncated and the `||` at the start and
 /// the end of the lines are just to represent the borders of the terminal but will not appear in
 /// the TUI.
