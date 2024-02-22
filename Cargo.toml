@@ -8,7 +8,7 @@ console = "0.15.7"
 crossterm = "0.27.0"
 nu-plugin = { version = "0.90.2", path = "../nushell/crates/nu-plugin" }
 nu-protocol = { version = "0.90.2", path = "../nushell/crates/nu-protocol", features = ["plugin"] }
-ratatui = "0.22.0"
+ratatui = "0.26.1"
 url = "2.4.0"
 
 [lib]
