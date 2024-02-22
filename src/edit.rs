@@ -1,6 +1,6 @@
 use crossterm::event::KeyCode;
 use ratatui::{
-    prelude::{Backend, Rect},
+    prelude::Rect,
     style::Style,
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
     Frame,
@@ -137,7 +137,7 @@ impl Editor {
         None
     }
 
-    pub(super) fn render<B: Backend>(&self, frame: &mut Frame<'_, B>, config: &Config) {
+    pub(super) fn render(&self, frame: &mut Frame, config: &Config) {
         let title = "Editor";
 
         let block = Paragraph::new(self.buffer.as_str())
