@@ -59,7 +59,10 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
                 })
                 .collect();
 
-            Value::record(Record::from_raw_cols_vals(cols, vals), Span::unknown())
+            match Record::from_raw_cols_vals(cols, vals, Span::unknown(), Span::unknown()) {
+                Ok(rec) => Value::record(rec, Span::unknown()),
+                Err(err) => Value::error(err, Span::unknown()),
+            }
         }
         _ => cell.clone(),
     }
@@ -171,7 +174,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             if first_row.len() == 2 {
                 let cols: Vec<String> = value_rows
                     .iter()
-                    .map(|row| row.get_data_by_key("1").unwrap().as_string().unwrap())
+                    .map(|row| row.get_data_by_key("1").unwrap().into_string().unwrap())
                     .collect();
 
                 let vals: Vec<Value> = value_rows
@@ -179,25 +182,37 @@ pub(crate) fn transpose(value: &Value) -> Value {
                     .map(|row| row.get_data_by_key("2").unwrap())
                     .collect();
 
-                return Value::record(Record::from_raw_cols_vals(cols, vals), Span::unknown());
+                return match Record::from_raw_cols_vals(
+                    cols,
+                    vals,
+                    Span::unknown(),
+                    Span::unknown(),
+                ) {
+                    Ok(rec) => Value::record(rec, Span::unknown()),
+                    Err(err) => Value::error(err, Span::unknown()),
+                };
             } else {
                 let mut rows = vec![];
                 let cols: Vec<String> = value_rows
                     .iter()
-                    .map(|v| v.get_data_by_key("1").unwrap().as_string().unwrap())
+                    .map(|v| v.get_data_by_key("1").unwrap().into_string().unwrap())
                     .collect();
 
                 for i in 0..(first_row.len() - 1) {
-                    rows.push(Value::record(
-                        Record::from_raw_cols_vals(
+                    rows.push(
+                        match Record::from_raw_cols_vals(
                             cols.clone(),
                             value_rows
                                 .iter()
                                 .map(|v| v.get_data_by_key(&format!("{}", i + 2)).unwrap())
                                 .collect(),
-                        ),
-                        Span::unknown(),
-                    ));
+                            Span::unknown(),
+                            Span::unknown(),
+                        ) {
+                            Ok(rec) => Value::record(rec, Span::unknown()),
+                            Err(err) => Value::error(err, Span::unknown()),
+                        },
+                    );
                 }
 
                 return Value::list(rows, Span::unknown());
@@ -214,10 +229,12 @@ pub(crate) fn transpose(value: &Value) -> Value {
                 vs.push(v.get_data_by_key(col).unwrap());
             }
 
-            rows.push(Value::record(
-                Record::from_raw_cols_vals(cols, vs),
-                Span::unknown(),
-            ));
+            rows.push(
+                match Record::from_raw_cols_vals(cols, vs, Span::unknown(), Span::unknown()) {
+                    Ok(rec) => Value::record(rec, Span::unknown()),
+                    Err(err) => Value::error(err, Span::unknown()),
+                },
+            );
         }
 
         return Value::list(rows, Span::unknown());
@@ -252,7 +269,7 @@ mod tests {
     use nu_protocol::{ast::CellPath, record, Config, Value};
 
     fn default_value_repr(value: &Value) -> String {
-        value.into_string(" ", &Config::default())
+        value.to_abbreviated_string(&Config::default())
     }
 
     #[test]

@@ -33,6 +33,7 @@ impl Plugin for Explore {
     fn run(
         &mut self,
         name: &str,
+        _config: &Option<Value>,
         call: &EvaluatedCall,
         input: &Value,
     ) -> Result<Value, LabeledError> {
