@@ -174,7 +174,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             if first_row.len() == 2 {
                 let cols: Vec<String> = value_rows
                     .iter()
-                    .map(|row| row.get_data_by_key("1").unwrap().as_string().unwrap())
+                    .map(|row| row.get_data_by_key("1").unwrap().as_str().unwrap().into())
                     .collect();
 
                 let vals: Vec<Value> = value_rows
@@ -191,7 +191,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
                 let mut rows = vec![];
                 let cols: Vec<String> = value_rows
                     .iter()
-                    .map(|v| v.get_data_by_key("1").unwrap().as_string().unwrap())
+                    .map(|v| v.get_data_by_key("1").unwrap().as_str().unwrap().into())
                     .collect();
 
                 for i in 0..(first_row.len() - 1) {
@@ -262,7 +262,7 @@ mod tests {
     use nu_protocol::{ast::CellPath, record, Config, Value};
 
     fn default_value_repr(value: &Value) -> String {
-        value.into_string(" ", &Config::default())
+        value.to_expanded_string(" ", &Config::default())
     }
 
     #[test]
@@ -410,9 +410,8 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
+        assert!(
             is_table(&table),
-            true,
             "{} should be a table",
             default_value_repr(&table)
         );
@@ -427,9 +426,8 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
+        assert!(
             is_table(&table_with_out_of_order_columns),
-            true,
             "{} should be a table",
             default_value_repr(&table_with_out_of_order_columns)
         );
@@ -444,9 +442,8 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
+        assert!(
             is_table(&table_with_nulls),
-            true,
             "{} should be a table",
             default_value_repr(&table_with_nulls)
         );
@@ -461,9 +458,8 @@ mod tests {
                 "b" => Value::test_float(2.34),
             }),
         ]);
-        assert_eq!(
+        assert!(
             is_table(&table_with_number_colum),
-            true,
             "{} should be a table",
             default_value_repr(&table_with_number_colum)
         );
@@ -477,9 +473,8 @@ mod tests {
                 "b" => Value::test_int(1),
             }),
         ]);
-        assert_eq!(
-            is_table(&not_a_table_missing_field),
-            false,
+        assert!(
+            !is_table(&not_a_table_missing_field),
             "{} should not be a table",
             default_value_repr(&not_a_table_missing_field)
         );
@@ -494,14 +489,13 @@ mod tests {
                 "b" => Value::test_list(vec![Value::test_int(1)]),
             }),
         ]);
-        assert_eq!(
-            is_table(&not_a_table_incompatible_types),
-            false,
+        assert!(
+            !is_table(&not_a_table_incompatible_types),
             "{} should not be a table",
             default_value_repr(&not_a_table_incompatible_types)
         );
 
-        assert_eq!(is_table(&Value::test_int(0)), false);
+        assert!(!is_table(&Value::test_int(0)));
     }
 
     #[test]

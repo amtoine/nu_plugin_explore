@@ -402,7 +402,7 @@ mod tests {
             let mode = app.mode.clone();
 
             let result =
-                handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
+                handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, config)
                     .unwrap();
 
             if exit {
@@ -438,14 +438,15 @@ mod tests {
                         mode
                     ),
                 },
-                None => match result {
-                    TransitionResult::Return(_) => panic!(
-                        "did NOT expect output data after pressing {} in {} mode",
-                        repr_keycode(&key),
-                        mode
-                    ),
-                    _ => {}
-                },
+                None => {
+                    if let TransitionResult::Return(_) = result {
+                        panic!(
+                            "did NOT expect output data after pressing {} in {} mode",
+                            repr_keycode(&key),
+                            mode
+                        )
+                    }
+                }
             }
         }
     }
@@ -555,13 +556,11 @@ mod tests {
 
         for (key, cell_path) in transitions {
             let expected = to_path_member_vec(&cell_path);
-            match handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
-                .unwrap()
+            if let TransitionResult::Mutate(cell, path) =
+                handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
+                    .unwrap()
             {
-                TransitionResult::Mutate(cell, path) => {
-                    app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
-                }
-                _ => {}
+                app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
             }
 
             assert!(

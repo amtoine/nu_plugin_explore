@@ -132,7 +132,7 @@ fn repr_simple_value(value: &Value) -> DataRowRepr {
         name: None,
         shape,
         // FIXME: use a real config
-        data: value.into_string(" ", &nu_protocol::Config::default()),
+        data: value.to_expanded_string(" ", &nu_protocol::Config::default()),
     }
 }
 
@@ -246,7 +246,8 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
             panic!(
                 "unexpected error when following {:?} in {}",
                 app.position.members,
-                app.value.into_string(" ", &nu_protocol::Config::default())
+                app.value
+                    .to_expanded_string(" ", &nu_protocol::Config::default())
             )
         });
 

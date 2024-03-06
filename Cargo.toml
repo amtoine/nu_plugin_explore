@@ -6,8 +6,8 @@ name = "nu_plugin_explore"
 anyhow = "1.0.73"
 console = "0.15.7"
 crossterm = "0.27.0"
-nu-plugin = "0.90.1"
-nu-protocol = { version = "0.90.1", features = ["plugin"] }
+nu-plugin = "0.91.0"
+nu-protocol = { version = "0.91.0", features = ["plugin"] }
 ratatui = "0.26.1"
 url = "2.4.0"
 
@@ -17,4 +17,4 @@ bench = false
 [package]
 edition = "2021"
 name = "nu_plugin_explore"
-version = "0.1.2"
+version = "0.2.0"
