@@ -657,8 +657,10 @@ mod tests {
         let value = Value::test_record(record! {
             "show_cell_path" => Value::test_bool(false)
         });
-        let mut expected = Config::default();
-        expected.show_cell_path = false;
+        let expected = Config {
+            show_cell_path: false,
+            ..Default::default()
+        };
         assert_eq!(Config::from_value(value), Ok(expected));
 
         let value = Value::test_record(record! {
