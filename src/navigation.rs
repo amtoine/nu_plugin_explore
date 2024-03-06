@@ -47,7 +47,8 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
             panic!(
                 "unexpected error when following {:?} in {}",
                 app.position.members,
-                app.value.into_string(" ", &nu_protocol::Config::default())
+                app.value
+                    .to_expanded_string(" ", &nu_protocol::Config::default())
             )
         });
 
@@ -116,7 +117,8 @@ pub(super) fn go_deeper_in_data(app: &mut App) {
             panic!(
                 "unexpected error when following {:?} in {}",
                 app.position.members,
-                app.value.into_string(" ", &nu_protocol::Config::default())
+                app.value
+                    .to_expanded_string(" ", &nu_protocol::Config::default())
             )
         });
 

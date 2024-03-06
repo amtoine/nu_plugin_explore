@@ -37,7 +37,7 @@ impl Editor {
 
     pub(super) fn from_value(value: &Value) -> Self {
         Self {
-            buffer: value.into_string(" ", &nu_protocol::Config::default()),
+            buffer: value.to_expanded_string(" ", &nu_protocol::Config::default()),
             cursor_position: (0, 0),
             width: 0,
         }

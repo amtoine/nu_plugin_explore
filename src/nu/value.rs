@@ -174,7 +174,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             if first_row.len() == 2 {
                 let cols: Vec<String> = value_rows
                     .iter()
-                    .map(|row| row.get_data_by_key("1").unwrap().as_string().unwrap())
+                    .map(|row| row.get_data_by_key("1").unwrap().as_str().unwrap().into())
                     .collect();
 
                 let vals: Vec<Value> = value_rows
@@ -191,7 +191,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
                 let mut rows = vec![];
                 let cols: Vec<String> = value_rows
                     .iter()
-                    .map(|v| v.get_data_by_key("1").unwrap().as_string().unwrap())
+                    .map(|v| v.get_data_by_key("1").unwrap().as_str().unwrap().into())
                     .collect();
 
                 for i in 0..(first_row.len() - 1) {
@@ -262,7 +262,7 @@ mod tests {
     use nu_protocol::{ast::CellPath, record, Config, Value};
 
     fn default_value_repr(value: &Value) -> String {
-        value.into_string(" ", &Config::default())
+        value.to_expanded_string(" ", &Config::default())
     }
 
     #[test]
