@@ -19,7 +19,7 @@ impl SimplePluginCommand for Explore {
     type Plugin = ExplorePlugin;
 
     fn name(&self) -> &str {
-        "explore"
+        "nu_plugin_explore"
     }
 
     fn usage(&self) -> &str {
