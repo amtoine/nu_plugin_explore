@@ -3,7 +3,7 @@
 use crossterm::event::KeyCode;
 use ratatui::style::{Color, Modifier};
 
-use nu_plugin::LabeledError;
+use nu_protocol::LabeledError;
 use nu_protocol::{ast::PathMember, Span, Value};
 
 use super::{BgFgColorConfig, Layout};
@@ -23,12 +23,11 @@ use super::{BgFgColorConfig, Layout};
 ///    ·              ╰── `$.foo` is not a valid config field
 ///    ╰────
 /// ```
-pub fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledError {
-    LabeledError {
-        label: "invalid config".into(),
-        msg: format!("`$.{}` is not a valid config field", cell_path.join("."),),
+pub fn invalid_field(cell_path: &[&str], span: Span) -> LabeledError {
+    LabeledError::new("invalid config").with_label(
+        format!("`$.{}` is not a valid config field", cell_path.join("."),),
         span,
-    }
+    )
 }
 
 /// return an *invalid type* error
@@ -47,27 +46,25 @@ pub fn invalid_field(cell_path: &[&str], span: Option<Span>) -> LabeledError {
 ///    ╰────
 /// ```
 pub fn invalid_type(value: &Value, cell_path: &[&str], expected: &str) -> LabeledError {
-    LabeledError {
-        label: "invalid config".into(),
-        msg: format!(
+    LabeledError::new("invalid config").with_label(
+        format!(
             "`$.{}` should be a {expected}, found {}",
             cell_path.join("."),
             value.get_type()
         ),
-        span: Some(value.span()),
-    }
+        value.span(),
+    )
 }
 
-fn u8_out_of_range(value: i64, cell_path: &[&str], span: Option<Span>) -> LabeledError {
-    LabeledError {
-        label: "invalid config".into(),
-        msg: format!(
+fn u8_out_of_range(value: i64, cell_path: &[&str], span: Span) -> LabeledError {
+    LabeledError::new("invalid config").with_label(
+        format!(
             "`$.{}` should be an integer between 0 and 255, found {}",
             cell_path.join("."),
             value
         ),
         span,
-    }
+    )
 }
 
 /// try to parse a bool in the *value* at the given *cell path*
@@ -98,15 +95,15 @@ pub fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<Modifier
             "italic" => Ok(Some(Modifier::ITALIC)),
             "underline" => Ok(Some(Modifier::UNDERLINED)),
             "blink" => Ok(Some(Modifier::SLOW_BLINK)),
-            x => Err(LabeledError {
-                label: "invalid config".into(),
-                msg: format!(
+            x => Err(LabeledError::new(
+                "invalid config").with_label(
+                format!(
                     r#"`$.{}` should be the empty string, one of [italic, bold, underline, blink] or null, found {}"#,
                     cell_path.join("."),
                     x
                 ),
-                span: Some(value.span()),
-            }),
+                value.span()
+            )),
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string or null")),
         _ => Ok(None),
@@ -134,32 +131,32 @@ pub fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, Lab
             "lightmagenta" => Ok(Some(Color::LightMagenta)),
             "lightcyan" => Ok(Some(Color::LightCyan)),
             "white" => Ok(Some(Color::White)),
-            x => Err(LabeledError {
-                label: "invalid config".into(),
-                msg: format!(
+            x => Err(LabeledError::new(
+                "invalid config").with_label(
+                format!(
                     r#"`$.{}` should be a u8, a list of three u8s or one of [black, red, green, yellow, blue, magenta, cyan, gray, darkgray, lightred, lightgreen, lightyellow, lightblue, lightmagenta, lightcyan, white] , found {}"#,
                     cell_path.join("."),
                     x
                 ),
-                span: Some(value.span()),
-            }),
+                value.span()
+            )),
         },
         Some(Value::Int { val, .. }) => {
             if !(0..=255).contains(&val) {
                 // FIXME: use a real span?
-                return Err(u8_out_of_range(val, cell_path, None));
+                return Err(u8_out_of_range(val, cell_path, Span::unknown()));
             }
 
             Ok(Some(Color::Rgb(val as u8, val as u8, val as u8)))
         }
         Some(Value::List { vals, .. }) => {
             if vals.len() != 3 {
-                return Err(LabeledError {
-                    label: "invalid config".into(),
-                    msg: format!("`$.{}` is not a valid config field, expected a list of three u8, found {} items", cell_path.join("."), vals.len()),
+                return Err(LabeledError::new(
+                    "invalid config").with_label(
+                    format!("`$.{}` is not a valid config field, expected a list of three u8, found {} items", cell_path.join("."), vals.len()),
                     // FIXME: use a real span?
-                    span: None,
-                });
+                    Span::unknown(),
+                ));
             }
 
             let mut channels: Vec<u8> = vec![];
@@ -173,7 +170,7 @@ pub fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, Lab
                 match val {
                     Value::Int { val: x, .. } => {
                         if (*x < 0) | (*x > 255) {
-                            return Err(u8_out_of_range(*x, &cell_path, Some(val.span())));
+                            return Err(u8_out_of_range(*x, &cell_path, val.span()));
                         }
 
                         channels.push(*x as u8);
@@ -224,7 +221,7 @@ pub fn try_fg_bg_colors(
             x => {
                 let mut cell_path = cell_path.to_vec();
                 cell_path.push(x);
-                return Err(invalid_field(&cell_path, Some(cell.span())));
+                return Err(invalid_field(&cell_path, cell.span()));
             }
         }
     }
@@ -243,15 +240,15 @@ pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCode>, Lab
             "escape" => Ok(Some(KeyCode::Esc)),
             x => {
                 if x.len() != 1 {
-                    return Err(LabeledError {
-                        label: "invalid config".into(),
-                        msg: format!(
+                    return Err(LabeledError::new(
+                        "invalid config")
+                        .with_label(format!(
                             r#"`$.{}` should be a character or one of [up, down, left, right, escape] , found {}"#,
                             cell_path.join("."),
                             x
                         ),
-                        span: Some(value.span()),
-                    });
+                        value.span()
+                    ));
                 }
 
                 #[allow(clippy::iter_nth_zero)]
@@ -269,15 +266,14 @@ pub fn try_layout(value: &Value, cell_path: &[&str]) -> Result<Option<Layout>, L
         Some(Value::String { val, .. }) => match val.as_str() {
             "table" => Ok(Some(Layout::Table)),
             "compact" => Ok(Some(Layout::Compact)),
-            x => Err(LabeledError {
-                label: "invalid config".into(),
-                msg: format!(
+            x => Err(LabeledError::new("invalid config").with_label(
+                format!(
                     r#"`$.{}` should be one of [table, compact] , found {}"#,
                     cell_path.join("."),
                     x
                 ),
-                span: Some(value.span()),
-            }),
+                value.span(),
+            )),
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
         _ => Ok(None),
@@ -317,7 +313,7 @@ pub fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Value> {
 #[cfg(test)]
 mod tests {
     use crossterm::event::KeyCode;
-    use nu_plugin::LabeledError;
+    use nu_protocol::LabeledError;
     use nu_protocol::{record, Record, Value};
     use ratatui::style::{Color, Modifier};
 

@@ -7,8 +7,7 @@
 use crossterm::event::KeyCode;
 use ratatui::style::{Color, Modifier};
 
-use nu_plugin::LabeledError;
-use nu_protocol::Value;
+use nu_protocol::{LabeledError, Value};
 
 mod parsing;
 use parsing::{
@@ -284,7 +283,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "normal", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ))
                                         }
                                     }
@@ -370,7 +369,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "status_bar", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ))
                                         }
                                     }
@@ -414,13 +413,13 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "editor", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ))
                                         }
                                     }
                                 }
                             }
-                            x => return Err(invalid_field(&["colors", x], Some(cell.span()))),
+                            x => return Err(invalid_field(&["colors", x], cell.span())),
                         }
                     }
                 }
@@ -501,7 +500,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["keybindings", "navigation", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ));
                                         }
                                     }
@@ -564,7 +563,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["keybindings", "peeking", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ));
                                         }
                                     }
@@ -575,11 +574,11 @@ impl Config {
                                     config.keybindings.transpose = val
                                 }
                             }
-                            x => return Err(invalid_field(&["keybindings", x], Some(cell.span()))),
+                            x => return Err(invalid_field(&["keybindings", x], cell.span())),
                         }
                     }
                 }
-                x => return Err(invalid_field(&[x], Some(value.span()))),
+                x => return Err(invalid_field(&[x], value.span())),
             }
         }
 

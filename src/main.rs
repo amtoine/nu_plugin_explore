@@ -1,6 +1,8 @@
-use nu_plugin::{serve_plugin, EvaluatedCall, LabeledError, MsgPackSerializer, Plugin};
+use nu_plugin::{serve_plugin, EvaluatedCall, MsgPackSerializer, Plugin};
 use nu_plugin_explore::explore;
-use nu_protocol::{Category, PluginExample, PluginSignature, ShellError, Type, Value};
+use nu_protocol::{
+    Category, LabeledError, PluginExample, PluginSignature, ShellError, Type, Value,
+};
 
 /// the main structure of the [Nushell](https://nushell.sh) plugin
 struct Explore;
@@ -38,19 +40,19 @@ impl Plugin for Explore {
                 Err(err) => {
                     match err.downcast_ref::<ShellError>() {
                         Some(shell_error) => Err(LabeledError::from(shell_error.clone())),
-                        None => Err(LabeledError {
-                            label: "unexpected internal error".into(),
-                            msg: "could not transform error into ShellError, there was another kind of crash...".into(),
-                            span: Some(call.head),
-                        }),
+                        None => Err(LabeledError::new(
+                            "unexpected internal error").with_label(
+                            "could not transform error into ShellError, there was another kind of crash...",
+                            call.head)
+                        ),
                     }
                 }
             },
-            _ => Err(LabeledError {
-                label: "Plugin call with wrong name signature".into(),
-                msg: "the signature used to call the plugin does not match any name in the plugin signature vector".into(),
-                span: Some(call.head),
-            }),
+            _ => Err(LabeledError::new(
+                "Plugin call with wrong name signature").with_label(
+                "the signature used to call the plugin does not match any name in the plugin signature vector",
+                call.head)
+            ),
         }
     }
 }
