@@ -1,62 +1,79 @@
-use nu_plugin::{serve_plugin, EvaluatedCall, MsgPackSerializer, Plugin};
-use nu_plugin_explore::explore;
-use nu_protocol::{
-    Category, LabeledError, PluginExample, PluginSignature, ShellError, Type, Value,
+use nu_plugin::{
+    serve_plugin, EngineInterface, EvaluatedCall, MsgPackSerializer, Plugin, PluginCommand,
+    SimplePluginCommand,
 };
+use nu_plugin_explore::explore;
+use nu_protocol::{Example, LabeledError, Record, ShellError, Signature, Span, Type, Value};
 
-/// the main structure of the [Nushell](https://nushell.sh) plugin
+struct ExplorePlugin;
+
+impl Plugin for ExplorePlugin {
+    fn commands(&self) -> Vec<Box<dyn PluginCommand<Plugin = Self>>> {
+        vec![Box::new(Explore)]
+    }
+}
+
 struct Explore;
 
-impl Plugin for Explore {
-    fn signature(&self) -> Vec<PluginSignature> {
-        vec![PluginSignature::build("nu_plugin_explore")
-            .usage("interactively explore Nushell structured data")
-            .input_output_type(Type::Any, Type::Any)
-            .plugin_examples(vec![
-                PluginExample {
-                    example: "open Cargo.toml | explore".into(),
-                    description: "explore the Cargo.toml file of this project".into(),
-                    result: None,
-                },
-                PluginExample {
-                    example: r#"$nu | explore {show_cell_path: false, layout: "compact"}"#.into(),
-                    description: "explore `$nu` and set some config options".into(),
-                    result: None,
-                },
-            ])
-            .category(Category::Experimental)]
+impl SimplePluginCommand for Explore {
+    type Plugin = ExplorePlugin;
+
+    fn name(&self) -> &str {
+        "explore"
+    }
+
+    fn usage(&self) -> &str {
+        "interactively explore Nushell structured data"
+    }
+
+    fn signature(&self) -> Signature {
+        Signature::build(PluginCommand::name(self)).input_output_type(Type::Any, Type::Any)
+    }
+
+    fn search_terms(&self) -> Vec<&str> {
+        vec!["plugin", "explore"]
+    }
+
+    fn examples(&self) -> Vec<nu_protocol::Example> {
+        vec![
+            Example {
+                example: "open Cargo.toml | explore",
+                description: "explore the Cargo.toml file of this project",
+                result: None,
+            },
+            Example {
+                example: r#"$nu | explore {show_cell_path: false, layout: "compact"}"#,
+                description: "explore `$nu` and set some config options",
+                result: None,
+            },
+        ]
     }
 
     fn run(
-        &mut self,
-        name: &str,
-        config: &Option<Value>,
+        &self,
+        _plugin: &ExplorePlugin,
+        engine: &EngineInterface,
         call: &EvaluatedCall,
         input: &Value,
     ) -> Result<Value, LabeledError> {
-        match name {
-            "nu_plugin_explore" => match explore(config, input.clone()) {
-                Ok(value) => Ok(value),
-                Err(err) => {
-                    match err.downcast_ref::<ShellError>() {
-                        Some(shell_error) => Err(LabeledError::from(shell_error.clone())),
-                        None => Err(LabeledError::new(
-                            "unexpected internal error").with_label(
-                            "could not transform error into ShellError, there was another kind of crash...",
-                            call.head)
-                        ),
-                    }
-                }
+        let config = engine.get_config()?;
+
+        let default_config = Value::record(Record::new(), Span::unknown());
+        let config = config.plugins.get("explore").unwrap_or(&default_config);
+
+        match explore(config, input.clone()) {
+            Ok(value) => Ok(value),
+            Err(err) => match err.downcast_ref::<ShellError>() {
+                Some(shell_error) => Err(LabeledError::from(shell_error.clone())),
+                None => Err(LabeledError::new("unexpected internal error").with_label(
+                    "could not transform error into ShellError, there was another kind of crash...",
+                    call.head,
+                )),
             },
-            _ => Err(LabeledError::new(
-                "Plugin call with wrong name signature").with_label(
-                "the signature used to call the plugin does not match any name in the plugin signature vector",
-                call.head)
-            ),
         }
     }
 }
 
 fn main() {
-    serve_plugin(&mut Explore {}, MsgPackSerializer {})
+    serve_plugin(&ExplorePlugin, MsgPackSerializer {})
 }
