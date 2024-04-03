@@ -358,8 +358,11 @@ mod tests {
         assert!(result.is_err());
         let err = result.err().unwrap();
         assert_eq!(err.labels.len(), 1);
-        assert_eq!(err.labels[0].text, "invalid config");
-        assert_eq!(err.msg, format!("`$.{}` {}", cell_path, expected));
+        assert_eq!(err.msg, "invalid config");
+        assert_eq!(
+            err.labels[0].text,
+            format!("`$.{}` {}", cell_path, expected)
+        );
     }
 
     #[test]

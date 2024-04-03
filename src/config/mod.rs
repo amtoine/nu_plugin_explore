@@ -643,7 +643,7 @@ mod tests {
         let result = Config::from_value(value);
         assert!(result.is_err());
         let error = result.err().unwrap();
-        assert!(error.msg.contains("not a valid config field"));
+        assert!(error.labels[0].text.contains("not a valid config field"));
 
         let value = Value::test_record(record! {
             "colors" => Value::test_record(record! {
@@ -653,7 +653,7 @@ mod tests {
         let result = Config::from_value(value);
         assert!(result.is_err());
         let error = result.err().unwrap();
-        assert!(error.msg.contains("not a valid config field"));
+        assert!(error.labels[0].text.contains("not a valid config field"));
     }
 
     #[test]
