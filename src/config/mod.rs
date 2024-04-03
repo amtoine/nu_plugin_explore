@@ -231,7 +231,7 @@ impl Config {
                 "colors" => {
                     let cell = follow_cell_path(&value, &["colors"]).unwrap();
                     let columns = match &cell {
-                        Value::Record { val: rec, .. } => &rec.cols,
+                        Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
                         x => return Err(invalid_type(x, &["colors"], "record")),
                     };
 
@@ -240,7 +240,9 @@ impl Config {
                             "normal" => {
                                 let cell = follow_cell_path(&value, &["colors", "normal"]).unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -315,7 +317,9 @@ impl Config {
                                 let cell =
                                     follow_cell_path(&value, &["colors", "status_bar"]).unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -375,7 +379,9 @@ impl Config {
                             "editor" => {
                                 let cell = follow_cell_path(&value, &["colors", "editor"]).unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -421,7 +427,7 @@ impl Config {
                 "keybindings" => {
                     let cell = follow_cell_path(&value, &["keybindings"]).unwrap();
                     let columns = match &cell {
-                        Value::Record { val: rec, .. } => &rec.cols,
+                        Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
                         x => return Err(invalid_type(x, &["keybindings"], "record")),
                     };
 
@@ -446,7 +452,9 @@ impl Config {
                                 let cell = follow_cell_path(&value, &["keybindings", "navigation"])
                                     .unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -508,7 +516,9 @@ impl Config {
                                 let cell =
                                     follow_cell_path(&value, &["keybindings", "peeking"]).unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,

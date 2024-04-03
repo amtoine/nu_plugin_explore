@@ -198,8 +198,8 @@ pub fn try_fg_bg_colors(
     default: &BgFgColorConfig,
 ) -> Result<Option<BgFgColorConfig>, LabeledError> {
     let cell = follow_cell_path(value, cell_path).unwrap();
-    let columns = match cell.clone() {
-        Value::Record { val: rec, .. } => rec.cols,
+    let columns = match &cell {
+        Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
         x => return Err(invalid_type(&x, cell_path, "record")),
     };
 

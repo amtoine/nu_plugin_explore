@@ -70,11 +70,13 @@ pub fn handle_key_events(
                 if transpose != view {
                     match transpose.clone() {
                         Value::Record { val: rec, .. } => {
+                            let cols = rec.columns().cloned().collect::<Vec<_>>();
+
                             // NOTE: app.position.members should never be empty by construction
                             *app.position.members.last_mut().unwrap() = PathMember::String {
-                                val: rec.cols.first().unwrap_or(&"".to_string()).to_string(),
+                                val: cols.first().unwrap_or(&"".to_string()).to_string(),
                                 span: Span::unknown(),
-                                optional: rec.cols.is_empty(),
+                                optional: cols.is_empty(),
                             };
                         }
                         _ => {

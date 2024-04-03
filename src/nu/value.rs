@@ -43,7 +43,7 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
             };
             cell_path.members.remove(0);
 
-            let id = rec.cols.iter().position(|x| *x == col).unwrap_or(0);
+            let id = rec.columns().position(|x| *x == col).unwrap_or(0);
 
             let cols = rec.columns().cloned().collect();
             let vals = rec
@@ -170,7 +170,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             .map(|i| format!("{i}"))
             .collect::<Vec<String>>();
 
-        if first_row.cols == full_columns {
+        if first_row.columns().cloned().collect::<Vec<_>>() == full_columns {
             if first_row.len() == 2 {
                 let cols: Vec<String> = value_rows
                     .iter()
