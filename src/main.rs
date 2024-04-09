@@ -61,7 +61,10 @@ impl SimplePluginCommand for Explore {
         let default_config = Value::record(Record::new(), Span::unknown());
         let config = config.plugins.get("explore").unwrap_or(&default_config);
 
-        match explore(config, input.clone()) {
+        // This is needed to make terminal UI work.
+        engine.set_foreground(true)?;
+
+        let result = match explore(config, input.clone()) {
             Ok(value) => Ok(value),
             Err(err) => match err.downcast_ref::<ShellError>() {
                 Some(shell_error) => Err(LabeledError::from(shell_error.clone())),
@@ -70,7 +73,11 @@ impl SimplePluginCommand for Explore {
                     call.head,
                 )),
             },
-        }
+        };
+
+        let reset_result = engine.set_foreground(false).map_err(LabeledError::from);
+
+        result.and_then(|value| reset_result.map(|_| value))
     }
 }
 
