@@ -1,3 +1,5 @@
+use std::io::IsTerminal;
+
 use nu_plugin::{
     serve_plugin, EngineInterface, EvaluatedCall, MsgPackSerializer, Plugin, PluginCommand,
     SimplePluginCommand,
@@ -61,23 +63,32 @@ impl SimplePluginCommand for Explore {
         let default_config = Value::record(Record::new(), Span::unknown());
         let config = config.plugins.get("explore").unwrap_or(&default_config);
 
-        // This is needed to make terminal UI work.
-        engine.set_foreground(true)?;
+        // Double check that stdin is a terminal. If not, the terminal UI may not work properly.
+        if !std::io::stdin().is_terminal() {
+            return Err(LabeledError::new("Can't start nu_plugin_explore")
+                .with_label("must run in a terminal", call.head)
+                .with_help(
+                    "ensure that you are running in a terminal, and that the plugin is not \
+                    communicating over stdio",
+                ));
+        }
 
-        let result = match explore(config, input.clone()) {
-            Ok(value) => Ok(value),
-            Err(err) => match err.downcast_ref::<ShellError>() {
-                Some(shell_error) => Err(LabeledError::from(shell_error.clone())),
-                None => Err(LabeledError::new("unexpected internal error").with_label(
+        // This is needed to make terminal UI work.
+        let foreground = engine.enter_foreground()?;
+
+        let value = explore(config, input.clone()).map_err(|err| {
+            match err.downcast_ref::<ShellError>() {
+                Some(shell_error) => LabeledError::from(shell_error.clone()),
+                None => LabeledError::new("unexpected internal error").with_label(
                     "could not transform error into ShellError, there was another kind of crash...",
                     call.head,
-                )),
-            },
-        };
+                ),
+            }
+        })?;
 
-        let reset_result = engine.set_foreground(false).map_err(LabeledError::from);
+        foreground.leave()?;
 
-        result.and_then(|value| reset_result.map(|_| value))
+        Ok(value)
     }
 }
 
