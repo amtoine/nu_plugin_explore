@@ -15,7 +15,7 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
 
-use nu_protocol::{Record, Span, Value};
+use nu_protocol::{Span, Value};
 
 use app::{App, Mode};
 use config::Config;
@@ -23,13 +23,9 @@ use event::{Event, EventHandler};
 use handler::{handle_key_events, TransitionResult};
 use tui::Tui;
 
-pub fn explore(config: &Option<Value>, input: Value) -> Result<Value> {
-    let config = Config::from_value(
-        config
-            .clone()
-            .unwrap_or(Value::record(Record::new(), Span::unknown())),
-    )
-    .expect("Could not convert config value to an actual config");
+pub fn explore(config: &Value, input: Value) -> Result<Value> {
+    let config = Config::from_value(config.clone())
+        .expect("Could not convert config value to an actual config");
 
     let mut tui = Tui::new(
         Terminal::new(CrosstermBackend::new(io::stderr()))?,

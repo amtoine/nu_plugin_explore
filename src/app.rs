@@ -72,11 +72,15 @@ impl App {
                 span: Span::unknown(),
                 optional: vals.is_empty(),
             }),
-            Value::Record { val: rec, .. } => app.position.members.push(PathMember::String {
-                val: rec.cols.first().unwrap_or(&"".to_string()).into(),
-                span: Span::unknown(),
-                optional: rec.cols.is_empty(),
-            }),
+            Value::Record { val: rec, .. } => {
+                let cols = rec.columns().cloned().collect::<Vec<_>>();
+
+                app.position.members.push(PathMember::String {
+                    val: cols.first().unwrap_or(&"".to_string()).into(),
+                    span: Span::unknown(),
+                    optional: cols.is_empty(),
+                })
+            }
             _ => {}
         }
 

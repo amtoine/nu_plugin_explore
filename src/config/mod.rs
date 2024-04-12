@@ -7,8 +7,7 @@
 use crossterm::event::KeyCode;
 use ratatui::style::{Color, Modifier};
 
-use nu_plugin::LabeledError;
-use nu_protocol::Value;
+use nu_protocol::{LabeledError, Value};
 
 mod parsing;
 use parsing::{
@@ -231,7 +230,7 @@ impl Config {
                 "colors" => {
                     let cell = follow_cell_path(&value, &["colors"]).unwrap();
                     let columns = match &cell {
-                        Value::Record { val: rec, .. } => &rec.cols,
+                        Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
                         x => return Err(invalid_type(x, &["colors"], "record")),
                     };
 
@@ -240,7 +239,9 @@ impl Config {
                             "normal" => {
                                 let cell = follow_cell_path(&value, &["colors", "normal"]).unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -282,7 +283,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "normal", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ))
                                         }
                                     }
@@ -315,7 +316,9 @@ impl Config {
                                 let cell =
                                     follow_cell_path(&value, &["colors", "status_bar"]).unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -366,7 +369,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "status_bar", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ))
                                         }
                                     }
@@ -375,7 +378,9 @@ impl Config {
                             "editor" => {
                                 let cell = follow_cell_path(&value, &["colors", "editor"]).unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -408,20 +413,20 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["colors", "editor", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ))
                                         }
                                     }
                                 }
                             }
-                            x => return Err(invalid_field(&["colors", x], Some(cell.span()))),
+                            x => return Err(invalid_field(&["colors", x], cell.span())),
                         }
                     }
                 }
                 "keybindings" => {
                     let cell = follow_cell_path(&value, &["keybindings"]).unwrap();
                     let columns = match &cell {
-                        Value::Record { val: rec, .. } => &rec.cols,
+                        Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
                         x => return Err(invalid_type(x, &["keybindings"], "record")),
                     };
 
@@ -446,7 +451,9 @@ impl Config {
                                 let cell = follow_cell_path(&value, &["keybindings", "navigation"])
                                     .unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -493,7 +500,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["keybindings", "navigation", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ));
                                         }
                                     }
@@ -508,7 +515,9 @@ impl Config {
                                 let cell =
                                     follow_cell_path(&value, &["keybindings", "peeking"]).unwrap();
                                 let columns = match &cell {
-                                    Value::Record { val: rec, .. } => &rec.cols,
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
                                     x => {
                                         return Err(invalid_type(
                                             x,
@@ -554,7 +563,7 @@ impl Config {
                                         x => {
                                             return Err(invalid_field(
                                                 &["keybindings", "peeking", x],
-                                                Some(cell.span()),
+                                                cell.span(),
                                             ));
                                         }
                                     }
@@ -565,11 +574,11 @@ impl Config {
                                     config.keybindings.transpose = val
                                 }
                             }
-                            x => return Err(invalid_field(&["keybindings", x], Some(cell.span()))),
+                            x => return Err(invalid_field(&["keybindings", x], cell.span())),
                         }
                     }
                 }
-                x => return Err(invalid_field(&[x], Some(value.span()))),
+                x => return Err(invalid_field(&[x], value.span())),
             }
         }
 
@@ -634,7 +643,7 @@ mod tests {
         let result = Config::from_value(value);
         assert!(result.is_err());
         let error = result.err().unwrap();
-        assert!(error.msg.contains("not a valid config field"));
+        assert!(error.labels[0].text.contains("not a valid config field"));
 
         let value = Value::test_record(record! {
             "colors" => Value::test_record(record! {
@@ -644,7 +653,7 @@ mod tests {
         let result = Config::from_value(value);
         assert!(result.is_err());
         let error = result.err().unwrap();
-        assert!(error.msg.contains("not a valid config field"));
+        assert!(error.labels[0].text.contains("not a valid config field"));
     }
 
     #[test]

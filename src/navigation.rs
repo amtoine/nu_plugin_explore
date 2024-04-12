@@ -81,19 +81,23 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                     val,
                     span,
                     optional,
-                } => PathMember::String {
-                    val: if rec.cols.is_empty() {
-                        "".into()
-                    } else {
-                        let index = rec.cols.iter().position(|x| x == &val).unwrap() as i32;
-                        let len = rec.cols.len() as i32;
-                        let new_index = (index + direction + len) % len;
+                } => {
+                    let cols = rec.columns().cloned().collect::<Vec<_>>();
 
-                        rec.cols[new_index as usize].clone()
-                    },
-                    span,
-                    optional,
-                },
+                    PathMember::String {
+                        val: if cols.is_empty() {
+                            "".into()
+                        } else {
+                            let index = rec.columns().position(|x| x == &val).unwrap() as i32;
+                            let len = cols.len() as i32;
+                            let new_index = (index + direction + len) % len;
+
+                            cols[new_index as usize].clone()
+                        },
+                        span,
+                        optional,
+                    }
+                }
                 _ => panic!("current should be an string path member"),
             };
             app.position.members.push(new);
@@ -128,11 +132,15 @@ pub(super) fn go_deeper_in_data(app: &mut App) {
             span: Span::unknown(),
             optional: vals.is_empty(),
         }),
-        Value::Record { val: rec, .. } => app.position.members.push(PathMember::String {
-            val: rec.cols.first().unwrap_or(&"".to_string()).into(),
-            span: Span::unknown(),
-            optional: rec.cols.is_empty(),
-        }),
+        Value::Record { val: rec, .. } => {
+            let cols = rec.columns().cloned().collect::<Vec<_>>();
+
+            app.position.members.push(PathMember::String {
+                val: cols.first().unwrap_or(&"".to_string()).into(),
+                span: Span::unknown(),
+                optional: cols.is_empty(),
+            })
+        }
         _ => app.hit_bottom(),
     }
 }

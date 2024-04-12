@@ -142,7 +142,7 @@ fn repr_simple_value(value: &Value) -> DataRowRepr {
 fn repr_value(value: &Value) -> DataRowRepr {
     match value {
         Value::List { vals, .. } => repr_list(vals),
-        Value::Record { val: rec, .. } => repr_record(&rec.cols),
+        Value::Record { val: rec, .. } => repr_record(&rec.columns().cloned().collect::<Vec<_>>()),
         x => repr_simple_value(x),
     }
 }
@@ -164,7 +164,7 @@ fn repr_data(data: &Value) -> Vec<DataRowRepr> {
             }
         }
         Value::Record { val: rec, .. } => {
-            if rec.cols.is_empty() {
+            if rec.columns().collect::<Vec<_>>().is_empty() {
                 vec![DataRowRepr {
                     name: None,
                     shape: "record".into(),
@@ -193,7 +193,7 @@ fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) 
     let mut rows = vec![vec![]; table.len()];
 
     for (i, row) in table.iter().enumerate() {
-        for (j, col) in table[0].cols.iter().enumerate() {
+        for (j, col) in table[0].columns().enumerate() {
             // NOTE: because `table` is a valid table, this should always be a `Some`
             let val = row.get(col).unwrap();
 
@@ -211,7 +211,7 @@ fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) 
     }
 
     (
-        table[0].cols.clone(),
+        table[0].columns().cloned().collect::<Vec<_>>(),
         shapes.iter().map(|s| s.to_string()).collect(),
         rows,
     )
