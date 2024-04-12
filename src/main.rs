@@ -63,7 +63,6 @@ impl SimplePluginCommand for Explore {
         let default_config = Value::record(Record::new(), Span::unknown());
         let config = config.plugins.get("explore").unwrap_or(&default_config);
 
-        // Double check that stdin is a terminal. If not, the terminal UI may not work properly.
         if !std::io::stdin().is_terminal() {
             return Err(LabeledError::new("Can't start nu_plugin_explore")
                 .with_label("must run in a terminal", call.head)
@@ -73,7 +72,6 @@ impl SimplePluginCommand for Explore {
                 ));
         }
 
-        // This is needed to make terminal UI work.
         let foreground = engine.enter_foreground()?;
 
         let value = explore(config, input.clone()).map_err(|err| {
