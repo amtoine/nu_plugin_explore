@@ -6,8 +6,8 @@ name = "nu_plugin_explore"
 anyhow = "1.0.73"
 console = "0.15.7"
 crossterm = "0.27.0"
-nu-plugin = "0.92.0"
-nu-protocol = { version = "0.92.0", features = ["plugin"] }
+nu-plugin = { git = "https://github.com/devyn/nushell", branch = "plugin-local-socket", package = "nu-plugin" }
+nu-protocol = { git = "https://github.com/devyn/nushell", branch = "plugin-local-socket", package = "nu-protocol", features = ["plugin"] }
 ratatui = "0.26.1"
 url = "2.4.0"
 
