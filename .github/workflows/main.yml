@@ -20,6 +20,9 @@ jobs:
 
       - run: make check
 
+      - name: Check Cargo.lock
+        run: if [[ -n $(git status --short Cargo.lock) ]]; then exit 1; fi
+
   tests:
     strategy:
       fail-fast: true
