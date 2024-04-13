@@ -68,12 +68,10 @@ pub fn handle_key_events(
                 navigation::go_up_or_down_in_data(app, Direction::Up(10));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == KeyCode::Char('G') {
-                // FIXME: compute the real number of repetitions to go to bottom
-                navigation::go_up_or_down_in_data(app, Direction::Down(1_000));
+                navigation::go_up_or_down_in_data(app, Direction::Bottom);
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == KeyCode::Char('g') {
-                // FIXME: compute the real number of repetitions to go to top
-                navigation::go_up_or_down_in_data(app, Direction::Up(1_000));
+                navigation::go_up_or_down_in_data(app, Direction::Top);
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);

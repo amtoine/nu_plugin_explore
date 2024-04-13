@@ -9,6 +9,10 @@ pub enum Direction {
     Down(usize),
     /// go up in the data
     Up(usize),
+    /// go to the top of the data, i.e. the first element or the first key
+    Top,
+    /// go to the bottom of the data, i.e. the last element or the last key
+    Bottom,
 }
 
 /// go up or down in the data
@@ -61,6 +65,8 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                         match direction {
                             Direction::Up(step) => val.saturating_sub(step).max(0),
                             Direction::Down(step) => val.saturating_add(step).min(vals.len() - 1),
+                            Direction::Top => 0,
+                            Direction::Bottom => vals.len() - 1,
                         }
                     },
                     span,
@@ -89,6 +95,8 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                                 Direction::Down(step) => {
                                     index.saturating_add(step).min(cols.len() - 1)
                                 }
+                                Direction::Top => 0,
+                                Direction::Bottom => cols.len() - 1,
                             };
 
                             cols[new_index].clone()
@@ -195,6 +203,10 @@ mod tests {
             (Direction::Up(1), 1),
             (Direction::Up(1), 0),
             (Direction::Up(1), 0),
+            (Direction::Top, 0),
+            (Direction::Bottom, 2),
+            (Direction::Bottom, 2),
+            (Direction::Top, 0),
         ];
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, direction);
@@ -219,6 +231,10 @@ mod tests {
             (Direction::Up(1), "b"),
             (Direction::Up(1), "a"),
             (Direction::Up(1), "a"),
+            (Direction::Top, "a"),
+            (Direction::Bottom, "c"),
+            (Direction::Bottom, "c"),
+            (Direction::Top, "a"),
         ];
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, direction);
