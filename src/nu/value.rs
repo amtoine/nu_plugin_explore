@@ -5,6 +5,17 @@ use nu_protocol::{
     record, Record, Span, Type, Value,
 };
 
+#[derive(Debug, PartialEq)]
+pub(crate) enum Table {
+    Empty,
+    RowNotARecord(usize, Type),
+    RowIncompatibleLen(usize, usize, usize),
+    RowIncompatibleType(usize, String, Type, Type),
+    RowInvalidKey(usize, String, Vec<String>),
+    IsValid,
+    NotAList,
+}
+
 pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
     if cell_path.members.is_empty() {
         return cell.clone();
@@ -68,29 +79,29 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
     }
 }
 
-pub(crate) fn is_table(value: &Value) -> bool {
+pub(crate) fn is_table(value: &Value) -> Table {
     match value {
         Value::List { vals, .. } => {
             if vals.is_empty() {
-                return false;
+                return Table::Empty;
             }
 
             // extract the columns of each row as hashmaps for easier access
             let mut rows = Vec::new();
-            for val in vals {
+            for (i, val) in vals.iter().enumerate() {
                 match val.get_type() {
                     Type::Record(fields) => {
                         rows.push(fields.into_iter().collect::<HashMap<String, Type>>())
                     }
-                    _ => return false,
+                    t => return Table::RowNotARecord(i, t),
                 };
             }
 
             // check the number of columns for each row
             let n = rows[0].keys().len();
-            for row in rows.iter().skip(1) {
+            for (i, row) in rows.iter().skip(1).enumerate() {
                 if row.keys().len() != n {
-                    return false;
+                    return Table::RowIncompatibleLen(i + 1, row.keys().len(), n);
                 }
             }
 
@@ -100,7 +111,7 @@ pub(crate) fn is_table(value: &Value) -> bool {
             for (key, val) in rows[0].iter() {
                 let mut ty = val;
 
-                for row in rows.iter().skip(1) {
+                for (i, row) in rows.iter().skip(1).enumerate() {
                     match row.get(key) {
                         Some(v) => match ty {
                             Type::Nothing => ty = v,
@@ -113,19 +124,28 @@ pub(crate) fn is_table(value: &Value) -> bool {
                                         // tables
                                         | (v != ty)
                                     {
-                                        return false;
+                                        return Table::RowIncompatibleType(
+                                            i + 1,
+                                            key.clone(),
+                                            v.clone(),
+                                            ty.clone(),
+                                        );
                                     }
                                 }
                             }
                         },
-                        None => return false,
+                        None => {
+                            let mut keys = row.keys().cloned().collect::<Vec<String>>();
+                            keys.sort();
+                            return Table::RowInvalidKey(i + 1, key.clone(), keys);
+                        }
                     }
                 }
             }
 
-            true
+            Table::IsValid
         }
-        _ => false,
+        _ => Table::NotAList,
     }
 }
 
@@ -158,7 +178,7 @@ pub(crate) fn is_table(value: &Value) -> bool {
 /// }
 /// ```
 pub(crate) fn transpose(value: &Value) -> Value {
-    if is_table(value) {
+    if matches!(is_table(value), Table::IsValid) {
         let value_rows = match value {
             Value::List { vals, .. } => vals,
             _ => return value.clone(),
@@ -257,9 +277,9 @@ mod tests {
     use super::{is_table, mutate_value_cell};
     use crate::nu::{
         cell_path::{to_path_member_vec, PM},
-        value::transpose,
+        value::{transpose, Table},
     };
-    use nu_protocol::{ast::CellPath, record, Config, Value};
+    use nu_protocol::{ast::CellPath, record, Config, Type, Value};
 
     fn default_value_repr(value: &Value) -> String {
         value.to_expanded_string(" ", &Config::default())
@@ -410,8 +430,9 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert!(
+        assert_eq!(
             is_table(&table),
+            Table::IsValid,
             "{} should be a table",
             default_value_repr(&table)
         );
@@ -426,8 +447,9 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert!(
+        assert_eq!(
             is_table(&table_with_out_of_order_columns),
+            Table::IsValid,
             "{} should be a table",
             default_value_repr(&table_with_out_of_order_columns)
         );
@@ -442,8 +464,9 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert!(
+        assert_eq!(
             is_table(&table_with_nulls),
+            Table::IsValid,
             "{} should be a table",
             default_value_repr(&table_with_nulls)
         );
@@ -458,8 +481,9 @@ mod tests {
                 "b" => Value::test_float(2.34),
             }),
         ]);
-        assert!(
+        assert_eq!(
             is_table(&table_with_number_colum),
+            Table::IsValid,
             "{} should be a table",
             default_value_repr(&table_with_number_colum)
         );
@@ -473,8 +497,9 @@ mod tests {
                 "b" => Value::test_int(1),
             }),
         ]);
-        assert!(
-            !is_table(&not_a_table_missing_field),
+        assert_eq!(
+            is_table(&not_a_table_missing_field),
+            Table::RowIncompatibleLen(1, 2, 1),
             "{} should not be a table",
             default_value_repr(&not_a_table_missing_field)
         );
@@ -489,13 +514,52 @@ mod tests {
                 "b" => Value::test_list(vec![Value::test_int(1)]),
             }),
         ]);
-        assert!(
-            !is_table(&not_a_table_incompatible_types),
+        assert_eq!(
+            is_table(&not_a_table_incompatible_types),
+            Table::RowIncompatibleType(
+                1,
+                "b".to_string(),
+                Type::List(Box::new(Type::Int)),
+                Type::Int
+            ),
             "{} should not be a table",
             default_value_repr(&not_a_table_incompatible_types)
         );
 
-        assert!(!is_table(&Value::test_int(0)));
+        assert_eq!(is_table(&Value::test_int(0)), Table::NotAList);
+
+        assert_eq!(is_table(&Value::test_list(vec![])), Table::Empty);
+
+        let not_a_table_row_not_record = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_int(0),
+        ]);
+        assert_eq!(
+            is_table(&not_a_table_row_not_record),
+            Table::RowNotARecord(1, Type::Int),
+            "{} should not be a table",
+            default_value_repr(&not_a_table_row_not_record)
+        );
+
+        let not_a_table_row_invalid_key = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "c" => Value::test_int(2),
+            }),
+        ]);
+        assert_eq!(
+            is_table(&not_a_table_row_invalid_key),
+            Table::RowInvalidKey(1, "b".into(), vec!["a".into(), "c".into()]),
+            "{} should not be a table",
+            default_value_repr(&not_a_table_row_invalid_key)
+        );
     }
 
     #[test]
