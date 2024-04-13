@@ -5,10 +5,10 @@ use crate::app::{App, Mode};
 
 /// specify a vertical direction in which to go in the data
 pub enum Direction {
-    /// go one row down in the data
-    Down,
-    /// go one row up in the data
-    Up,
+    /// go down in the data
+    Down(usize),
+    /// go up in the data
+    Up(usize),
 }
 
 /// go up or down in the data
@@ -59,8 +59,8 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                         val
                     } else {
                         match direction {
-                            Direction::Up => (val - 1).max(0),
-                            Direction::Down => (val + 1).min(vals.len() - 1),
+                            Direction::Up(step) => (val - step).max(0),
+                            Direction::Down(step) => (val + step).min(vals.len() - 1),
                         }
                     },
                     span,
@@ -83,13 +83,13 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                         val: if cols.is_empty() {
                             "".into()
                         } else {
-                            let index = rec.columns().position(|x| x == &val).unwrap() as i32;
+                            let index = rec.columns().position(|x| x == &val).unwrap();
                             let new_index = match direction {
-                                Direction::Up => (index - 1).max(0),
-                                Direction::Down => (index + 1).min((cols.len() - 1) as i32),
+                                Direction::Up(step) => (index - step).max(0),
+                                Direction::Down(step) => (index + step).min(cols.len() - 1),
                             };
 
-                            cols[new_index as usize].clone()
+                            cols[new_index].clone()
                         },
                         span,
                         optional,
@@ -187,12 +187,12 @@ mod tests {
         let mut app = App::from_value(value);
 
         let sequence = vec![
-            (Direction::Down, 1),
-            (Direction::Down, 2),
-            (Direction::Down, 0),
-            (Direction::Up, 2),
-            (Direction::Up, 1),
-            (Direction::Up, 0),
+            (Direction::Down(1), 1),
+            (Direction::Down(1), 2),
+            (Direction::Down(1), 0),
+            (Direction::Up(1), 2),
+            (Direction::Up(1), 1),
+            (Direction::Up(1), 0),
         ];
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, direction);
@@ -211,12 +211,12 @@ mod tests {
         let mut app = App::from_value(value);
 
         let sequence = vec![
-            (Direction::Down, "b"),
-            (Direction::Down, "c"),
-            (Direction::Down, "a"),
-            (Direction::Up, "c"),
-            (Direction::Up, "b"),
-            (Direction::Up, "a"),
+            (Direction::Down(1), "b"),
+            (Direction::Down(1), "c"),
+            (Direction::Down(1), "a"),
+            (Direction::Up(1), "c"),
+            (Direction::Up(1), "b"),
+            (Direction::Up(1), "a"),
         ];
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, direction);

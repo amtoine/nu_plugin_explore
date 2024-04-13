@@ -60,7 +60,7 @@ pub fn handle_key_events(
                 // FIXME: compute the real number of repetitions to go half a page down
                 // TODO: add a margin to the bottom
                 for _ in 0..10 {
-                    navigation::go_up_or_down_in_data(app, Direction::Down);
+                    navigation::go_up_or_down_in_data(app, Direction::Down(1));
                 }
                 return Ok(TransitionResult::Continue);
             } else if key_event.modifiers == KeyModifiers::CONTROL
@@ -70,21 +70,21 @@ pub fn handle_key_events(
                 // FIXME: compute the real number of repetitions to go half a page up
                 // TODO: add a margin to the top
                 for _ in 0..10 {
-                    navigation::go_up_or_down_in_data(app, Direction::Up);
+                    navigation::go_up_or_down_in_data(app, Direction::Up(1));
                 }
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == KeyCode::Char('G') {
                 // TODO: don't go down when already at the bottom vertically
                 // FIXME: compute the real number of repetitions to go to bottom
                 for _ in 0..1_000 {
-                    navigation::go_up_or_down_in_data(app, Direction::Down);
+                    navigation::go_up_or_down_in_data(app, Direction::Down(1));
                 }
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == KeyCode::Char('g') {
                 // TODO: don't go up when already at the top vertically
                 // FIXME: compute the real number of repetitions to go to top
                 for _ in 0..1_000 {
-                    navigation::go_up_or_down_in_data(app, Direction::Up);
+                    navigation::go_up_or_down_in_data(app, Direction::Up(1));
                 }
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.quit {
@@ -98,10 +98,10 @@ pub fn handle_key_events(
                 app.mode = Mode::Peeking;
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.down {
-                navigation::go_up_or_down_in_data(app, Direction::Down);
+                navigation::go_up_or_down_in_data(app, Direction::Down(1));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.up {
-                navigation::go_up_or_down_in_data(app, Direction::Up);
+                navigation::go_up_or_down_in_data(app, Direction::Up(1));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.right {
                 navigation::go_deeper_in_data(app);
@@ -167,14 +167,14 @@ pub fn handle_key_events(
                 app.mode = Mode::Normal;
                 // TODO: don't go down when already at the bottom vertically
                 for _ in 0..n {
-                    navigation::go_up_or_down_in_data(app, Direction::Down);
+                    navigation::go_up_or_down_in_data(app, Direction::Down(1));
                 }
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.up {
                 app.mode = Mode::Normal;
                 // TODO: don't go up when already at the top vertically
                 for _ in 0..n {
-                    navigation::go_up_or_down_in_data(app, Direction::Up);
+                    navigation::go_up_or_down_in_data(app, Direction::Up(1));
                 }
                 return Ok(TransitionResult::Continue);
             }
