@@ -59,8 +59,8 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                         val
                     } else {
                         match direction {
-                            Direction::Up(step) => (val - step).max(0),
-                            Direction::Down(step) => (val + step).min(vals.len() - 1),
+                            Direction::Up(step) => val.saturating_sub(step).max(0),
+                            Direction::Down(step) => val.saturating_add(step).min(vals.len() - 1),
                         }
                     },
                     span,
@@ -85,8 +85,10 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                         } else {
                             let index = rec.columns().position(|x| x == &val).unwrap();
                             let new_index = match direction {
-                                Direction::Up(step) => (index - step).max(0),
-                                Direction::Down(step) => (index + step).min(cols.len() - 1),
+                                Direction::Up(step) => index.saturating_sub(step).max(0),
+                                Direction::Down(step) => {
+                                    index.saturating_add(step).min(cols.len() - 1)
+                                }
                             };
 
                             cols[new_index].clone()
