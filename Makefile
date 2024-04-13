@@ -1,7 +1,6 @@
 CLIPPY_OPTIONS="-D warnings"
 
-all: check test install
-
+DEFAULT: check test
 
 check:
 	cargo fmt --all --verbose -- --check --verbose
