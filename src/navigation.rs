@@ -191,9 +191,9 @@ mod tests {
         let sequence = vec![
             (Direction::Down(1), 1),
             (Direction::Down(1), 2),
-            (Direction::Down(1), 0),
-            (Direction::Up(1), 2),
+            (Direction::Down(1), 2),
             (Direction::Up(1), 1),
+            (Direction::Up(1), 0),
             (Direction::Up(1), 0),
         ];
         for (direction, id) in sequence {
@@ -215,9 +215,9 @@ mod tests {
         let sequence = vec![
             (Direction::Down(1), "b"),
             (Direction::Down(1), "c"),
-            (Direction::Down(1), "a"),
-            (Direction::Up(1), "c"),
+            (Direction::Down(1), "c"),
             (Direction::Up(1), "b"),
+            (Direction::Up(1), "a"),
             (Direction::Up(1), "a"),
         ];
         for (direction, id) in sequence {

@@ -378,9 +378,6 @@ mod tests {
         assert_eq!(app.position.members, to_path_member_vec(&[PM::S("l")]));
 
         let transitions = vec![
-            (nav.up, vec![PM::S("i")], false),
-            (nav.up, vec![PM::S("s")], false),
-            (nav.up, vec![PM::S("r")], false),
             (nav.up, vec![PM::S("l")], false),
             (nav.down, vec![PM::S("r")], false),
             (nav.left, vec![PM::S("r")], false),
@@ -395,7 +392,7 @@ mod tests {
             (nav.down, vec![PM::S("r"), PM::S("b")], true),
             (nav.left, vec![PM::S("r"), PM::S("b")], false),
             (nav.up, vec![PM::S("r"), PM::S("a")], false),
-            (nav.up, vec![PM::S("r"), PM::S("b")], false),
+            (nav.up, vec![PM::S("r"), PM::S("a")], false),
             (nav.left, vec![PM::S("r")], false),
             (nav.down, vec![PM::S("s")], false),
             (nav.left, vec![PM::S("s")], false),
@@ -409,7 +406,9 @@ mod tests {
             (nav.up, vec![PM::S("i")], true),
             (nav.down, vec![PM::S("i")], true),
             (nav.left, vec![PM::S("i")], false),
-            (nav.down, vec![PM::S("l")], false),
+            (nav.up, vec![PM::S("s")], false),
+            (nav.up, vec![PM::S("r")], false),
+            (nav.up, vec![PM::S("l")], false),
             (nav.left, vec![PM::S("l")], false),
             (nav.right, vec![PM::S("l"), PM::I(0)], false),
             (nav.right, vec![PM::S("l"), PM::I(0)], true),
@@ -428,7 +427,7 @@ mod tests {
             (nav.left, vec![PM::S("l"), PM::I(2)], false),
             (nav.up, vec![PM::S("l"), PM::I(1)], false),
             (nav.up, vec![PM::S("l"), PM::I(0)], false),
-            (nav.up, vec![PM::S("l"), PM::I(2)], false),
+            (nav.up, vec![PM::S("l"), PM::I(0)], false),
             (nav.left, vec![PM::S("l")], false),
         ];
 
@@ -619,7 +618,7 @@ mod tests {
         let transitions = vec![
             (kmap.navigation.down, vec![PM::S("b")]),
             (kmap.transpose, vec![PM::I(0)]),
-            (kmap.navigation.up, vec![PM::I(2)]),
+            (kmap.navigation.down, vec![PM::I(1)]),
             (kmap.transpose, vec![PM::S("a")]),
         ];
 
