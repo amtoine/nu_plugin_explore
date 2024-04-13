@@ -180,7 +180,7 @@ pub(crate) fn is_table(value: &Value) -> Table {
 /// }
 /// ```
 pub(crate) fn transpose(value: &Value) -> Value {
-    if is_table(value) {
+    if matches!(is_table(value), Table::IsTable) {
         let value_rows = match value {
             Value::List { vals, .. } => vals,
             _ => return value.clone(),
@@ -279,7 +279,7 @@ mod tests {
     use super::{is_table, mutate_value_cell};
     use crate::nu::{
         cell_path::{to_path_member_vec, PM},
-        value::transpose,
+        value::{transpose, Table},
     };
     use nu_protocol::{ast::CellPath, record, Config, Value};
 
@@ -434,6 +434,7 @@ mod tests {
         ]);
         assert!(
             is_table(&table),
+            Table::IsTable,
             "{} should be a table",
             default_value_repr(&table)
         );
@@ -450,6 +451,7 @@ mod tests {
         ]);
         assert!(
             is_table(&table_with_out_of_order_columns),
+            Table::IsTable,
             "{} should be a table",
             default_value_repr(&table_with_out_of_order_columns)
         );
@@ -466,6 +468,7 @@ mod tests {
         ]);
         assert!(
             is_table(&table_with_nulls),
+            Table::IsTable,
             "{} should be a table",
             default_value_repr(&table_with_nulls)
         );
@@ -482,6 +485,7 @@ mod tests {
         ]);
         assert!(
             is_table(&table_with_number_colum),
+            Table::IsTable,
             "{} should be a table",
             default_value_repr(&table_with_number_colum)
         );
@@ -495,8 +499,9 @@ mod tests {
                 "b" => Value::test_int(1),
             }),
         ]);
-        assert!(
-            !is_table(&not_a_table_missing_field),
+        assert_ne!(
+            is_table(&not_a_table_missing_field),
+            Table::IsTable,
             "{} should not be a table",
             default_value_repr(&not_a_table_missing_field)
         );
@@ -511,13 +516,14 @@ mod tests {
                 "b" => Value::test_list(vec![Value::test_int(1)]),
             }),
         ]);
-        assert!(
-            !is_table(&not_a_table_incompatible_types),
+        assert_ne!(
+            is_table(&not_a_table_incompatible_types),
+            Table::IsTable,
             "{} should not be a table",
             default_value_repr(&not_a_table_incompatible_types)
         );
 
-        assert!(!is_table(&Value::test_int(0)));
+        assert_ne!(is_table(&Value::test_int(0)), Table::IsTable);
     }
 
     #[test]

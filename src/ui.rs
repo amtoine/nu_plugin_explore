@@ -273,7 +273,7 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
         None => 0,
     };
 
-    if is_table(&value) {
+    if matches!(is_table(&value), crate::nu::value::Table::IsTable) {
         let (columns, shapes, cells) = match value {
             Value::List { vals, .. } => {
                 let recs = vals
