@@ -13,6 +13,8 @@ pub enum Direction {
     Top,
     /// go to the bottom of the data, i.e. the last element or the last key
     Bottom,
+    /// go at a particular line in the data
+    At(usize),
 }
 
 /// go up or down in the data
@@ -67,6 +69,7 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                             Direction::Down(step) => val.saturating_add(step).min(vals.len() - 1),
                             Direction::Top => 0,
                             Direction::Bottom => vals.len() - 1,
+                            Direction::At(id) => id.min(vals.len() - 1),
                         }
                     },
                     span,
@@ -97,6 +100,7 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                                 }
                                 Direction::Top => 0,
                                 Direction::Bottom => cols.len() - 1,
+                                Direction::At(id) => id.min(cols.len() - 1),
                             };
 
                             cols[new_index].clone()
@@ -207,6 +211,9 @@ mod tests {
             (Direction::Bottom, 2),
             (Direction::Bottom, 2),
             (Direction::Top, 0),
+            (Direction::At(0), 0),
+            (Direction::At(1), 1),
+            (Direction::At(2), 2),
         ];
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, direction);
@@ -235,6 +242,9 @@ mod tests {
             (Direction::Bottom, "c"),
             (Direction::Bottom, "c"),
             (Direction::Top, "a"),
+            (Direction::At(0), "a"),
+            (Direction::At(1), "b"),
+            (Direction::At(2), "c"),
         ];
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, direction);

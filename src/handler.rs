@@ -157,6 +157,10 @@ pub fn handle_key_events(
                 app.mode = Mode::Normal;
                 navigation::go_up_or_down_in_data(app, Direction::Up(n));
                 return Ok(TransitionResult::Continue);
+            } else if key_event.code == KeyCode::Char('g') {
+                app.mode = Mode::Normal;
+                navigation::go_up_or_down_in_data(app, Direction::At(n));
+                return Ok(TransitionResult::Continue);
             }
         }
         Mode::Insert => {
