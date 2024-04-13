@@ -28,11 +28,6 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
         return;
     }
 
-    let direction = match direction {
-        Direction::Up => -1,
-        Direction::Down => 1,
-    };
-
     let current = app
         .position
         .members
@@ -63,10 +58,10 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                     val: if vals.is_empty() {
                         val
                     } else {
-                        let len = vals.len() as i32;
-                        let new_index = (val as i32 + direction + len) % len;
-
-                        new_index as usize
+                        match direction {
+                            Direction::Up => (val - 1).max(0),
+                            Direction::Down => (val + 1).min(vals.len() - 1),
+                        }
                     },
                     span,
                     optional,
@@ -89,8 +84,10 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                             "".into()
                         } else {
                             let index = rec.columns().position(|x| x == &val).unwrap() as i32;
-                            let len = cols.len() as i32;
-                            let new_index = (index + direction + len) % len;
+                            let new_index = match direction {
+                                Direction::Up => (index - 1).max(0),
+                                Direction::Down => (index + 1).min((cols.len() - 1) as i32),
+                            };
 
                             cols[new_index as usize].clone()
                         },
