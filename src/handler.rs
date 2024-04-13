@@ -57,6 +57,8 @@ pub fn handle_key_events(
                 && key_event.code == KeyCode::Char('d')
             {
                 // TODO: don't go down when already at the bottom vertically
+                // FIXME: compute the real number of repetitions to go half a page down
+                // TODO: add a margin to the bottom
                 for _ in 0..10 {
                     navigation::go_up_or_down_in_data(app, Direction::Down);
                 }
@@ -65,18 +67,22 @@ pub fn handle_key_events(
                 && key_event.code == KeyCode::Char('u')
             {
                 // TODO: don't go up when already at the top vertically
+                // FIXME: compute the real number of repetitions to go half a page up
+                // TODO: add a margin to the top
                 for _ in 0..10 {
                     navigation::go_up_or_down_in_data(app, Direction::Up);
                 }
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == KeyCode::Char('G') {
                 // TODO: don't go down when already at the bottom vertically
+                // FIXME: compute the real number of repetitions to go to bottom
                 for _ in 0..1_000 {
                     navigation::go_up_or_down_in_data(app, Direction::Down);
                 }
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == KeyCode::Char('g') {
                 // TODO: don't go up when already at the top vertically
+                // FIXME: compute the real number of repetitions to go to top
                 for _ in 0..1_000 {
                     navigation::go_up_or_down_in_data(app, Direction::Up);
                 }
