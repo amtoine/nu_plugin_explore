@@ -564,14 +564,16 @@ fn render_status_bar(frame: &mut Frame, app: &App, config: &Config) {
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
     let bg_style = match app.mode {
-        Mode::Normal => Style::default().bg(config.colors.status_bar.normal.background),
+        Mode::Normal | Mode::Waiting(_) => {
+            Style::default().bg(config.colors.status_bar.normal.background)
+        }
         Mode::Insert => Style::default().bg(config.colors.status_bar.insert.background),
         Mode::Peeking => Style::default().bg(config.colors.status_bar.peek.background),
         Mode::Bottom => Style::default().bg(config.colors.status_bar.bottom.background),
     };
 
     let style = match app.mode {
-        Mode::Normal => bg_style.fg(config.colors.status_bar.normal.foreground),
+        Mode::Normal | Mode::Waiting(_) => bg_style.fg(config.colors.status_bar.normal.foreground),
         Mode::Insert => bg_style.fg(config.colors.status_bar.insert.foreground),
         Mode::Peeking => bg_style.fg(config.colors.status_bar.peek.foreground),
         Mode::Bottom => bg_style.fg(config.colors.status_bar.bottom.foreground),
@@ -589,6 +591,11 @@ fn render_status_bar(frame: &mut Frame, app: &App, config: &Config) {
             repr_keycode(&config.keybindings.peek),
             repr_keycode(&config.keybindings.transpose),
             repr_keycode(&config.keybindings.quit),
+        ),
+        Mode::Waiting(n) => format!(
+            "{} to quit | will run next motion {} times",
+            repr_keycode(&KeyCode::Esc),
+            n
         ),
         Mode::Insert => format!(
             "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",

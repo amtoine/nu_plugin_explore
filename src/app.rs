@@ -16,6 +16,7 @@ pub enum Mode {
     /// the PEEKING mode lets the user *peek* data out of the application, to be reused later
     Peeking,
     Bottom,
+    Waiting(usize),
 }
 
 impl Default for Mode {
@@ -31,6 +32,7 @@ impl std::fmt::Display for Mode {
             Self::Insert => "INSERT",
             Self::Peeking => "PEEKING",
             Self::Bottom => "BOTTOM",
+            Self::Waiting(_) => "WAITING",
         };
         write!(f, "{}", repr)
     }

@@ -1,4 +1,4 @@
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent};
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
@@ -38,7 +38,22 @@ pub fn handle_key_events(
 ) -> Result<TransitionResult, ShellError> {
     match app.mode {
         Mode::Normal => {
-            if key_event.code == config.keybindings.quit {
+            if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9')) {
+                app.mode = Mode::Waiting(match key_event.code {
+                    KeyCode::Char('0') => 0,
+                    KeyCode::Char('1') => 1,
+                    KeyCode::Char('2') => 2,
+                    KeyCode::Char('3') => 3,
+                    KeyCode::Char('4') => 4,
+                    KeyCode::Char('5') => 5,
+                    KeyCode::Char('6') => 6,
+                    KeyCode::Char('7') => 7,
+                    KeyCode::Char('8') => 8,
+                    KeyCode::Char('9') => 9,
+                    _ => unreachable!(),
+                });
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
             } else if key_event.code == config.keybindings.insert {
                 match app.enter_editor() {
@@ -91,6 +106,24 @@ pub fn handle_key_events(
                     return Ok(TransitionResult::Mutate(transpose, path));
                 }
 
+                return Ok(TransitionResult::Continue);
+            }
+        }
+        Mode::Waiting(n) => {
+            if key_event.code == KeyCode::Esc {
+                app.mode = Mode::Normal;
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == config.keybindings.navigation.down {
+                app.mode = Mode::Normal;
+                for _ in 0..n {
+                    navigation::go_up_or_down_in_data(app, Direction::Down);
+                }
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == config.keybindings.navigation.up {
+                app.mode = Mode::Normal;
+                for _ in 0..n {
+                    navigation::go_up_or_down_in_data(app, Direction::Up);
+                }
                 return Ok(TransitionResult::Continue);
             }
         }
