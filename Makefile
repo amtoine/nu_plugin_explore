@@ -7,8 +7,7 @@ dev-deps:
 
 check:
 	cargo fmt --all --verbose -- --check --verbose
-	cargo check --workspace --lib
-	cargo check --workspace --tests
+	cargo check --workspace --lib --tests
 	cargo clippy --workspace -- "${CLIPPY_OPTIONS}"
 
 test: check
