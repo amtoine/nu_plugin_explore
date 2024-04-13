@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
@@ -52,6 +52,34 @@ pub fn handle_key_events(
                     KeyCode::Char('9') => 9,
                     _ => unreachable!(),
                 });
+                return Ok(TransitionResult::Continue);
+            } else if key_event.modifiers == KeyModifiers::CONTROL
+                && key_event.code == KeyCode::Char('d')
+            {
+                // TODO: don't go down when already at the bottom vertically
+                for _ in 0..10 {
+                    navigation::go_up_or_down_in_data(app, Direction::Down);
+                }
+                return Ok(TransitionResult::Continue);
+            } else if key_event.modifiers == KeyModifiers::CONTROL
+                && key_event.code == KeyCode::Char('u')
+            {
+                // TODO: don't go up when already at the top vertically
+                for _ in 0..10 {
+                    navigation::go_up_or_down_in_data(app, Direction::Up);
+                }
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == KeyCode::Char('G') {
+                // TODO: don't go down when already at the bottom vertically
+                for _ in 0..1_000 {
+                    navigation::go_up_or_down_in_data(app, Direction::Down);
+                }
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == KeyCode::Char('g') {
+                // TODO: don't go up when already at the top vertically
+                for _ in 0..1_000 {
+                    navigation::go_up_or_down_in_data(app, Direction::Up);
+                }
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
