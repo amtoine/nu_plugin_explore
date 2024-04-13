@@ -56,36 +56,24 @@ pub fn handle_key_events(
             } else if key_event.modifiers == KeyModifiers::CONTROL
                 && key_event.code == KeyCode::Char('d')
             {
-                // TODO: don't go down when already at the bottom vertically
                 // FIXME: compute the real number of repetitions to go half a page down
                 // TODO: add a margin to the bottom
-                for _ in 0..10 {
-                    navigation::go_up_or_down_in_data(app, Direction::Down(1));
-                }
+                navigation::go_up_or_down_in_data(app, Direction::Down(10));
                 return Ok(TransitionResult::Continue);
             } else if key_event.modifiers == KeyModifiers::CONTROL
                 && key_event.code == KeyCode::Char('u')
             {
-                // TODO: don't go up when already at the top vertically
                 // FIXME: compute the real number of repetitions to go half a page up
                 // TODO: add a margin to the top
-                for _ in 0..10 {
-                    navigation::go_up_or_down_in_data(app, Direction::Up(1));
-                }
+                navigation::go_up_or_down_in_data(app, Direction::Up(10));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == KeyCode::Char('G') {
-                // TODO: don't go down when already at the bottom vertically
                 // FIXME: compute the real number of repetitions to go to bottom
-                for _ in 0..1_000 {
-                    navigation::go_up_or_down_in_data(app, Direction::Down(1));
-                }
+                navigation::go_up_or_down_in_data(app, Direction::Down(1_000));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == KeyCode::Char('g') {
-                // TODO: don't go up when already at the top vertically
                 // FIXME: compute the real number of repetitions to go to top
-                for _ in 0..1_000 {
-                    navigation::go_up_or_down_in_data(app, Direction::Up(1));
-                }
+                navigation::go_up_or_down_in_data(app, Direction::Up(1_000));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
@@ -165,17 +153,11 @@ pub fn handle_key_events(
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.down {
                 app.mode = Mode::Normal;
-                // TODO: don't go down when already at the bottom vertically
-                for _ in 0..n {
-                    navigation::go_up_or_down_in_data(app, Direction::Down(1));
-                }
+                navigation::go_up_or_down_in_data(app, Direction::Down(n));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.up {
                 app.mode = Mode::Normal;
-                // TODO: don't go up when already at the top vertically
-                for _ in 0..n {
-                    navigation::go_up_or_down_in_data(app, Direction::Up(1));
-                }
+                navigation::go_up_or_down_in_data(app, Direction::Up(n));
                 return Ok(TransitionResult::Continue);
             }
         }
