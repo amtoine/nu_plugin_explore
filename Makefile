@@ -30,8 +30,4 @@ install:
 	nu --commands "register ${CARGO_HOME}/bin/nu_plugin_explore"
 
 clean:
-	cargo remove nu-plugin
-	cargo remove nu-protocol
-
-purge: clean
 	cargo clean
