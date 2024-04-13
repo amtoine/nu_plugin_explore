@@ -115,12 +115,14 @@ pub fn handle_key_events(
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.down {
                 app.mode = Mode::Normal;
+                // TODO: don't go down when already at the bottom vertically
                 for _ in 0..n {
                     navigation::go_up_or_down_in_data(app, Direction::Down);
                 }
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.up {
                 app.mode = Mode::Normal;
+                // TODO: don't go up when already at the top vertically
                 for _ in 0..n {
                     navigation::go_up_or_down_in_data(app, Direction::Up);
                 }
