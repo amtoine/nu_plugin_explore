@@ -1,5 +1,6 @@
 CLIPPY_OPTIONS="-D warnings"
 
+.PHONY: all check test fmt doc build register install clean
 DEFAULT: check test
 
 check:
