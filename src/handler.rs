@@ -110,7 +110,23 @@ pub fn handle_key_events(
             }
         }
         Mode::Waiting(n) => {
-            if key_event.code == KeyCode::Esc {
+            if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9')) {
+                let u = match key_event.code {
+                    KeyCode::Char('0') => 0,
+                    KeyCode::Char('1') => 1,
+                    KeyCode::Char('2') => 2,
+                    KeyCode::Char('3') => 3,
+                    KeyCode::Char('4') => 4,
+                    KeyCode::Char('5') => 5,
+                    KeyCode::Char('6') => 6,
+                    KeyCode::Char('7') => 7,
+                    KeyCode::Char('8') => 8,
+                    KeyCode::Char('9') => 9,
+                    _ => unreachable!(),
+                };
+                app.mode = Mode::Waiting(n * 10 + u);
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == KeyCode::Esc {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.down {
