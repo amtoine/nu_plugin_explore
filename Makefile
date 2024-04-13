@@ -1,14 +1,11 @@
 CLIPPY_OPTIONS="-D warnings"
 
-all: check test install
-
-dev-deps:
-	./scripts/setup-dev-deps
+.PHONY: all check test fmt doc build register install clean
+DEFAULT: check test
 
 check:
 	cargo fmt --all --verbose -- --check --verbose
-	cargo check --workspace --lib
-	cargo check --workspace --tests
+	cargo check --workspace --lib --tests
 	cargo clippy --workspace -- "${CLIPPY_OPTIONS}"
 
 test: check
@@ -31,8 +28,4 @@ install:
 	nu --commands "register ${CARGO_HOME}/bin/nu_plugin_explore"
 
 clean:
-	cargo remove nu-plugin
-	cargo remove nu-protocol
-
-purge: clean
 	cargo clean
