@@ -2,8 +2,6 @@ CLIPPY_OPTIONS="-D warnings"
 
 all: check test install
 
-dev-deps:
-	./scripts/setup-dev-deps
 
 check:
 	cargo fmt --all --verbose -- --check --verbose
