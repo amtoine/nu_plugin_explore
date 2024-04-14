@@ -1,9 +1,9 @@
 //! the module responsible for rendering the TUI
 use crate::nu::{strings::SpecialString, value::is_table};
 
-use super::config::{repr_keycode, Layout};
+use super::config::{repr_key, Layout};
 use super::{App, Config, Mode};
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use nu_protocol::ast::PathMember;
 use nu_protocol::{Record, Type, Value};
 use ratatui::{
@@ -582,47 +582,47 @@ fn render_status_bar(frame: &mut Frame, app: &App, config: &Config) {
     let hints = match app.mode {
         Mode::Normal => format!(
             "{} to {} | {}{}{}{} to move around | {} to peek | {} to transpose | {} to quit",
-            repr_keycode(&config.keybindings.insert),
+            repr_key(&config.keybindings.insert),
             Mode::Insert,
-            repr_keycode(&config.keybindings.navigation.left),
-            repr_keycode(&config.keybindings.navigation.down),
-            repr_keycode(&config.keybindings.navigation.up),
-            repr_keycode(&config.keybindings.navigation.right),
-            repr_keycode(&config.keybindings.peek),
-            repr_keycode(&config.keybindings.transpose),
-            repr_keycode(&config.keybindings.quit),
+            repr_key(&config.keybindings.navigation.left),
+            repr_key(&config.keybindings.navigation.down),
+            repr_key(&config.keybindings.navigation.up),
+            repr_key(&config.keybindings.navigation.right),
+            repr_key(&config.keybindings.peek),
+            repr_key(&config.keybindings.transpose),
+            repr_key(&config.keybindings.quit),
         ),
         Mode::Waiting(n) => format!(
             "{} to quit | will run next motion {} times",
-            repr_keycode(&KeyCode::Esc),
+            repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             n
         ),
         Mode::Insert => format!(
             "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",
-            repr_keycode(&KeyCode::Esc),
-            repr_keycode(&KeyCode::Left),
-            repr_keycode(&KeyCode::Right),
-            repr_keycode(&KeyCode::Up),
-            repr_keycode(&KeyCode::Down),
-            repr_keycode(&KeyCode::Backspace),
-            repr_keycode(&KeyCode::Delete),
-            repr_keycode(&KeyCode::Enter),
+            repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            repr_key(&KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)),
+            repr_key(&KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
+            repr_key(&KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
+            repr_key(&KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            repr_key(&KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)),
+            repr_key(&KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE)),
+            repr_key(&KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
         ),
         Mode::Peeking => format!(
             "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to peek the cell path",
-            repr_keycode(&config.keybindings.normal),
+            repr_key(&config.keybindings.normal),
             Mode::Normal,
-            repr_keycode(&config.keybindings.peeking.all),
-            repr_keycode(&config.keybindings.peeking.view),
-            repr_keycode(&config.keybindings.peeking.under),
-            repr_keycode(&config.keybindings.peeking.cell_path),
+            repr_key(&config.keybindings.peeking.all),
+            repr_key(&config.keybindings.peeking.view),
+            repr_key(&config.keybindings.peeking.under),
+            repr_key(&config.keybindings.peeking.cell_path),
         ),
         Mode::Bottom => format!(
             "{} to {} | {} to peek | {} to quit",
-            repr_keycode(&config.keybindings.navigation.left),
+            repr_key(&config.keybindings.navigation.left),
             Mode::Normal,
-            repr_keycode(&config.keybindings.peek),
-            repr_keycode(&config.keybindings.quit),
+            repr_key(&config.keybindings.peek),
+            repr_key(&config.keybindings.quit),
         ),
     };
 
