@@ -2,6 +2,7 @@
     show_cell_path: true,  # whether or not to show the current cell path above the status bar
     show_table_header: true,  # whether or not to show the table header in "table" layout
     layout: "table",  # the layout of the data, either "table" or "compact"
+    margin: 10, # the number of lines to keep between the cursor and the top / bottom
 
     # "reset" is used instead of "black" in a dark terminal because, when the terminal is actually
     # black, "black" is not really black which is ugly, whereas "reset" is really black.
