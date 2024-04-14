@@ -35,6 +35,7 @@ pub fn handle_key_events(
     key_event: KeyEvent,
     app: &mut App,
     config: &Config,
+    half_page: usize,
 ) -> Result<TransitionResult, ShellError> {
     match app.mode {
         Mode::Normal => {
@@ -54,14 +55,12 @@ pub fn handle_key_events(
                 });
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.half_page_down {
-                // FIXME: compute the real number of repetitions to go half a page down
                 // TODO: add a margin to the bottom
-                navigation::go_up_or_down_in_data(app, Direction::Down(10));
+                navigation::go_up_or_down_in_data(app, Direction::Down(half_page));
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.half_page_up {
-                // FIXME: compute the real number of repetitions to go half a page up
                 // TODO: add a margin to the top
-                navigation::go_up_or_down_in_data(app, Direction::Up(10));
+                navigation::go_up_or_down_in_data(app, Direction::Up(half_page));
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.goto_bottom {
                 navigation::go_up_or_down_in_data(app, Direction::Bottom);
@@ -285,7 +284,7 @@ mod tests {
         for (key, expected_mode) in transitions {
             let mode = app.mode.clone();
 
-            let result = handle_key_events(key, &mut app, &config).unwrap();
+            let result = handle_key_events(key, &mut app, &config, 0).unwrap();
 
             assert!(
                 !result.is_quit(),
@@ -324,7 +323,7 @@ mod tests {
         for (key, exit) in transitions {
             let mode = app.mode.clone();
 
-            let result = handle_key_events(key, &mut app, &config).unwrap();
+            let result = handle_key_events(key, &mut app, &config, 0).unwrap();
 
             if exit {
                 assert!(
@@ -427,7 +426,7 @@ mod tests {
 
         for (key, cell_path, bottom) in transitions {
             let expected = to_path_member_vec(&cell_path);
-            handle_key_events(key, &mut app, &config).unwrap();
+            handle_key_events(key, &mut app, &config, 0).unwrap();
 
             if bottom {
                 assert!(
@@ -462,7 +461,7 @@ mod tests {
         for (key, exit, expected) in transitions {
             let mode = app.mode.clone();
 
-            let result = handle_key_events(key, &mut app, config).unwrap();
+            let result = handle_key_events(key, &mut app, config, 0).unwrap();
 
             if exit {
                 assert!(
@@ -616,7 +615,7 @@ mod tests {
         for (key, cell_path) in transitions {
             let expected = to_path_member_vec(&cell_path);
             if let TransitionResult::Mutate(cell, path) =
-                handle_key_events(key, &mut app, &config).unwrap()
+                handle_key_events(key, &mut app, &config, 0).unwrap()
             {
                 app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
             }
