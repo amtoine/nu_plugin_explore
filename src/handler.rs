@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent};
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
@@ -53,24 +53,20 @@ pub fn handle_key_events(
                     _ => unreachable!(),
                 });
                 return Ok(TransitionResult::Continue);
-            } else if key_event.modifiers == KeyModifiers::CONTROL
-                && key_event.code == KeyCode::Char('d')
-            {
+            } else if key_event == config.keybindings.navigation.half_page_down {
                 // FIXME: compute the real number of repetitions to go half a page down
                 // TODO: add a margin to the bottom
                 navigation::go_up_or_down_in_data(app, Direction::Down(10));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.modifiers == KeyModifiers::CONTROL
-                && key_event.code == KeyCode::Char('u')
-            {
+            } else if key_event == config.keybindings.navigation.half_page_up {
                 // FIXME: compute the real number of repetitions to go half a page up
                 // TODO: add a margin to the top
                 navigation::go_up_or_down_in_data(app, Direction::Up(10));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == KeyCode::Char('G') {
+            } else if key_event == config.keybindings.navigation.goto_bottom {
                 navigation::go_up_or_down_in_data(app, Direction::Bottom);
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == KeyCode::Char('g') {
+            } else if key_event == config.keybindings.navigation.goto_top {
                 navigation::go_up_or_down_in_data(app, Direction::Top);
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.quit {
@@ -157,7 +153,7 @@ pub fn handle_key_events(
                 app.mode = Mode::Normal;
                 navigation::go_up_or_down_in_data(app, Direction::Up(n));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == KeyCode::Char('g') {
+            } else if key_event == config.keybindings.navigation.goto_line {
                 app.mode = Mode::Normal;
                 navigation::go_up_or_down_in_data(app, Direction::At(n));
                 return Ok(TransitionResult::Continue);

@@ -78,6 +78,16 @@ pub struct NavigationBindingsMap {
     pub left: KeyEvent,
     /// go one level deeper in the data
     pub right: KeyEvent,
+    /// go one half page up in the data
+    pub half_page_up: KeyEvent,
+    /// go one half page down in the data
+    pub half_page_down: KeyEvent,
+    /// go to the top of the data, i.e. the first element or the first key
+    pub goto_top: KeyEvent,
+    /// go to the bottom of the data, i.e. the last element or the last key
+    pub goto_bottom: KeyEvent,
+    /// go at a particular line in the data
+    pub goto_line: KeyEvent,
 }
 
 /// the bindings in PEEKING mode (see [crate::app::Mode::Peeking])
@@ -198,6 +208,11 @@ impl Default for Config {
                     down: KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
                     up: KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
                     right: KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE),
+                    half_page_down: KeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL),
+                    half_page_up: KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+                    goto_top: KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+                    goto_bottom: KeyEvent::new(KeyCode::Char('G'), KeyModifiers::NONE),
+                    goto_line: KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
                 },
                 peek: KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE),
                 peeking: PeekingBindingsMap {
@@ -510,6 +525,46 @@ impl Config {
                                                 &["keybindings", "navigation", "right"],
                                             )? {
                                                 config.keybindings.navigation.right = val
+                                            }
+                                        }
+                                        "half_page_up" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "half_page_up"],
+                                            )? {
+                                                config.keybindings.navigation.half_page_up = val
+                                            }
+                                        }
+                                        "half_page_down" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "half_page_down"],
+                                            )? {
+                                                config.keybindings.navigation.half_page_down = val
+                                            }
+                                        }
+                                        "goto_top" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "goto_top"],
+                                            )? {
+                                                config.keybindings.navigation.goto_top = val
+                                            }
+                                        }
+                                        "goto_bottom" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "goto_bottom"],
+                                            )? {
+                                                config.keybindings.navigation.goto_bottom = val
+                                            }
+                                        }
+                                        "goto_line" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "goto_line"],
+                                            )? {
+                                                config.keybindings.navigation.goto_line = val
                                             }
                                         }
                                         x => {
