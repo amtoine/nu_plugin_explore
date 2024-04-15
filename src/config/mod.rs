@@ -497,7 +497,8 @@ impl Config {
                                 }
                             }
                             "line_numbers" => {
-                                let cell = follow_cell_path(&value, &["colors", "line_numbers"]).unwrap();
+                                let cell =
+                                    follow_cell_path(&value, &["colors", "line_numbers"]).unwrap();
                                 let columns = match &cell {
                                     Value::Record { val: rec, .. } => {
                                         rec.columns().collect::<Vec<_>>()
