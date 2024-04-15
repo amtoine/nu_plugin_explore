@@ -46,7 +46,12 @@ pub fn explore(config: &Value, input: Value) -> Result<Value> {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
                 if key_event.kind == KeyEventKind::Press {
-                    match handle_key_events(key_event, &mut app, &config)? {
+                    match handle_key_events(
+                        key_event,
+                        &mut app,
+                        &config,
+                        (tui.size()?.height as usize - 5) / 2,
+                    )? {
                         TransitionResult::Quit => break,
                         TransitionResult::Continue => {}
                         TransitionResult::Mutate(cell, path) => {

@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent};
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
@@ -35,6 +35,7 @@ pub fn handle_key_events(
     key_event: KeyEvent,
     app: &mut App,
     config: &Config,
+    half_page: usize,
 ) -> Result<TransitionResult, ShellError> {
     match app.mode {
         Mode::Normal => {
@@ -53,49 +54,43 @@ pub fn handle_key_events(
                     _ => unreachable!(),
                 });
                 return Ok(TransitionResult::Continue);
-            } else if key_event.modifiers == KeyModifiers::CONTROL
-                && key_event.code == KeyCode::Char('d')
-            {
-                // FIXME: compute the real number of repetitions to go half a page down
+            } else if key_event == config.keybindings.navigation.half_page_down {
                 // TODO: add a margin to the bottom
-                navigation::go_up_or_down_in_data(app, Direction::Down(10));
+                navigation::go_up_or_down_in_data(app, Direction::Down(half_page));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.modifiers == KeyModifiers::CONTROL
-                && key_event.code == KeyCode::Char('u')
-            {
-                // FIXME: compute the real number of repetitions to go half a page up
+            } else if key_event == config.keybindings.navigation.half_page_up {
                 // TODO: add a margin to the top
-                navigation::go_up_or_down_in_data(app, Direction::Up(10));
+                navigation::go_up_or_down_in_data(app, Direction::Up(half_page));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == KeyCode::Char('G') {
+            } else if key_event == config.keybindings.navigation.goto_bottom {
                 navigation::go_up_or_down_in_data(app, Direction::Bottom);
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == KeyCode::Char('g') {
+            } else if key_event == config.keybindings.navigation.goto_top {
                 navigation::go_up_or_down_in_data(app, Direction::Top);
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.quit {
+            } else if key_event == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
-            } else if key_event.code == config.keybindings.insert {
+            } else if key_event == config.keybindings.insert {
                 match app.enter_editor() {
                     Ok(_) => return Ok(TransitionResult::Continue),
                     Err(err) => return Ok(TransitionResult::Error(err)),
                 }
-            } else if key_event.code == config.keybindings.peek {
+            } else if key_event == config.keybindings.peek {
                 app.mode = Mode::Peeking;
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.navigation.down {
+            } else if key_event == config.keybindings.navigation.down {
                 navigation::go_up_or_down_in_data(app, Direction::Down(1));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.navigation.up {
+            } else if key_event == config.keybindings.navigation.up {
                 navigation::go_up_or_down_in_data(app, Direction::Up(1));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.navigation.right {
+            } else if key_event == config.keybindings.navigation.right {
                 navigation::go_deeper_in_data(app);
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.navigation.left {
+            } else if key_event == config.keybindings.navigation.left {
                 navigation::go_back_in_data(app);
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.transpose {
+            } else if key_event == config.keybindings.transpose {
                 let mut path = app.position.clone();
                 path.members.pop();
 
@@ -149,22 +144,22 @@ pub fn handle_key_events(
             } else if key_event.code == KeyCode::Esc {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.navigation.down {
+            } else if key_event == config.keybindings.navigation.down {
                 app.mode = Mode::Normal;
                 navigation::go_up_or_down_in_data(app, Direction::Down(n));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.navigation.up {
+            } else if key_event == config.keybindings.navigation.up {
                 app.mode = Mode::Normal;
                 navigation::go_up_or_down_in_data(app, Direction::Up(n));
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == KeyCode::Char('g') {
+            } else if key_event == config.keybindings.navigation.goto_line {
                 app.mode = Mode::Normal;
                 navigation::go_up_or_down_in_data(app, Direction::At(n));
                 return Ok(TransitionResult::Continue);
             }
         }
         Mode::Insert => {
-            if key_event.code == config.keybindings.normal {
+            if key_event == config.keybindings.normal {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
             }
@@ -182,27 +177,27 @@ pub fn handle_key_events(
             }
         }
         Mode::Peeking => {
-            if key_event.code == config.keybindings.quit {
+            if key_event == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
-            } else if key_event.code == config.keybindings.normal {
+            } else if key_event == config.keybindings.normal {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.peeking.all {
+            } else if key_event == config.keybindings.peeking.all {
                 return Ok(TransitionResult::Return(app.value.clone()));
-            } else if key_event.code == config.keybindings.peeking.view {
+            } else if key_event == config.keybindings.peeking.view {
                 app.position.members.pop();
                 return Ok(TransitionResult::Return(
                     app.value
                         .clone()
                         .follow_cell_path(&app.position.members, false)?,
                 ));
-            } else if key_event.code == config.keybindings.peeking.under {
+            } else if key_event == config.keybindings.peeking.under {
                 return Ok(TransitionResult::Return(
                     app.value
                         .clone()
                         .follow_cell_path(&app.position.members, false)?,
                 ));
-            } else if key_event.code == config.keybindings.peeking.cell_path {
+            } else if key_event == config.keybindings.peeking.cell_path {
                 return Ok(TransitionResult::Return(Value::cell_path(
                     app.position.clone(),
                     Span::unknown(),
@@ -210,12 +205,12 @@ pub fn handle_key_events(
             }
         }
         Mode::Bottom => {
-            if key_event.code == config.keybindings.quit {
+            if key_event == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
-            } else if key_event.code == config.keybindings.navigation.left {
+            } else if key_event == config.keybindings.navigation.left {
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
-            } else if key_event.code == config.keybindings.peek {
+            } else if key_event == config.keybindings.peek {
                 return Ok(TransitionResult::Return(
                     app.value
                         .clone()
@@ -230,7 +225,7 @@ pub fn handle_key_events(
 
 #[cfg(test)]
 mod tests {
-    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use crossterm::event::KeyEvent;
     use nu_protocol::{
         ast::{CellPath, PathMember},
         record, Span, Value,
@@ -239,7 +234,7 @@ mod tests {
     use super::{handle_key_events, App, TransitionResult};
     use crate::{
         app::Mode,
-        config::{repr_keycode, Config},
+        config::{repr_key, Config},
         nu::cell_path::{to_path_member_vec, PM},
     };
 
@@ -289,21 +284,19 @@ mod tests {
         for (key, expected_mode) in transitions {
             let mode = app.mode.clone();
 
-            let result =
-                handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
-                    .unwrap();
+            let result = handle_key_events(key, &mut app, &config, 0).unwrap();
 
             assert!(
                 !result.is_quit(),
                 "unexpected exit after pressing {} in {}",
-                repr_keycode(&key),
+                repr_key(&key),
                 mode,
             );
             assert!(
                 app.mode == expected_mode,
                 "expected to be in {} after pressing {} in {}, found {}",
                 expected_mode,
-                repr_keycode(&key),
+                repr_key(&key),
                 mode,
                 app.mode
             );
@@ -330,22 +323,20 @@ mod tests {
         for (key, exit) in transitions {
             let mode = app.mode.clone();
 
-            let result =
-                handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
-                    .unwrap();
+            let result = handle_key_events(key, &mut app, &config, 0).unwrap();
 
             if exit {
                 assert!(
                     result.is_quit(),
                     "expected to quit after pressing {} in {} mode",
-                    repr_keycode(&key),
+                    repr_key(&key),
                     mode
                 );
             } else {
                 assert!(
                     !result.is_quit(),
                     "expected NOT to quit after pressing {} in {} mode",
-                    repr_keycode(&key),
+                    repr_key(&key),
                     mode
                 );
             }
@@ -435,20 +426,19 @@ mod tests {
 
         for (key, cell_path, bottom) in transitions {
             let expected = to_path_member_vec(&cell_path);
-            handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
-                .unwrap();
+            handle_key_events(key, &mut app, &config, 0).unwrap();
 
             if bottom {
                 assert!(
                     app.is_at_bottom(),
                     "expected to be at the bottom after pressing {}",
-                    repr_keycode(&key)
+                    repr_key(&key)
                 );
             } else {
                 assert!(
                     !app.is_at_bottom(),
                     "expected NOT to be at the bottom after pressing {}",
-                    repr_keycode(&key)
+                    repr_key(&key)
                 );
             }
             assert_eq!(
@@ -462,7 +452,7 @@ mod tests {
     }
 
     fn run_peeking_scenario(
-        transitions: Vec<(KeyCode, bool, Option<Value>)>,
+        transitions: Vec<(KeyEvent, bool, Option<Value>)>,
         config: &Config,
         value: Value,
     ) {
@@ -471,22 +461,20 @@ mod tests {
         for (key, exit, expected) in transitions {
             let mode = app.mode.clone();
 
-            let result =
-                handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, config)
-                    .unwrap();
+            let result = handle_key_events(key, &mut app, config, 0).unwrap();
 
             if exit {
                 assert!(
                     result.is_quit(),
                     "expected to peek some data after pressing {} in {} mode",
-                    repr_keycode(&key),
+                    repr_key(&key),
                     mode
                 );
             } else {
                 assert!(
                     !result.is_quit(),
                     "expected NOT to peek some data after pressing {} in {} mode",
-                    repr_keycode(&key),
+                    repr_key(&key),
                     mode
                 );
             }
@@ -498,13 +486,13 @@ mod tests {
                             value,
                             val,
                             "unexpected data after pressing {} in {} mode",
-                            repr_keycode(&key),
+                            repr_key(&key),
                             mode
                         )
                     }
                     _ => panic!(
                         "did expect output data after pressing {} in {} mode",
-                        repr_keycode(&key),
+                        repr_key(&key),
                         mode
                     ),
                 },
@@ -512,7 +500,7 @@ mod tests {
                     if let TransitionResult::Return(_) = result {
                         panic!(
                             "did NOT expect output data after pressing {} in {} mode",
-                            repr_keycode(&key),
+                            repr_key(&key),
                             mode
                         )
                     }
@@ -627,8 +615,7 @@ mod tests {
         for (key, cell_path) in transitions {
             let expected = to_path_member_vec(&cell_path);
             if let TransitionResult::Mutate(cell, path) =
-                handle_key_events(KeyEvent::new(key, KeyModifiers::empty()), &mut app, &config)
-                    .unwrap()
+                handle_key_events(key, &mut app, &config, 0).unwrap()
             {
                 app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
             }
@@ -636,7 +623,7 @@ mod tests {
             assert!(
                 !app.is_at_bottom(),
                 "expected NOT to be at the bottom after pressing {}",
-                repr_keycode(&key)
+                repr_key(&key)
             );
 
             assert_eq!(

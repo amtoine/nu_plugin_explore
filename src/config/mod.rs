@@ -4,7 +4,7 @@
 //! 1. holds the data structure of the [`Config`]
 //! 1. gives default values to a [`Config`] with [`Config::default`]
 //! 1. parses a Nushell [`Value`](https://docs.rs/nu-protocol/0.83.1/nu_protocol/enum.Value.html) into a valid [`Config`]
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::style::{Color, Modifier};
 
 use nu_protocol::{LabeledError, Value};
@@ -71,41 +71,51 @@ pub struct BgFgColorConfig {
 #[derive(Clone, PartialEq, Debug)]
 pub struct NavigationBindingsMap {
     /// go one row up in the data
-    pub up: KeyCode,
+    pub up: KeyEvent,
     /// go one row down in the data
-    pub down: KeyCode,
+    pub down: KeyEvent,
     /// go one level higher in the data
-    pub left: KeyCode,
+    pub left: KeyEvent,
     /// go one level deeper in the data
-    pub right: KeyCode,
+    pub right: KeyEvent,
+    /// go one half page up in the data
+    pub half_page_up: KeyEvent,
+    /// go one half page down in the data
+    pub half_page_down: KeyEvent,
+    /// go to the top of the data, i.e. the first element or the first key
+    pub goto_top: KeyEvent,
+    /// go to the bottom of the data, i.e. the last element or the last key
+    pub goto_bottom: KeyEvent,
+    /// go at a particular line in the data
+    pub goto_line: KeyEvent,
 }
 
 /// the bindings in PEEKING mode (see [crate::app::Mode::Peeking])
 #[derive(Clone, PartialEq, Debug)]
 pub struct PeekingBindingsMap {
     /// peek the whole data structure
-    pub all: KeyCode,
+    pub all: KeyEvent,
     /// peek the current cell path
-    pub cell_path: KeyCode,
+    pub cell_path: KeyEvent,
     /// peek the current level, but only the row under the cursor
-    pub under: KeyCode,
+    pub under: KeyEvent,
     /// peek the current view
-    pub view: KeyCode,
+    pub view: KeyEvent,
 }
 
 /// the keybindings mapping
 #[derive(Clone, PartialEq, Debug)]
 pub struct KeyBindingsMap {
-    pub quit: KeyCode,
+    pub quit: KeyEvent,
     /// go into INSERT mode (see [crate::app::Mode::Insert])
-    pub insert: KeyCode,
+    pub insert: KeyEvent,
     /// go back into NORMAL mode (see [crate::app::Mode::Normal])
-    pub normal: KeyCode,
+    pub normal: KeyEvent,
     pub navigation: NavigationBindingsMap,
     /// go into PEEKING mode (see [crate::app::Mode::Peeking])
-    pub peek: KeyCode,
+    pub peek: KeyEvent,
     pub peeking: PeekingBindingsMap,
-    pub transpose: KeyCode,
+    pub transpose: KeyEvent,
 }
 
 /// the layout of the application
@@ -190,23 +200,28 @@ impl Default for Config {
                 },
             },
             keybindings: KeyBindingsMap {
-                quit: KeyCode::Char('q'),
-                insert: KeyCode::Char('i'),
-                normal: KeyCode::Esc,
+                quit: KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE),
+                insert: KeyEvent::new(KeyCode::Char('i'), KeyModifiers::NONE),
+                normal: KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
                 navigation: NavigationBindingsMap {
-                    left: KeyCode::Char('h'),
-                    down: KeyCode::Char('j'),
-                    up: KeyCode::Char('k'),
-                    right: KeyCode::Char('l'),
+                    left: KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE),
+                    down: KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+                    up: KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
+                    right: KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE),
+                    half_page_down: KeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL),
+                    half_page_up: KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+                    goto_top: KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
+                    goto_bottom: KeyEvent::new(KeyCode::Char('G'), KeyModifiers::NONE),
+                    goto_line: KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE),
                 },
-                peek: KeyCode::Char('p'),
+                peek: KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE),
                 peeking: PeekingBindingsMap {
-                    all: KeyCode::Char('a'),
-                    cell_path: KeyCode::Char('c'),
-                    under: KeyCode::Char('p'),
-                    view: KeyCode::Char('v'),
+                    all: KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+                    cell_path: KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE),
+                    under: KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE),
+                    view: KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE),
                 },
-                transpose: KeyCode::Char('t'),
+                transpose: KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE),
             },
         }
     }
@@ -512,6 +527,46 @@ impl Config {
                                                 config.keybindings.navigation.right = val
                                             }
                                         }
+                                        "half_page_up" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "half_page_up"],
+                                            )? {
+                                                config.keybindings.navigation.half_page_up = val
+                                            }
+                                        }
+                                        "half_page_down" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "half_page_down"],
+                                            )? {
+                                                config.keybindings.navigation.half_page_down = val
+                                            }
+                                        }
+                                        "goto_top" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "goto_top"],
+                                            )? {
+                                                config.keybindings.navigation.goto_top = val
+                                            }
+                                        }
+                                        "goto_bottom" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "goto_bottom"],
+                                            )? {
+                                                config.keybindings.navigation.goto_bottom = val
+                                            }
+                                        }
+                                        "goto_line" => {
+                                            if let Some(val) = try_key(
+                                                &value,
+                                                &["keybindings", "navigation", "goto_line"],
+                                            )? {
+                                                config.keybindings.navigation.goto_line = val
+                                            }
+                                        }
                                         x => {
                                             return Err(invalid_field(
                                                 &["keybindings", "navigation", x],
@@ -601,9 +656,9 @@ impl Config {
     }
 }
 
-/// represent a [`KeyCode`] as a simple string
-pub fn repr_keycode(keycode: &KeyCode) -> String {
-    match keycode {
+/// represent a [`KeyEvent`] as a simple string
+pub fn repr_key(key: &KeyEvent) -> String {
+    let code = match key.code {
         KeyCode::Char(c) => c.to_string(),
         KeyCode::Left => char::from_u32(0x2190).unwrap().into(),
         KeyCode::Up => char::from_u32(0x2191).unwrap().into(),
@@ -614,26 +669,37 @@ pub fn repr_keycode(keycode: &KeyCode) -> String {
         KeyCode::Backspace => char::from_u32(0x232b).unwrap().into(),
         KeyCode::Delete => char::from_u32(0x2326).unwrap().into(),
         _ => "??".into(),
+    };
+
+    match key.modifiers {
+        KeyModifiers::NONE => code,
+        KeyModifiers::CONTROL => format!("<c-{}>", code),
+        _ => "??".into(),
     }
 }
 
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
-    use crossterm::event::KeyCode;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use nu_protocol::{record, Record, Value};
 
     use crate::nu::value::from_nuon;
 
-    use super::{repr_keycode, Config};
+    use super::{repr_key, Config};
 
     #[test]
     fn keycode_representation() {
-        assert_eq!(repr_keycode(&KeyCode::Char('x')), "x".to_string());
-        assert_eq!(repr_keycode(&KeyCode::Left), "←".to_string());
-        assert_eq!(repr_keycode(&KeyCode::Esc), "<esc>".to_string());
-        assert_eq!(repr_keycode(&KeyCode::Enter), "⏎".to_string());
-        assert_eq!(repr_keycode(&KeyCode::Home), "??".to_string());
+        for (key, modifiers, expected) in [
+            (KeyCode::Char('x'), KeyModifiers::NONE, "x"),
+            (KeyCode::Char('x'), KeyModifiers::CONTROL, "<c-x>"),
+            (KeyCode::Left, KeyModifiers::NONE, "←"),
+            (KeyCode::Esc, KeyModifiers::NONE, "<esc>"),
+            (KeyCode::Enter, KeyModifiers::NONE, "⏎"),
+            (KeyCode::Home, KeyModifiers::NONE, "??"),
+        ] {
+            assert_eq!(repr_key(&KeyEvent::new(key, modifiers)), expected);
+        }
     }
 
     #[test]
@@ -698,7 +764,7 @@ mod tests {
         });
 
         let mut expected = Config::default();
-        expected.keybindings.navigation.up = KeyCode::Char('x');
+        expected.keybindings.navigation.up = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
         assert_eq!(Config::from_value(value), Ok(expected));
     }
 

@@ -68,6 +68,11 @@
             down: 'j',  # go one row down in the current level
             up: 'k',  # go one row up in the current level
             right: 'l',  # go one level deeper in the data or hit the bottom
+            half_page_down: "<c-d>", # go one half page up in the data
+            half_page_up: "<c-u>", # go one half page down in the data
+            goto_top: 'g', # go to the top of the data, i.e. the first element or the first key
+            goto_bottom: 'G', # go to the bottom of the data, i.e. the last element or the last key
+            goto_line: 'g', # go at a particular line in the data
         },
         peek: 'p',  # go to PEEKING mode to peek a value
         peeking: {  # only in PEEKING mode

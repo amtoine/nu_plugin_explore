@@ -1,6 +1,6 @@
 //! utilities to parse a [`Value`](https://docs.rs/nu-protocol/0.83.1/nu_protocol/enum.Value.html)
 //! into a configuration
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::style::{Color, Modifier};
 
 use nu_protocol::LabeledError;
@@ -230,20 +230,31 @@ pub fn try_fg_bg_colors(
 }
 
 /// try to parse a key in the *value* at the given *cell path*
-pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCode>, LabeledError> {
+pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyEvent>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
-            "up" => Ok(Some(KeyCode::Up)),
-            "down" => Ok(Some(KeyCode::Down)),
-            "left" => Ok(Some(KeyCode::Left)),
-            "right" => Ok(Some(KeyCode::Right)),
-            "escape" => Ok(Some(KeyCode::Esc)),
+            "up" => Ok(Some(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE))),
+            "down" => Ok(Some(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE))),
+            "left" => Ok(Some(KeyEvent::new(KeyCode::Left, KeyModifiers::NONE))),
+            "right" => Ok(Some(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE))),
+            "escape" => Ok(Some(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE))),
             x => {
                 if x.len() != 1 {
+                    if x.len() == 5
+                        && (x.starts_with("<c-") || x.starts_with("<C-"))
+                        && x.ends_with('>')
+                    {
+                        #[allow(clippy::iter_nth_zero)]
+                        return Ok(Some(KeyEvent::new(
+                            KeyCode::Char(x.to_string().chars().nth(3).unwrap()),
+                            KeyModifiers::CONTROL,
+                        )));
+                    }
+
                     return Err(LabeledError::new(
                         "invalid config")
                         .with_label(format!(
-                            r#"`$.{}` should be a character or one of [up, down, left, right, escape] , found {}"#,
+                            r#"`$.{}` should be a character, possibly inside '<c-...>' or '<C-...>', or one of [up, down, left, right, escape] , found {}"#,
                             cell_path.join("."),
                             x
                         ),
@@ -252,7 +263,10 @@ pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyCode>, Lab
                 }
 
                 #[allow(clippy::iter_nth_zero)]
-                Ok(Some(KeyCode::Char(x.to_string().chars().nth(0).unwrap())))
+                Ok(Some(KeyEvent::new(
+                    KeyCode::Char(x.to_string().chars().nth(0).unwrap()),
+                    KeyModifiers::NONE,
+                )))
             }
         },
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
@@ -312,7 +326,7 @@ pub fn follow_cell_path(value: &Value, cell_path: &[&str]) -> Option<Value> {
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
-    use crossterm::event::KeyCode;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use nu_protocol::LabeledError;
     use nu_protocol::{record, Record, Value};
     use ratatui::style::{Color, Modifier};
@@ -421,18 +435,23 @@ mod tests {
         test_tried_error(
             try_key(&Value::test_string("enter"), &[]),
             "",
-            "should be a character or one of [up, down, left, right, escape] , found enter",
+            "should be a character, possibly inside '<c-...>' or '<C-...>', or one of [up, down, left, right, escape] , found enter",
         );
 
         let cases = vec![
-            ("up", KeyCode::Up),
-            ("down", KeyCode::Down),
-            ("left", KeyCode::Left),
-            ("right", KeyCode::Right),
-            ("escape", KeyCode::Esc),
-            ("a", KeyCode::Char('a')),
-            ("b", KeyCode::Char('b')),
-            ("x", KeyCode::Char('x')),
+            ("up", KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
+            ("down", KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            ("left", KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)),
+            ("right", KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
+            ("escape", KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            ("a", KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE)),
+            ("b", KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)),
+            ("x", KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            ("x", KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            (
+                "<C-x>",
+                KeyEvent::new(KeyCode::Char('x'), KeyModifiers::CONTROL),
+            ),
         ];
 
         for (input, expected) in cases {
