@@ -1,4 +1,4 @@
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
@@ -38,7 +38,42 @@ pub fn handle_key_events(
 ) -> Result<TransitionResult, ShellError> {
     match app.mode {
         Mode::Normal => {
-            if key_event.code == config.keybindings.quit {
+            if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9')) {
+                app.mode = Mode::Waiting(match key_event.code {
+                    KeyCode::Char('0') => 0,
+                    KeyCode::Char('1') => 1,
+                    KeyCode::Char('2') => 2,
+                    KeyCode::Char('3') => 3,
+                    KeyCode::Char('4') => 4,
+                    KeyCode::Char('5') => 5,
+                    KeyCode::Char('6') => 6,
+                    KeyCode::Char('7') => 7,
+                    KeyCode::Char('8') => 8,
+                    KeyCode::Char('9') => 9,
+                    _ => unreachable!(),
+                });
+                return Ok(TransitionResult::Continue);
+            } else if key_event.modifiers == KeyModifiers::CONTROL
+                && key_event.code == KeyCode::Char('d')
+            {
+                // FIXME: compute the real number of repetitions to go half a page down
+                // TODO: add a margin to the bottom
+                navigation::go_up_or_down_in_data(app, Direction::Down(10));
+                return Ok(TransitionResult::Continue);
+            } else if key_event.modifiers == KeyModifiers::CONTROL
+                && key_event.code == KeyCode::Char('u')
+            {
+                // FIXME: compute the real number of repetitions to go half a page up
+                // TODO: add a margin to the top
+                navigation::go_up_or_down_in_data(app, Direction::Up(10));
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == KeyCode::Char('G') {
+                navigation::go_up_or_down_in_data(app, Direction::Bottom);
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == KeyCode::Char('g') {
+                navigation::go_up_or_down_in_data(app, Direction::Top);
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
             } else if key_event.code == config.keybindings.insert {
                 match app.enter_editor() {
@@ -49,10 +84,10 @@ pub fn handle_key_events(
                 app.mode = Mode::Peeking;
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.down {
-                navigation::go_up_or_down_in_data(app, Direction::Down);
+                navigation::go_up_or_down_in_data(app, Direction::Down(1));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.up {
-                navigation::go_up_or_down_in_data(app, Direction::Up);
+                navigation::go_up_or_down_in_data(app, Direction::Up(1));
                 return Ok(TransitionResult::Continue);
             } else if key_event.code == config.keybindings.navigation.right {
                 navigation::go_deeper_in_data(app);
@@ -91,6 +126,40 @@ pub fn handle_key_events(
                     return Ok(TransitionResult::Mutate(transpose, path));
                 }
 
+                return Ok(TransitionResult::Continue);
+            }
+        }
+        Mode::Waiting(n) => {
+            if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9')) {
+                let u = match key_event.code {
+                    KeyCode::Char('0') => 0,
+                    KeyCode::Char('1') => 1,
+                    KeyCode::Char('2') => 2,
+                    KeyCode::Char('3') => 3,
+                    KeyCode::Char('4') => 4,
+                    KeyCode::Char('5') => 5,
+                    KeyCode::Char('6') => 6,
+                    KeyCode::Char('7') => 7,
+                    KeyCode::Char('8') => 8,
+                    KeyCode::Char('9') => 9,
+                    _ => unreachable!(),
+                };
+                app.mode = Mode::Waiting(n * 10 + u);
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == KeyCode::Esc {
+                app.mode = Mode::Normal;
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == config.keybindings.navigation.down {
+                app.mode = Mode::Normal;
+                navigation::go_up_or_down_in_data(app, Direction::Down(n));
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == config.keybindings.navigation.up {
+                app.mode = Mode::Normal;
+                navigation::go_up_or_down_in_data(app, Direction::Up(n));
+                return Ok(TransitionResult::Continue);
+            } else if key_event.code == KeyCode::Char('g') {
+                app.mode = Mode::Normal;
+                navigation::go_up_or_down_in_data(app, Direction::At(n));
                 return Ok(TransitionResult::Continue);
             }
         }
@@ -311,9 +380,6 @@ mod tests {
         assert_eq!(app.position.members, to_path_member_vec(&[PM::S("l")]));
 
         let transitions = vec![
-            (nav.up, vec![PM::S("i")], false),
-            (nav.up, vec![PM::S("s")], false),
-            (nav.up, vec![PM::S("r")], false),
             (nav.up, vec![PM::S("l")], false),
             (nav.down, vec![PM::S("r")], false),
             (nav.left, vec![PM::S("r")], false),
@@ -328,7 +394,7 @@ mod tests {
             (nav.down, vec![PM::S("r"), PM::S("b")], true),
             (nav.left, vec![PM::S("r"), PM::S("b")], false),
             (nav.up, vec![PM::S("r"), PM::S("a")], false),
-            (nav.up, vec![PM::S("r"), PM::S("b")], false),
+            (nav.up, vec![PM::S("r"), PM::S("a")], false),
             (nav.left, vec![PM::S("r")], false),
             (nav.down, vec![PM::S("s")], false),
             (nav.left, vec![PM::S("s")], false),
@@ -342,7 +408,9 @@ mod tests {
             (nav.up, vec![PM::S("i")], true),
             (nav.down, vec![PM::S("i")], true),
             (nav.left, vec![PM::S("i")], false),
-            (nav.down, vec![PM::S("l")], false),
+            (nav.up, vec![PM::S("s")], false),
+            (nav.up, vec![PM::S("r")], false),
+            (nav.up, vec![PM::S("l")], false),
             (nav.left, vec![PM::S("l")], false),
             (nav.right, vec![PM::S("l"), PM::I(0)], false),
             (nav.right, vec![PM::S("l"), PM::I(0)], true),
@@ -361,7 +429,7 @@ mod tests {
             (nav.left, vec![PM::S("l"), PM::I(2)], false),
             (nav.up, vec![PM::S("l"), PM::I(1)], false),
             (nav.up, vec![PM::S("l"), PM::I(0)], false),
-            (nav.up, vec![PM::S("l"), PM::I(2)], false),
+            (nav.up, vec![PM::S("l"), PM::I(0)], false),
             (nav.left, vec![PM::S("l")], false),
         ];
 
@@ -552,7 +620,7 @@ mod tests {
         let transitions = vec![
             (kmap.navigation.down, vec![PM::S("b")]),
             (kmap.transpose, vec![PM::I(0)]),
-            (kmap.navigation.up, vec![PM::I(2)]),
+            (kmap.navigation.down, vec![PM::I(1)]),
             (kmap.transpose, vec![PM::S("a")]),
         ];
 

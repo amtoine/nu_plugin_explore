@@ -5,10 +5,16 @@ use crate::app::{App, Mode};
 
 /// specify a vertical direction in which to go in the data
 pub enum Direction {
-    /// go one row down in the data
-    Down,
-    /// go one row up in the data
-    Up,
+    /// go down in the data
+    Down(usize),
+    /// go up in the data
+    Up(usize),
+    /// go to the top of the data, i.e. the first element or the first key
+    Top,
+    /// go to the bottom of the data, i.e. the last element or the last key
+    Bottom,
+    /// go at a particular line in the data
+    At(usize),
 }
 
 /// go up or down in the data
@@ -27,11 +33,6 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
     if app.is_at_bottom() {
         return;
     }
-
-    let direction = match direction {
-        Direction::Up => -1,
-        Direction::Down => 1,
-    };
 
     let current = app
         .position
@@ -63,10 +64,13 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                     val: if vals.is_empty() {
                         val
                     } else {
-                        let len = vals.len() as i32;
-                        let new_index = (val as i32 + direction + len) % len;
-
-                        new_index as usize
+                        match direction {
+                            Direction::Up(step) => val.saturating_sub(step).max(0),
+                            Direction::Down(step) => val.saturating_add(step).min(vals.len() - 1),
+                            Direction::Top => 0,
+                            Direction::Bottom => vals.len() - 1,
+                            Direction::At(id) => id.min(vals.len() - 1),
+                        }
                     },
                     span,
                     optional,
@@ -88,11 +92,18 @@ pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
                         val: if cols.is_empty() {
                             "".into()
                         } else {
-                            let index = rec.columns().position(|x| x == &val).unwrap() as i32;
-                            let len = cols.len() as i32;
-                            let new_index = (index + direction + len) % len;
+                            let index = rec.columns().position(|x| x == &val).unwrap();
+                            let new_index = match direction {
+                                Direction::Up(step) => index.saturating_sub(step).max(0),
+                                Direction::Down(step) => {
+                                    index.saturating_add(step).min(cols.len() - 1)
+                                }
+                                Direction::Top => 0,
+                                Direction::Bottom => cols.len() - 1,
+                                Direction::At(id) => id.min(cols.len() - 1),
+                            };
 
-                            cols[new_index as usize].clone()
+                            cols[new_index].clone()
                         },
                         span,
                         optional,
@@ -190,12 +201,19 @@ mod tests {
         let mut app = App::from_value(value);
 
         let sequence = vec![
-            (Direction::Down, 1),
-            (Direction::Down, 2),
-            (Direction::Down, 0),
-            (Direction::Up, 2),
-            (Direction::Up, 1),
-            (Direction::Up, 0),
+            (Direction::Down(1), 1),
+            (Direction::Down(1), 2),
+            (Direction::Down(1), 2),
+            (Direction::Up(1), 1),
+            (Direction::Up(1), 0),
+            (Direction::Up(1), 0),
+            (Direction::Top, 0),
+            (Direction::Bottom, 2),
+            (Direction::Bottom, 2),
+            (Direction::Top, 0),
+            (Direction::At(0), 0),
+            (Direction::At(1), 1),
+            (Direction::At(2), 2),
         ];
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, direction);
@@ -214,12 +232,19 @@ mod tests {
         let mut app = App::from_value(value);
 
         let sequence = vec![
-            (Direction::Down, "b"),
-            (Direction::Down, "c"),
-            (Direction::Down, "a"),
-            (Direction::Up, "c"),
-            (Direction::Up, "b"),
-            (Direction::Up, "a"),
+            (Direction::Down(1), "b"),
+            (Direction::Down(1), "c"),
+            (Direction::Down(1), "c"),
+            (Direction::Up(1), "b"),
+            (Direction::Up(1), "a"),
+            (Direction::Up(1), "a"),
+            (Direction::Top, "a"),
+            (Direction::Bottom, "c"),
+            (Direction::Bottom, "c"),
+            (Direction::Top, "a"),
+            (Direction::At(0), "a"),
+            (Direction::At(1), "b"),
+            (Direction::At(2), "c"),
         ];
         for (direction, id) in sequence {
             go_up_or_down_in_data(&mut app, direction);
