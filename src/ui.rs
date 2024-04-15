@@ -333,11 +333,15 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
 
     if cursor >= top + height - margin {
         app.rendering_tops.pop();
-        app.rendering_tops
-            .push((cursor - height + margin + 1).max(0));
+        app.rendering_tops.push(
+            (cursor - height + margin + 1)
+                .min(nb_lines as i32 - height)
+                .max(0),
+        );
     } else if cursor <= top + margin {
         app.rendering_tops.pop();
-        app.rendering_tops.push((cursor - margin).max(0));
+        app.rendering_tops
+            .push((cursor - margin).min(nb_lines as i32 - height).max(0));
     }
 
     let margin_offset = *app.rendering_tops.last().unwrap_or(&0) as usize;
