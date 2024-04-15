@@ -7,13 +7,15 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::style::{Color, Modifier};
 
-use nu_protocol::{LabeledError, Value};
+use nu_protocol::{LabeledError, Span, Value};
 
 mod parsing;
 use parsing::{
     follow_cell_path, invalid_field, invalid_type, try_bool, try_fg_bg_colors, try_key, try_layout,
     try_modifier, try_string,
 };
+
+use self::parsing::{positive_integer, try_int};
 
 /// the configuration for the status bar colors in all [`crate::app::Mode`]s
 #[derive(Clone, PartialEq, Debug)]
@@ -135,6 +137,7 @@ pub struct Config {
     pub show_cell_path: bool,
     pub layout: Layout,
     pub show_table_header: bool,
+    pub margin: usize,
 }
 
 impl Default for Config {
@@ -145,6 +148,7 @@ impl Default for Config {
             show_cell_path: true,
             show_table_header: true,
             layout: Layout::Table,
+            margin: 10,
             colors: ColorConfig {
                 normal: TableRowColorConfig {
                     name: BgFgColorConfig {
@@ -246,6 +250,14 @@ impl Config {
                 "layout" => {
                     if let Some(val) = try_layout(&value, &["layout"])? {
                         config.layout = val
+                    }
+                }
+                "margin" => {
+                    if let Some(val) = try_int(&value, &["margin"])? {
+                        if val < 0 {
+                            return Err(positive_integer(val, &["margin"], Span::unknown()));
+                        }
+                        config.margin = val as usize
                     }
                 }
                 "colors" => {

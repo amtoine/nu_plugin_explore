@@ -67,6 +67,17 @@ fn u8_out_of_range(value: i64, cell_path: &[&str], span: Span) -> LabeledError {
     )
 }
 
+pub fn positive_integer(value: i64, cell_path: &[&str], span: Span) -> LabeledError {
+    LabeledError::new("invalid config").with_label(
+        format!(
+            "`$.{}` should be a positive integer, found {}",
+            cell_path.join("."),
+            value
+        ),
+        span,
+    )
+}
+
 /// try to parse a bool in the *value* at the given *cell path*
 pub fn try_bool(value: &Value, cell_path: &[&str]) -> Result<Option<bool>, LabeledError> {
     match follow_cell_path(value, cell_path) {
@@ -81,6 +92,15 @@ pub fn try_string(value: &Value, cell_path: &[&str]) -> Result<Option<String>, L
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => Ok(Some(val)),
         Some(x) => Err(invalid_type(&x, cell_path, "string")),
+        _ => Ok(None),
+    }
+}
+
+/// try to parse an integer in the *value* at the given *cell path*
+pub fn try_int(value: &Value, cell_path: &[&str]) -> Result<Option<i64>, LabeledError> {
+    match follow_cell_path(value, cell_path) {
+        Some(Value::Int { val, .. }) => Ok(Some(val)),
+        Some(x) => Err(invalid_type(&x, cell_path, "int")),
         _ => Ok(None),
     }
 }
@@ -332,8 +352,8 @@ mod tests {
     use ratatui::style::{Color, Modifier};
 
     use super::{
-        follow_cell_path, try_bool, try_color, try_fg_bg_colors, try_key, try_layout, try_modifier,
-        try_string,
+        follow_cell_path, try_bool, try_color, try_fg_bg_colors, try_int, try_key, try_layout,
+        try_modifier, try_string,
     };
     use crate::config::{BgFgColorConfig, Layout};
 
@@ -418,6 +438,24 @@ mod tests {
             try_string(&Value::test_string("my string"), &["x"]),
             Ok(None)
         );
+    }
+
+    #[test]
+    fn trying_int() {
+        test_tried_error(
+            try_int(&Value::test_bool(true), &[]),
+            "",
+            "should be a int, found bool",
+        );
+        test_tried_error(
+            try_int(&Value::test_string("my string"), &[]),
+            "",
+            "should be a int, found string",
+        );
+
+        assert_eq!(try_int(&Value::test_int(123), &[]), Ok(Some(123)));
+        assert_eq!(try_int(&Value::test_int(-123), &[]), Ok(Some(-123)));
+        assert_eq!(try_int(&Value::test_int(123), &["x"]), Ok(None));
     }
 
     #[test]

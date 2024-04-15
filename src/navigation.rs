@@ -154,6 +154,8 @@ pub(super) fn go_deeper_in_data(app: &mut App) {
         }
         _ => app.hit_bottom(),
     }
+
+    app.rendering_tops.push(0);
 }
 
 /// pop one level of depth from the data
@@ -166,6 +168,7 @@ pub(super) fn go_back_in_data(app: &mut App) {
         app.position.members.pop();
     }
     app.mode = Mode::Normal;
+    app.rendering_tops.pop();
 }
 
 // TODO: add proper assert error messages

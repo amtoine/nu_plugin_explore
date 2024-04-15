@@ -42,6 +42,8 @@ impl std::fmt::Display for Mode {
 pub struct App {
     /// the full current path in the data
     pub position: CellPath,
+    /// used for rendering
+    pub rendering_tops: Vec<i32>,
     /// the current [`Mode`]
     pub mode: Mode,
     /// the editor to modify the cells of the data
@@ -54,6 +56,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             position: CellPath { members: vec![] },
+            rendering_tops: vec![],
             mode: Mode::default(),
             editor: Editor::default(),
             value: Value::default(),

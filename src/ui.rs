@@ -17,7 +17,7 @@ use ratatui::{
 };
 
 /// render the whole ui
-pub(super) fn render_ui(frame: &mut Frame, app: &App, config: &Config, error: Option<&str>) {
+pub(super) fn render_ui(frame: &mut Frame, app: &mut App, config: &Config, error: Option<&str>) {
     render_data(frame, app, config);
     if config.show_cell_path {
         render_cell_path(frame, app);
@@ -223,7 +223,7 @@ fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) 
 ///
 /// the data will be rendered on top of the bar, and on top of the cell path in case
 /// [`crate::config::Config::show_cell_path`] is set to `true`.
-fn render_data(frame: &mut Frame, app: &App, config: &Config) {
+fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
     let mut data_path = app.position.members.clone();
     let current = if !app.is_at_bottom() {
         data_path.pop()
@@ -310,6 +310,22 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
         None => 0,
     };
 
+    let height = data_frame_height as i32 - 3; // 3: border x 2 + header
+    let cursor = selected as i32;
+    let top = *app.rendering_tops.last().unwrap_or(&0);
+    let margin = config.margin as i32;
+
+    if cursor >= top + height - margin {
+        app.rendering_tops.pop();
+        app.rendering_tops
+            .push((cursor - height + margin + 1).max(0));
+    } else if cursor <= top + margin {
+        app.rendering_tops.pop();
+        app.rendering_tops.push((cursor - margin).max(0));
+    }
+
+    let margin_offset = *app.rendering_tops.last().unwrap_or(&0) as usize;
+
     if is_a_table {
         let (columns, shapes, cells) = match value {
             Value::List { vals, .. } => {
@@ -359,7 +375,9 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
         frame.render_stateful_widget(
             table,
             rect_without_bottom_bar,
-            &mut TableState::default().with_selected(Some(selected)),
+            &mut TableState::default()
+                .with_selected(Some(selected))
+                .with_offset(margin_offset),
         );
 
         return;
@@ -392,7 +410,9 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
             frame.render_stateful_widget(
                 items,
                 rect_without_bottom_bar,
-                &mut ListState::default().with_selected(Some(selected)),
+                &mut ListState::default()
+                    .with_selected(Some(selected))
+                    .with_offset(margin_offset),
             )
         }
         Layout::Table => {
@@ -488,7 +508,9 @@ fn render_data(frame: &mut Frame, app: &App, config: &Config) {
             frame.render_stateful_widget(
                 table,
                 rect_without_bottom_bar,
-                &mut TableState::default().with_selected(Some(selected)),
+                &mut TableState::default()
+                    .with_selected(Some(selected))
+                    .with_offset(margin_offset),
             )
         }
     }
