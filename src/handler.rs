@@ -154,7 +154,7 @@ pub fn handle_key_events(
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.goto_line {
                 app.mode = Mode::Normal;
-                navigation::go_up_or_down_in_data(app, Direction::At(n));
+                navigation::go_up_or_down_in_data(app, Direction::At(n.saturating_sub(1)));
                 return Ok(TransitionResult::Continue);
             }
         }
