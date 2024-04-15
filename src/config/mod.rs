@@ -56,6 +56,8 @@ pub struct ColorConfig {
     pub status_bar: StatusBarColorConfig,
     /// the color when editing a cell
     pub editor: EditorColorConfig,
+    /// the color of a warning banner
+    pub warning: BgFgColorConfig,
 }
 
 /// a pair of background / foreground colors
@@ -181,6 +183,10 @@ impl Default for Config {
                         background: Color::Reset,
                         foreground: Color::White,
                     },
+                },
+                warning: BgFgColorConfig {
+                    background: Color::Yellow,
+                    foreground: Color::Red,
                 },
             },
             keybindings: KeyBindingsMap {
@@ -417,6 +423,15 @@ impl Config {
                                             ))
                                         }
                                     }
+                                }
+                            }
+                            "warning" => {
+                                if let Some(val) = try_fg_bg_colors(
+                                    &value,
+                                    &["colors", "warning"],
+                                    &config.colors.warning,
+                                )? {
+                                    config.colors.warning = val
                                 }
                             }
                             x => return Err(invalid_field(&["colors", x], cell.span())),

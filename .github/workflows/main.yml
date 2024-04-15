@@ -6,9 +6,6 @@ on:
 
 name: continuous-integration
 
-env:
-  CLIPPY_OPTIONS: "-D warnings"
-
 jobs:
   fmt-check-clippy:
     runs-on: ubuntu-20.04
@@ -21,17 +18,10 @@ jobs:
         with:
           rustflags: ""
 
-      - name: Format
-        run: cargo fmt --all -- --check
+      - run: make check
 
-      - name: Check the library
-        run: cargo check --workspace --lib
-
-      - name: Check the tests
-        run: cargo check --workspace --tests
-
-      - name: Clippy
-        run: cargo clippy --workspace -- $CLIPPY_OPTIONS
+      - name: Check Cargo.lock
+        run: make lock
 
   tests:
     strategy:
@@ -49,5 +39,4 @@ jobs:
         with:
           rustflags: ""
 
-      - name: Tests
-        run: cargo test --workspace
+      - run: make test

@@ -11,6 +11,9 @@ nu-protocol = { git = "https://github.com/devyn/nushell", branch = "plugin-local
 ratatui = "0.26.1"
 url = "2.4.0"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
+
 [lib]
 bench = false
 
