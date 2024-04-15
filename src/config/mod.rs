@@ -44,6 +44,15 @@ pub struct EditorColorConfig {
     pub buffer: BgFgColorConfig,
 }
 
+/// the configuration for the line numbers
+#[derive(Clone, PartialEq, Debug)]
+pub struct LineNumbersColorConfig {
+    // all lines
+    pub normal: BgFgColorConfig,
+    // the selected line
+    pub selected: BgFgColorConfig,
+}
+
 /// the colors of the application
 #[derive(Clone, PartialEq, Debug)]
 pub struct ColorConfig {
@@ -60,6 +69,8 @@ pub struct ColorConfig {
     pub editor: EditorColorConfig,
     /// the color of a warning banner
     pub warning: BgFgColorConfig,
+    /// the color of the line numbers
+    pub line_numbers: LineNumbersColorConfig,
 }
 
 /// a pair of background / foreground colors
@@ -138,6 +149,8 @@ pub struct Config {
     pub layout: Layout,
     pub show_table_header: bool,
     pub margin: usize,
+    pub number: bool,
+    pub relativenumber: bool,
 }
 
 impl Default for Config {
@@ -149,6 +162,8 @@ impl Default for Config {
             show_table_header: true,
             layout: Layout::Table,
             margin: 10,
+            number: false,
+            relativenumber: false,
             colors: ColorConfig {
                 normal: TableRowColorConfig {
                     name: BgFgColorConfig {
@@ -201,6 +216,16 @@ impl Default for Config {
                 warning: BgFgColorConfig {
                     background: Color::Yellow,
                     foreground: Color::Red,
+                },
+                line_numbers: LineNumbersColorConfig {
+                    normal: BgFgColorConfig {
+                        background: Color::Reset,
+                        foreground: Color::White,
+                    },
+                    selected: BgFgColorConfig {
+                        background: Color::White,
+                        foreground: Color::Black,
+                    },
                 },
             },
             keybindings: KeyBindingsMap {
@@ -258,6 +283,16 @@ impl Config {
                             return Err(positive_integer(val, &["margin"], Span::unknown()));
                         }
                         config.margin = val as usize
+                    }
+                }
+                "number" => {
+                    if let Some(val) = try_bool(&value, &["number"])? {
+                        config.number = val
+                    }
+                }
+                "relativenumber" => {
+                    if let Some(val) = try_bool(&value, &["relativenumber"])? {
+                        config.relativenumber = val
                     }
                 }
                 "colors" => {
@@ -459,6 +494,51 @@ impl Config {
                                     &config.colors.warning,
                                 )? {
                                     config.colors.warning = val
+                                }
+                            }
+                            "line_numbers" => {
+                                let cell =
+                                    follow_cell_path(&value, &["colors", "line_numbers"]).unwrap();
+                                let columns = match &cell {
+                                    Value::Record { val: rec, .. } => {
+                                        rec.columns().collect::<Vec<_>>()
+                                    }
+                                    x => {
+                                        return Err(invalid_type(
+                                            x,
+                                            &["colors", "line_numbers"],
+                                            "record",
+                                        ))
+                                    }
+                                };
+
+                                for column in columns {
+                                    match column.as_str() {
+                                        "normal" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "line_numbers", "normal"],
+                                                &config.colors.line_numbers.normal,
+                                            )? {
+                                                config.colors.line_numbers.normal = val
+                                            }
+                                        }
+                                        "selected" => {
+                                            if let Some(val) = try_fg_bg_colors(
+                                                &value,
+                                                &["colors", "line_numbers", "selected"],
+                                                &config.colors.line_numbers.selected,
+                                            )? {
+                                                config.colors.line_numbers.selected = val
+                                            }
+                                        }
+                                        x => {
+                                            return Err(invalid_field(
+                                                &["colors", "line_numbers", x],
+                                                cell.span(),
+                                            ))
+                                        }
+                                    }
                                 }
                             }
                             x => return Err(invalid_field(&["colors", x], cell.span())),

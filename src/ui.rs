@@ -286,7 +286,6 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
             );
         }
     }
-    let rect_without_bottom_bar = Rect::new(0, 0, frame.size().width, data_frame_height);
 
     let normal_name_style = Style::default()
         .fg(config.colors.normal.name.foreground)
@@ -310,6 +309,23 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
         None => 0,
     };
 
+    let show_line_numbers = (config.number || config.relativenumber)
+        && matches!(value, Value::List { .. } | Value::Record { .. });
+    let nb_lines = match value.clone() {
+        // NOTE: it's annoying that `vals` cant' be cloned
+        Value::List { vals, .. } => vals.len(),
+        Value::Record { val, .. } => val.columns().len(),
+        _ => 0,
+    };
+    let line_numbers_width = if show_line_numbers {
+        format!("{}", nb_lines).len() as u16
+    } else {
+        0
+    };
+
+    let rect_without_bottom_bar =
+        Rect::new(line_numbers_width, 0, frame.size().width, data_frame_height);
+
     let height = data_frame_height as i32 - 3; // 3: border x 2 + header
     let cursor = selected as i32;
     let top = *app.rendering_tops.last().unwrap_or(&0);
@@ -325,6 +341,57 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
     }
 
     let margin_offset = *app.rendering_tops.last().unwrap_or(&0) as usize;
+
+    if show_line_numbers {
+        let rect_lines_without_bottom_bar = Rect::new(0, 0, line_numbers_width, data_frame_height);
+
+        let normal_line_style = Style::default()
+            .fg(config.colors.line_numbers.normal.foreground)
+            .bg(config.colors.line_numbers.normal.background);
+        let highlight_line_style = Style::default()
+            .fg(config.colors.line_numbers.selected.foreground)
+            .bg(config.colors.line_numbers.selected.background);
+
+        let mut line_numbers = vec![];
+        // add the lines at the top
+        for i in (1..(selected + 1 - margin_offset)).rev() {
+            let i = if config.relativenumber {
+                i
+            } else {
+                selected + 1 - i
+            };
+            line_numbers.push(i);
+        }
+        // add selected line
+        line_numbers.push(selected + 1);
+        // add the lines at the top
+        for i in 1..(margin_offset as i32 + height - selected as i32) {
+            if selected as i32 + 1 + i > nb_lines as i32 {
+                break;
+            }
+
+            let i = if config.relativenumber {
+                i
+            } else {
+                selected as i32 + 1 + i
+            };
+            line_numbers.push(i as usize);
+        }
+
+        let mut lines = vec![ListItem::new(Line::from("")); 2];
+        for i in line_numbers {
+            lines.push(ListItem::new(Line::from(Span::styled(
+                format!("{}", i),
+                normal_line_style,
+            ))));
+        }
+
+        frame.render_stateful_widget(
+            List::new(lines).highlight_style(highlight_line_style),
+            rect_lines_without_bottom_bar,
+            &mut ListState::default().with_selected(Some(selected - margin_offset + 2)),
+        );
+    }
 
     if is_a_table {
         let (columns, shapes, cells) = match value {
