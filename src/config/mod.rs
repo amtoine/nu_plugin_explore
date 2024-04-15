@@ -138,6 +138,8 @@ pub struct Config {
     pub layout: Layout,
     pub show_table_header: bool,
     pub margin: usize,
+    pub number: bool,
+    pub relativenumber: bool,
 }
 
 impl Default for Config {
@@ -149,6 +151,8 @@ impl Default for Config {
             show_table_header: true,
             layout: Layout::Table,
             margin: 10,
+            number: false,
+            relativenumber: false,
             colors: ColorConfig {
                 normal: TableRowColorConfig {
                     name: BgFgColorConfig {
@@ -258,6 +262,16 @@ impl Config {
                             return Err(positive_integer(val, &["margin"], Span::unknown()));
                         }
                         config.margin = val as usize
+                    }
+                }
+                "number" => {
+                    if let Some(val) = try_bool(&value, &["number"])? {
+                        config.number = val
+                    }
+                }
+                "relativenumber" => {
+                    if let Some(val) = try_bool(&value, &["relativenumber"])? {
+                        config.relativenumber = val
                     }
                 }
                 "colors" => {
