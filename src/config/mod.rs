@@ -623,6 +623,8 @@ mod tests {
     use crossterm::event::KeyCode;
     use nu_protocol::{record, Record, Value};
 
+    use crate::nu::value::from_nuon;
+
     use super::{repr_keycode, Config};
 
     #[test]
@@ -698,5 +700,16 @@ mod tests {
         let mut expected = Config::default();
         expected.keybindings.navigation.up = KeyCode::Char('x');
         assert_eq!(Config::from_value(value), Ok(expected));
+    }
+
+    #[test]
+    fn same_as_default() {
+        assert_eq!(
+            Config::default(),
+            Config::from_value(
+                from_nuon(include_str!("../../examples/config/default.nuon")).unwrap()
+            )
+            .unwrap()
+        )
     }
 }

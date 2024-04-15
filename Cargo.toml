@@ -8,6 +8,7 @@ console = "0.15.7"
 crossterm = "0.27.0"
 nu-plugin = { git = "https://github.com/devyn/nushell", branch = "plugin-local-socket", package = "nu-plugin" }
 nu-protocol = { git = "https://github.com/devyn/nushell", branch = "plugin-local-socket", package = "nu-protocol", features = ["plugin"] }
+nu-parser = { git = "https://github.com/devyn/nushell", branch = "plugin-local-socket", package = "nu-parser" }
 ratatui = "0.26.1"
 url = "2.4.0"
 
