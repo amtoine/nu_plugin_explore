@@ -311,13 +311,13 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
 
     let show_line_numbers = (config.number || config.relativenumber)
         && matches!(value, Value::List { .. } | Value::Record { .. });
+    let nb_lines = match value.clone() {
+        // NOTE: it's annoying that `vals` cant' be cloned
+        Value::List { vals, .. } => vals.len(),
+        Value::Record { val, .. } => val.columns().len(),
+        _ => 0,
+    };
     let line_numbers_width = if show_line_numbers {
-        let nb_lines = match value.clone() {
-            // NOTE: it's annoying that `vals` cant' be cloned
-            Value::List { vals, .. } => vals.len(),
-            Value::Record { val, .. } => val.columns().len(),
-            _ => 0,
-        };
         format!("{}", nb_lines).len() as u16
     } else {
         0
@@ -361,6 +361,10 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
         line_numbers.push(selected + 1);
         // add the lines at the top
         for i in 1..(margin_offset as i32 + height - selected as i32) {
+            if selected as i32 + 1 + i > nb_lines as i32 {
+                break;
+            }
+
             let i = if config.relativenumber {
                 i
             } else {
