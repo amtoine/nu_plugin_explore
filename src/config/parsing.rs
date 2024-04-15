@@ -70,7 +70,7 @@ fn u8_out_of_range(value: i64, cell_path: &[&str], span: Span) -> LabeledError {
 pub fn positive_integer(value: i64, cell_path: &[&str], span: Span) -> LabeledError {
     LabeledError::new("invalid config").with_label(
         format!(
-            "`$.{}` should be a strictly positive integer, found {}",
+            "`$.{}` should be a positive integer, found {}",
             cell_path.join("."),
             value
         ),

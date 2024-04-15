@@ -239,7 +239,7 @@ impl Config {
                 }
                 "margin" => {
                     if let Some(val) = try_int(&value, &["margin"])? {
-                        if val <= 0 {
+                        if val < 0 {
                             return Err(positive_integer(val, &["margin"], Span::unknown()));
                         }
                         config.margin = val as usize
