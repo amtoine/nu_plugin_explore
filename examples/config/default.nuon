@@ -60,7 +60,17 @@
         warning: {
             foreground: red,
             background: yellow,
-        }
+        },
+        line_numbers: {
+            normal: {
+                background: reset,
+                foreground: white,
+            },
+            selected: {
+                background: white,
+                foreground: black,
+            },
+        },
     }
     keybindings: {
         quit: 'q',  # quit `explore`

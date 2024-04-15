@@ -345,7 +345,12 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
     if show_line_numbers {
         let rect_lines_without_bottom_bar = Rect::new(0, 0, line_numbers_width, data_frame_height);
 
-        let normal_line_style = Style::default().fg(Color::Gray).bg(Color::Reset);
+        let normal_line_style = Style::default()
+            .fg(config.colors.line_numbers.normal.foreground)
+            .bg(config.colors.line_numbers.normal.background);
+        let highlight_line_style = Style::default()
+            .fg(config.colors.line_numbers.selected.foreground)
+            .bg(config.colors.line_numbers.selected.background);
 
         let mut line_numbers = vec![];
         // add the lines at the top
@@ -382,7 +387,7 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
         }
 
         frame.render_stateful_widget(
-            List::new(lines).highlight_style(highlight_style),
+            List::new(lines).highlight_style(highlight_line_style),
             rect_lines_without_bottom_bar,
             &mut ListState::default().with_selected(Some(selected - margin_offset + 2)),
         );
