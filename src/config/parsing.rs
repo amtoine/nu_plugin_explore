@@ -266,6 +266,7 @@ pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyEvent>, La
                     {
                         #[allow(clippy::iter_nth_zero)]
                         return Ok(Some(KeyEvent::new(
+                            // NOTE: this `unwrap` cannot fail because the length of `x` is `5`
                             KeyCode::Char(x.to_string().chars().nth(3).unwrap()),
                             KeyModifiers::CONTROL,
                         )));
@@ -284,6 +285,7 @@ pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyEvent>, La
 
                 #[allow(clippy::iter_nth_zero)]
                 Ok(Some(KeyEvent::new(
+                    // NOTE: this `unwrap` cannot fail because the length of `x` is `1`
                     KeyCode::Char(x.to_string().chars().nth(0).unwrap()),
                     KeyModifiers::NONE,
                 )))
