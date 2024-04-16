@@ -1,7 +1,10 @@
 //! the module responsible for rendering the TUI
-use crate::nu::{strings::SpecialString, value::is_table};
+use crate::{
+    config::Layout,
+    handler::repr_key,
+    nu::{strings::SpecialString, value::is_table},
+};
 
-use super::config::{repr_key, Layout};
 use super::{App, Config, Mode};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use nu_protocol::ast::PathMember;

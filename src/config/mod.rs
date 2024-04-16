@@ -750,37 +750,15 @@ impl Config {
     }
 }
 
-/// represent a [`KeyEvent`] as a simple string
-pub fn repr_key(key: &KeyEvent) -> String {
-    let code = match key.code {
-        KeyCode::Char(c) => c.to_string(),
-        KeyCode::Left => char::from_u32(0x2190).unwrap().into(),
-        KeyCode::Up => char::from_u32(0x2191).unwrap().into(),
-        KeyCode::Right => char::from_u32(0x2192).unwrap().into(),
-        KeyCode::Down => char::from_u32(0x2193).unwrap().into(),
-        KeyCode::Esc => "<esc>".into(),
-        KeyCode::Enter => char::from_u32(0x23ce).unwrap().into(),
-        KeyCode::Backspace => char::from_u32(0x232b).unwrap().into(),
-        KeyCode::Delete => char::from_u32(0x2326).unwrap().into(),
-        _ => "??".into(),
-    };
-
-    match key.modifiers {
-        KeyModifiers::NONE => code,
-        KeyModifiers::CONTROL => format!("<c-{}>", code),
-        _ => "??".into(),
-    }
-}
-
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use nu_protocol::{record, Record, Value};
 
-    use crate::nu::value::from_nuon;
+    use crate::{handler::repr_key, nu::value::from_nuon};
 
-    use super::{repr_key, Config};
+    use super::Config;
 
     #[test]
     fn keycode_representation() {

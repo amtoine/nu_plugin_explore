@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
@@ -223,6 +223,28 @@ pub fn handle_key_events(
     Ok(TransitionResult::Continue)
 }
 
+/// represent a [`KeyEvent`] as a simple string
+pub fn repr_key(key: &KeyEvent) -> String {
+    let code = match key.code {
+        KeyCode::Char(c) => c.to_string(),
+        KeyCode::Left => char::from_u32(0x2190).unwrap().into(),
+        KeyCode::Up => char::from_u32(0x2191).unwrap().into(),
+        KeyCode::Right => char::from_u32(0x2192).unwrap().into(),
+        KeyCode::Down => char::from_u32(0x2193).unwrap().into(),
+        KeyCode::Esc => "<esc>".into(),
+        KeyCode::Enter => char::from_u32(0x23ce).unwrap().into(),
+        KeyCode::Backspace => char::from_u32(0x232b).unwrap().into(),
+        KeyCode::Delete => char::from_u32(0x2326).unwrap().into(),
+        _ => "??".into(),
+    };
+
+    match key.modifiers {
+        KeyModifiers::NONE => code,
+        KeyModifiers::CONTROL => format!("<c-{}>", code),
+        _ => "??".into(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crossterm::event::KeyEvent;
@@ -231,10 +253,10 @@ mod tests {
         record, Span, Value,
     };
 
-    use super::{handle_key_events, App, TransitionResult};
+    use super::{handle_key_events, repr_key, App, TransitionResult};
     use crate::{
         app::Mode,
-        config::{repr_key, Config},
+        config::Config,
         nu::cell_path::{to_path_member_vec, PM},
     };
 
