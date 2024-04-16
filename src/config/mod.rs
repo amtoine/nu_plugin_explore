@@ -11,11 +11,9 @@ use nu_protocol::{LabeledError, Span, Value};
 
 mod parsing;
 use parsing::{
-    follow_cell_path, invalid_field, invalid_type, try_bool, try_fg_bg_colors, try_key, try_layout,
-    try_modifier, try_string,
+    follow_cell_path, invalid_field, invalid_type, positive_integer, try_bool, try_fg_bg_colors,
+    try_int, try_key, try_layout, try_modifier, try_string,
 };
-
-use self::parsing::{positive_integer, try_int};
 
 /// the configuration for the status bar colors in all [`crate::app::Mode`]s
 #[derive(Clone, PartialEq, Debug)]
