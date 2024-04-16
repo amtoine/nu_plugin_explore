@@ -253,28 +253,7 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
         frame.size().height - 1
     };
     if !is_a_table {
-        let msg = match table_type {
-            crate::nu::value::Table::Empty => None,
-            crate::nu::value::Table::RowNotARecord(i, t) => {
-                Some(format!("row $.{} is not a record: {}", i, t))
-            }
-            crate::nu::value::Table::RowIncompatibleLen(i, l, e) => Some(format!(
-                "row $.{} has incompatible length with first row: expected {} found {}",
-                i, e, l
-            )),
-            crate::nu::value::Table::RowIncompatibleType(i, k, t, e) => Some(format!(
-                "cell $.{}.{} has incompatible type with first row: expected {} found {}",
-                i, k, e, t
-            )),
-            crate::nu::value::Table::RowInvalidKey(i, k, ks) => Some(format!(
-                "row $.{} does not contain key '{}': list of keys {:?}",
-                i, k, ks
-            )),
-            crate::nu::value::Table::NotAList => None,
-            crate::nu::value::Table::IsValid => unreachable!(),
-        };
-
-        if let Some(msg) = msg {
+        if let Some(msg) = table_type.to_msg() {
             data_frame_height -= 1;
             frame.render_widget(
                 Paragraph::new(msg).alignment(Alignment::Right).style(

@@ -17,6 +17,29 @@ pub(crate) enum Table {
     NotAList,
 }
 
+impl Table {
+    pub(crate) fn to_msg(&self) -> Option<String> {
+        match self {
+            Table::Empty => None,
+            Table::RowNotARecord(i, t) => Some(format!("row $.{} is not a record: {}", i, t)),
+            Table::RowIncompatibleLen(i, l, e) => Some(format!(
+                "row $.{} has incompatible length with first row: expected {} found {}",
+                i, e, l
+            )),
+            Table::RowIncompatibleType(i, k, t, e) => Some(format!(
+                "cell $.{}.{} has incompatible type with first row: expected {} found {}",
+                i, k, e, t
+            )),
+            Table::RowInvalidKey(i, k, ks) => Some(format!(
+                "row $.{} does not contain key '{}': list of keys {:?}",
+                i, k, ks
+            )),
+            Table::NotAList => None,
+            Table::IsValid => None,
+        }
+    }
+}
+
 pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
     if cell_path.members.is_empty() {
         return cell.clone();
