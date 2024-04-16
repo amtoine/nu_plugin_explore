@@ -39,12 +39,13 @@ impl SimplePluginCommand for Explore {
     fn examples(&self) -> Vec<nu_protocol::Example> {
         vec![
             Example {
-                example: "open Cargo.toml | explore",
+                example: "open Cargo.toml | nu_plugin_explore",
                 description: "explore the Cargo.toml file of this project",
                 result: None,
             },
             Example {
-                example: r#"$nu | explore {show_cell_path: false, layout: "compact"}"#,
+                example: r#"$env.config.plugins.explore = { show_cell_path: false, layout: "compact" }
+    $nu | nu_plugin_explore"#,
                 description: "explore `$nu` and set some config options",
                 result: None,
             },
