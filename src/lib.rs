@@ -24,8 +24,7 @@ use handler::{handle_key_events, TransitionResult};
 use tui::Tui;
 
 pub fn explore(config: &Value, input: Value) -> Result<Value> {
-    let config = Config::from_value(config.clone())
-        .expect("Could not convert config value to an actual config");
+    let config = Config::from_value(config.clone())?;
 
     let mut tui = Tui::new(
         Terminal::new(CrosstermBackend::new(io::stderr()))?,
