@@ -56,6 +56,7 @@ pub fn explore(config: &Value, input: Value) -> Result<Value> {
                         TransitionResult::Mutate(cell, path) => {
                             app.value =
                                 crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
+                                    .unwrap()
                         }
                         TransitionResult::Error(error) => {
                             tui.draw(&mut app, &config, Some(&error))?;

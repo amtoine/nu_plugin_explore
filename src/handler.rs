@@ -617,7 +617,7 @@ mod tests {
             if let TransitionResult::Mutate(cell, path) =
                 handle_key_events(key, &mut app, &config, 0).unwrap()
             {
-                app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
+                app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell).unwrap()
             }
 
             assert!(

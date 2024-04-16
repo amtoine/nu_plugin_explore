@@ -40,9 +40,17 @@ impl Table {
     }
 }
 
-pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
+/// mutate the input `value`, changing the _value_ at `cell_path` into the `cell` argument
+///
+/// > **Note**  
+/// > returns [`None`] if the `cell_path` is not valid in `value`.
+pub(crate) fn mutate_value_cell(
+    value: &Value,
+    cell_path: &CellPath,
+    cell: &Value,
+) -> Option<Value> {
     if cell_path.members.is_empty() {
-        return cell.clone();
+        return Some(cell.clone());
     }
 
     if value
@@ -50,31 +58,32 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
         .follow_cell_path(&cell_path.members, false)
         .is_err()
     {
-        return value.clone();
+        return None;
     }
 
     let mut cell_path = cell_path.clone();
 
-    // NOTE: cell_path.members cannot be empty thanks to the guard above
+    // NOTE: `cell_path.members` cannot be empty because the last branch of the match bellot
+    // does not call `aux` recursively
     let first = cell_path.members.first().unwrap();
 
-    match value {
+    let res = match value {
         Value::List { vals, .. } => {
             let id = match first {
                 PathMember::Int { val, .. } => *val,
-                _ => panic!("first cell path element should be an int"),
+                _ => unreachable!(),
             };
             cell_path.members.remove(0);
 
             let mut vals = vals.clone();
-            vals[id] = mutate_value_cell(&vals[id], &cell_path, cell);
+            vals[id] = mutate_value_cell(&vals[id], &cell_path, cell).unwrap();
 
             Value::list(vals, Span::unknown())
         }
         Value::Record { val: rec, .. } => {
             let col = match first {
                 PathMember::String { val, .. } => val.clone(),
-                _ => panic!("first cell path element should be an string"),
+                _ => unreachable!(),
             };
             cell_path.members.remove(0);
 
@@ -87,7 +96,7 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
                 .enumerate()
                 .map(|(i, v)| {
                     if i == id {
-                        mutate_value_cell(&v, &cell_path, cell)
+                        mutate_value_cell(&v, &cell_path, cell).unwrap()
                     } else {
                         v
                     }
@@ -95,12 +104,17 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
                 .collect();
 
             Value::record(
+                // NOTE: this cannot fail because `cols` and `vals` have the same length by
+                // contruction, they have been constructed by iterating over `rec.columns()`
+                // and `rec.values()` respectively, both of which have the same length
                 Record::from_raw_cols_vals(cols, vals, Span::unknown(), Span::unknown()).unwrap(),
                 Span::unknown(),
             )
         }
         _ => cell.clone(),
-    }
+    };
+
+    Some(res)
 }
 
 pub(crate) fn is_table(value: &Value) -> Table {
@@ -770,68 +784,67 @@ mod tests {
                 Value::test_string("foo"),
                 vec![],
                 Value::test_string("bar"),
-                Value::test_string("bar"),
+                Some(Value::test_string("bar")),
             ),
             // list -> simple value
             (
                 list.clone(),
                 vec![],
                 Value::test_nothing(),
-                Value::test_nothing(),
+                Some(Value::test_nothing()),
             ),
             // record -> simple value
             (
                 record.clone(),
                 vec![],
                 Value::test_nothing(),
-                Value::test_nothing(),
+                Some(Value::test_nothing()),
             ),
             // mutate a list element with simple value
             (
                 list.clone(),
                 vec![PM::I(0)],
                 Value::test_int(0),
-                Value::test_list(vec![
+                Some(Value::test_list(vec![
                     Value::test_int(0),
                     Value::test_int(2),
                     Value::test_int(3),
-                ]),
+                ])),
             ),
             // mutate a list element with complex value
             (
                 list.clone(),
                 vec![PM::I(1)],
                 record.clone(),
-                Value::test_list(vec![Value::test_int(1), record.clone(), Value::test_int(3)]),
+                Some(Value::test_list(vec![
+                    Value::test_int(1),
+                    record.clone(),
+                    Value::test_int(3),
+                ])),
             ),
-            // invalid list index -> do not mutate
-            (
-                list.clone(),
-                vec![PM::I(5)],
-                Value::test_int(0),
-                list.clone(),
-            ),
+            // invalid list index
+            (list.clone(), vec![PM::I(5)], Value::test_int(0), None),
             // mutate a record field with a simple value
             (
                 record.clone(),
                 vec![PM::S("a")],
                 Value::test_nothing(),
-                Value::test_record(record! {
+                Some(Value::test_record(record! {
                     "a" => Value::test_nothing(),
                     "b" => Value::test_int(2),
                     "c" => Value::test_int(3),
-                }),
+                })),
             ),
             // mutate a record field with a complex value
             (
                 record.clone(),
                 vec![PM::S("c")],
                 list.clone(),
-                Value::test_record(record! {
+                Some(Value::test_record(record! {
                     "a" => Value::test_int(1),
                     "b" => Value::test_int(2),
                     "c" => list.clone(),
-                }),
+                })),
             ),
             // mutate a deeply-nested list element
             (
@@ -840,9 +853,9 @@ mod tests {
                 ])])]),
                 vec![PM::I(0), PM::I(0), PM::I(0)],
                 Value::test_string("bar"),
-                Value::test_list(vec![Value::test_list(vec![Value::test_list(vec![
-                    Value::test_string("bar"),
-                ])])]),
+                Some(Value::test_list(vec![Value::test_list(vec![
+                    Value::test_list(vec![Value::test_string("bar")]),
+                ])])),
             ),
             // mutate a deeply-nested record field
             (
@@ -855,13 +868,26 @@ mod tests {
                 }),
                 vec![PM::S("a"), PM::S("b"), PM::S("c")],
                 Value::test_string("bar"),
-                Value::test_record(record! {
+                Some(Value::test_record(record! {
                     "a" => Value::test_record(record! {
                         "b" => Value::test_record(record! {
                             "c" => Value::test_string("bar"),
                         }),
                     }),
+                })),
+            ),
+            // try to mutate bad cell path
+            (
+                Value::test_record(record! {
+                    "a" => Value::test_record(record! {
+                        "b" => Value::test_record(record! {
+                            "c" => Value::test_string("foo"),
+                        }),
+                    }),
                 }),
+                vec![PM::S("a"), PM::I(0), PM::S("c")],
+                Value::test_string("bar"),
+                None,
             ),
         ];
 
@@ -878,8 +904,14 @@ mod tests {
                 default_value_repr(&value),
                 PM::as_cell_path(&members),
                 default_value_repr(&cell),
-                default_value_repr(&expected),
-                default_value_repr(&result)
+                default_value_repr(&match expected.clone() {
+                    Some(v) => v,
+                    None => Value::test_nothing(),
+                }),
+                default_value_repr(&match result.clone() {
+                    Some(v) => v,
+                    None => Value::test_nothing(),
+                }),
             );
         }
     }
