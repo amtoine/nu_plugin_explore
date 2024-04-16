@@ -224,6 +224,7 @@ pub(crate) fn is_table(value: &Value) -> Table {
 ///     assert equal (open Cargo.toml | transpose | transpose) (open Cargo.toml)
 /// }
 /// ```
+// WARNING: some _unwraps_ haven't been proven to be safe in this function
 pub(crate) fn transpose(value: &Value) -> Value {
     if matches!(is_table(value), Table::IsValid) {
         let value_rows = match value {
@@ -231,6 +232,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             _ => return value.clone(),
         };
 
+        // NOTE: because `value` is a valid table, it's first row is guaranteed to be a record
         let first_row = value_rows[0].as_record().unwrap();
 
         let full_columns = (1..=(first_row.len()))
@@ -250,6 +252,8 @@ pub(crate) fn transpose(value: &Value) -> Value {
                     .collect();
 
                 return Value::record(
+                    // NOTE: `cols` and `value_rows` have the same length by contruction
+                    // because they have been created by iterating over `value_rows`
                     Record::from_raw_cols_vals(cols, vals, Span::unknown(), Span::unknown())
                         .unwrap(),
                     Span::unknown(),
@@ -263,6 +267,8 @@ pub(crate) fn transpose(value: &Value) -> Value {
 
                 for i in 0..(first_row.len() - 1) {
                     rows.push(Value::record(
+                        // NOTE: `cols` and `value_rows` have the same length by contruction
+                        // because `cols` has been created by iterating over `value_rows`
                         Record::from_raw_cols_vals(
                             cols.clone(),
                             value_rows
@@ -292,6 +298,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             }
 
             rows.push(Value::record(
+                // NOTE: `cols` and `vs` have the same length by construction
                 Record::from_raw_cols_vals(cols, vs, Span::unknown(), Span::unknown()).unwrap(),
                 Span::unknown(),
             ));
