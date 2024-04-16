@@ -8,12 +8,21 @@ use nu_protocol::{
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Table {
+    /// value is a list but with no items in it
     Empty,
+    /// row at index {0} should be a record but is a {1}
     RowNotARecord(usize, Type),
+    /// row at index {0} should have same length as first row, {2}, but has
+    /// length {1}
     RowIncompatibleLen(usize, usize, usize),
+    /// row at index {0} and subkey {1} has type {2} but was expected to have
+    /// the same type as first row {3}
     RowIncompatibleType(usize, String, Type, Type),
+    /// row at index {0} contains an invalid key {1} but expected one of {2}
     RowInvalidKey(usize, String, Vec<String>),
+    /// value is a valid table
     IsValid,
+    /// valis is not even a list
     NotAList,
 }
 
