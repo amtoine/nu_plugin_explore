@@ -214,7 +214,11 @@ pub fn try_fg_bg_colors(
     cell_path: &[&str],
     default: &BgFgColorConfig,
 ) -> Result<Option<BgFgColorConfig>, LabeledError> {
-    let cell = follow_cell_path(value, cell_path).unwrap();
+    let cell = match follow_cell_path(value, cell_path) {
+        Some(c) => c,
+        None => return Ok(None),
+    };
+
     let columns = match &cell {
         Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
         x => return Err(invalid_type(x, cell_path, "record")),
