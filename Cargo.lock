@@ -994,7 +994,7 @@ dependencies = [
 [[package]]
 name = "nu-engine"
 version = "0.92.3"
-source = "git+https://github.com/devyn/nushell?branch=plugin-local-socket#bfe2092b3da71b34a57ef48926a146f658e53fdb"
+source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
 dependencies = [
  "nu-glob",
  "nu-path",
@@ -1005,12 +1005,12 @@ dependencies = [
 [[package]]
 name = "nu-glob"
 version = "0.92.3"
-source = "git+https://github.com/devyn/nushell?branch=plugin-local-socket#bfe2092b3da71b34a57ef48926a146f658e53fdb"
+source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
 
 [[package]]
 name = "nu-parser"
 version = "0.92.3"
-source = "git+https://github.com/devyn/nushell?branch=plugin-local-socket#bfe2092b3da71b34a57ef48926a146f658e53fdb"
+source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
 dependencies = [
  "bytesize",
  "chrono",
@@ -1025,7 +1025,7 @@ dependencies = [
 [[package]]
 name = "nu-path"
 version = "0.92.3"
-source = "git+https://github.com/devyn/nushell?branch=plugin-local-socket#bfe2092b3da71b34a57ef48926a146f658e53fdb"
+source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
 dependencies = [
  "dirs-next",
  "omnipath",
@@ -1035,7 +1035,7 @@ dependencies = [
 [[package]]
 name = "nu-plugin"
 version = "0.92.3"
-source = "git+https://github.com/devyn/nushell?branch=plugin-local-socket#bfe2092b3da71b34a57ef48926a146f658e53fdb"
+source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
 dependencies = [
  "bincode",
  "interprocess",
@@ -1058,7 +1058,7 @@ dependencies = [
 [[package]]
 name = "nu-protocol"
 version = "0.92.3"
-source = "git+https://github.com/devyn/nushell?branch=plugin-local-socket#bfe2092b3da71b34a57ef48926a146f658e53fdb"
+source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
 dependencies = [
  "byte-unit",
  "chrono",
@@ -1080,7 +1080,7 @@ dependencies = [
 [[package]]
 name = "nu-system"
 version = "0.92.3"
-source = "git+https://github.com/devyn/nushell?branch=plugin-local-socket#bfe2092b3da71b34a57ef48926a146f658e53fdb"
+source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
 dependencies = [
  "chrono",
  "libc",
@@ -1098,7 +1098,7 @@ dependencies = [
 [[package]]
 name = "nu-utils"
 version = "0.92.3"
-source = "git+https://github.com/devyn/nushell?branch=plugin-local-socket#bfe2092b3da71b34a57ef48926a146f658e53fdb"
+source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
 dependencies = [
  "crossterm_winapi",
  "log",
@@ -1113,7 +1113,7 @@ dependencies = [
 
 [[package]]
 name = "nu_plugin_explore"
-version = "0.92.3"
+version = "0.92.3-c06ef201b72b3cbe901820417106b7d65c6f01e1"
 dependencies = [
  "anyhow",
  "console",
