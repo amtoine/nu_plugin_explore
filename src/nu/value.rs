@@ -927,7 +927,7 @@ mod tests {
 
     #[test]
     fn is_a_table() {
-        let table = Value::test_list(vec![
+        let simple_table = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_string("foo"),
                 "b" => Value::test_int(1),
@@ -937,13 +937,6 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
-            is_table(&table),
-            Table::IsValid,
-            "{} should be a table",
-            default_value_repr(&table)
-        );
-
         let table_with_out_of_order_columns = Value::test_list(vec![
             Value::test_record(record! {
                 "b" => Value::test_int(1),
@@ -954,13 +947,6 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
-            is_table(&table_with_out_of_order_columns),
-            Table::IsValid,
-            "{} should be a table",
-            default_value_repr(&table_with_out_of_order_columns)
-        );
-
         let table_with_nulls = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_nothing(),
@@ -971,13 +957,6 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
-            is_table(&table_with_nulls),
-            Table::IsValid,
-            "{} should be a table",
-            default_value_repr(&table_with_nulls)
-        );
-
         let table_with_number_colum = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_string("foo"),
@@ -988,85 +967,89 @@ mod tests {
                 "b" => Value::test_float(2.34),
             }),
         ]);
-        assert_eq!(
-            is_table(&table_with_number_colum),
-            Table::IsValid,
-            "{} should be a table",
-            default_value_repr(&table_with_number_colum)
-        );
+        for table in [
+            simple_table,
+            table_with_out_of_order_columns,
+            table_with_nulls,
+            table_with_number_colum,
+        ] {
+            assert_eq!(
+                is_table(&table),
+                Table::IsValid,
+                "{} should be a table",
+                default_value_repr(&table)
+            );
+        }
 
-        let not_a_table_missing_field = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-            }),
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-        ]);
-        assert_eq!(
-            is_table(&not_a_table_missing_field),
+        let not_a_table_missing_field = (
+            Value::test_list(vec![
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                }),
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_int(1),
+                }),
+            ]),
             Table::RowIncompatibleLen(1, 2, 1),
-            "{} should not be a table",
-            default_value_repr(&not_a_table_missing_field)
         );
-
-        let not_a_table_incompatible_types = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_list(vec![Value::test_int(1)]),
-            }),
-        ]);
-        assert_eq!(
-            is_table(&not_a_table_incompatible_types),
+        let not_a_table_incompatible_types = (
+            Value::test_list(vec![
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_int(1),
+                }),
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_list(vec![Value::test_int(1)]),
+                }),
+            ]),
             Table::RowIncompatibleType(
                 1,
                 "b".to_string(),
                 Type::List(Box::new(Type::Int)),
-                Type::Int
+                Type::Int,
             ),
-            "{} should not be a table",
-            default_value_repr(&not_a_table_incompatible_types)
         );
+        let not_a_table_row_not_record = (
+            Value::test_list(vec![
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_int(1),
+                }),
+                Value::test_int(0),
+            ]),
+            Table::RowNotARecord(1, Type::Int),
+        );
+        let not_a_table_row_invalid_key = (
+            Value::test_list(vec![
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_int(1),
+                }),
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "c" => Value::test_int(2),
+                }),
+            ]),
+            Table::RowInvalidKey(1, "b".into(), vec!["a".into(), "c".into()]),
+        );
+        for (not_a_table, expected) in [
+            not_a_table_missing_field,
+            not_a_table_incompatible_types,
+            not_a_table_row_not_record,
+            not_a_table_row_invalid_key,
+        ] {
+            assert_eq!(
+                is_table(&not_a_table),
+                expected,
+                "{} should not be a table",
+                default_value_repr(&not_a_table)
+            );
+        }
 
         assert_eq!(is_table(&Value::test_int(0)), Table::NotAList);
-
         assert_eq!(is_table(&Value::test_list(vec![])), Table::Empty);
-
-        let not_a_table_row_not_record = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-            Value::test_int(0),
-        ]);
-        assert_eq!(
-            is_table(&not_a_table_row_not_record),
-            Table::RowNotARecord(1, Type::Int),
-            "{} should not be a table",
-            default_value_repr(&not_a_table_row_not_record)
-        );
-
-        let not_a_table_row_invalid_key = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "c" => Value::test_int(2),
-            }),
-        ]);
-        assert_eq!(
-            is_table(&not_a_table_row_invalid_key),
-            Table::RowInvalidKey(1, "b".into(), vec!["a".into(), "c".into()]),
-            "{} should not be a table",
-            default_value_repr(&not_a_table_row_invalid_key)
-        );
     }
 
     #[test]
