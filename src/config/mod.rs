@@ -257,6 +257,10 @@ impl Default for Config {
 }
 
 impl Config {
+    // NOTE: all the _unwraps_ called on the output of [`parsing::follow_cell_path`] are safe
+    // because they all follow the same cell path as the parsing branch they are in, e.g.
+    // `follow_cell_path(&value, &["colors", "line_numbers"])` is only found in the "colors" and
+    // "line_numbers" branch of the parsing.
     pub fn from_value(value: Value) -> Result<Self, LabeledError> {
         let mut config = Config::default();
 
