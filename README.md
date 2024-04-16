@@ -6,9 +6,8 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
     - [*the idea behind an explorer*](#the-idea-behind-an-explorer)
     - [*why not `nu-explore`?*](#why-not-nu-explore)
 - [*installation*](#installation)
-    - [*building from source*](#building-from-source)
-    - [*installing manually*](#installing-manually)
     - [*using `nupm install` (recommended)*](#using-nupm-install-recommended)
+    - [*building from source*](#building-from-source)
 - [*usage*](#usage)
     - [*demo*](#demo)
 - [*configuration*](#configuration)
@@ -42,21 +41,16 @@ will come very handy in a day-to-day basis for me at least :)
 so here we are... LET'S GO :muscle:
 
 # installation
-## requirements
-> **Note**  
-> this is the development version of `nu_plugin_explore`, thus it does not require Nushell to be
-> installed with a stable version.
-
-let's setup the Nushell dependencies locally, because `nu-plugin` and `nu-protocol` are not release
-in version `0.xx.1`, only the stable `0.xx.0` :open_mouth:
-
-- clone the [Nushell repository][nushell/nushell] somewhere
-- setup the dependencies
-```shell
-make dev-deps
+## using `nupm install` (recommended)
+- download [nushell/nupm](https://github.com/nushell/nupm)
+- load the `nupm` module
+```nushell
+use /path/to/nupm/
 ```
-
-there are three ways to do it:
+- run the install process
+```nushell
+nupm install --path .
+```
 ## building from source
 - build the plugin
 ```shell
@@ -70,35 +64,6 @@ make register
 
 > **Note**  
 > alternatively, you can use directly `make install`
-
-## installing manually
-- define the install root, e.g. `$env.CARGO_HOME` or `/some/where/plugins/`
-```nushell
-let install_root: path = ...
-```
-- build and install the plugin
-```nushell
-cargo install --path . --root $install_root
-```
-- register the plugin in [Nushell]
-```nushell
-nu --commands $"register ($install_root | path join "bin" $name)"
-```
-- do not forget to restart [Nushell]
-
-## using `nupm install` (recommended)
-> **Warning**  
-> this is a very alpha software
-
-- download [nushell/nupm](https://github.com/nushell/nupm)
-- load the `nupm` module
-```nushell
-use /path/to/nupm/
-```
-- run the install process
-```nushell
-nupm install --path .
-```
 
 # usage
 - get some help
@@ -117,7 +82,7 @@ open Cargo.toml | nu_plugin_explore
 ## default configuration
 you can find it in [`default.nuon`](./examples/config/default.nuon).
 
-you can copy-paste it in your `config.nu` and set `$env.explore_config` to it:
+you can copy-paste it in your `config.nu` and set `$env.config.plugins.explore` to it:
 ```nushell
 $env.config.plugins.explore = {
     # content of the default config
@@ -157,8 +122,8 @@ in order to help, you can have a look at
 - [ ] when going into a file or URL, open it
 - [x] give different colors to names and type
 - [x] show true tables as such
-- [ ] get the config from `$env.config` => can parse configuration from CLI
-- [ ] add check for the config to make sure it's valid
+- [x] get the config from `$env.config` => can parse configuration from CLI
+- [x] add check for the config to make sure it's valid
 - [ ] support for editing cells in INSERT mode
   - [x] string cells
   - [ ] other simple cells
