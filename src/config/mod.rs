@@ -755,7 +755,7 @@ mod tests {
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use nu_protocol::{record, Record, Value};
 
-    use crate::{handler::repr_key, nu::value::from_nuon};
+    use crate::handler::repr_key;
 
     use super::Config;
 
@@ -844,7 +844,7 @@ mod tests {
         assert_eq!(
             Config::default(),
             Config::from_value(
-                &from_nuon(include_str!("../../examples/config/default.nuon")).unwrap()
+                &nuon::from_nuon(include_str!("../../examples/config/default.nuon"), None).unwrap()
             )
             .unwrap()
         )

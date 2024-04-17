@@ -994,7 +994,7 @@ dependencies = [
 [[package]]
 name = "nu-engine"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 dependencies = [
  "nu-glob",
  "nu-path",
@@ -1005,12 +1005,12 @@ dependencies = [
 [[package]]
 name = "nu-glob"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 
 [[package]]
 name = "nu-parser"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 dependencies = [
  "bytesize",
  "chrono",
@@ -1025,7 +1025,7 @@ dependencies = [
 [[package]]
 name = "nu-path"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 dependencies = [
  "dirs-next",
  "omnipath",
@@ -1035,7 +1035,7 @@ dependencies = [
 [[package]]
 name = "nu-plugin"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 dependencies = [
  "bincode",
  "interprocess",
@@ -1058,7 +1058,7 @@ dependencies = [
 [[package]]
 name = "nu-protocol"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 dependencies = [
  "byte-unit",
  "chrono",
@@ -1080,7 +1080,7 @@ dependencies = [
 [[package]]
 name = "nu-system"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 dependencies = [
  "chrono",
  "libc",
@@ -1098,7 +1098,7 @@ dependencies = [
 [[package]]
 name = "nu-utils"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=c06ef201b72b3cbe901820417106b7d65c6f01e1#c06ef201b72b3cbe901820417106b7d65c6f01e1"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 dependencies = [
  "crossterm_winapi",
  "log",
@@ -1113,14 +1113,14 @@ dependencies = [
 
 [[package]]
 name = "nu_plugin_explore"
-version = "0.92.3-c06ef201b72b3cbe901820417106b7d65c6f01e1"
+version = "0.92.3-55edef5ddaf3d3d55290863446c2dd50c012e9bc"
 dependencies = [
  "anyhow",
  "console",
  "crossterm",
- "nu-parser",
  "nu-plugin",
  "nu-protocol",
+ "nuon",
  "ratatui",
  "url",
 ]
@@ -1142,6 +1142,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da0df0e5185db44f69b44f26786fe401b6c293d1907744beaa7fa62b2e5a517a"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "nuon"
+version = "0.92.3"
+source = "git+https://github.com/nushell/nushell?rev=55edef5ddaf3d3d55290863446c2dd50c012e9bc#55edef5ddaf3d3d55290863446c2dd50c012e9bc"
+dependencies = [
+ "fancy-regex",
+ "nu-engine",
+ "nu-parser",
+ "nu-protocol",
+ "once_cell",
 ]
 
 [[package]]
@@ -1503,9 +1515,9 @@ dependencies = [
 
 [[package]]
 name = "rmp"
-version = "0.8.12"
+version = "0.8.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f9860a6cc38ed1da53456442089b4dfa35e7cedaa326df63017af88385e6b20"
+checksum = "228ed7c16fa39782c3b3468e974aec2795e9089153cd08ee2e9aefb3613334c4"
 dependencies = [
  "byteorder",
  "num-traits",
@@ -1514,9 +1526,9 @@ dependencies = [
 
 [[package]]
 name = "rmp-serde"
-version = "1.1.2"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bffea85eea980d8a74453e5d02a8d93028f3c34725de143085a844ebe953258a"
+checksum = "938a142ab806f18b88a97b0dea523d39e0fd730a064b035726adcfc58a8a5188"
 dependencies = [
  "byteorder",
  "rmp",
