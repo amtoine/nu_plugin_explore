@@ -7,7 +7,7 @@ use crate::{
 
 use super::{App, Config, Mode};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use nu_protocol::ast::PathMember;
+use nu_protocol::ast::{CellPath, PathMember};
 use nu_protocol::{Record, Type, Value};
 use ratatui::{
     prelude::{Alignment, Constraint, Rect},
@@ -234,18 +234,7 @@ fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
         None
     };
 
-    let value = app
-        .value
-        .clone()
-        .follow_cell_path(&data_path, false)
-        .unwrap_or_else(|_| {
-            panic!(
-                "unexpected error when following {:?} in {}",
-                app.position.members,
-                app.value
-                    .to_expanded_string(" ", &nu_protocol::Config::default())
-            )
-        });
+    let value = app.value_under_cursor(Some(CellPath { members: data_path }));
 
     let table_type = is_table(&value);
     let is_a_table = matches!(table_type, crate::nu::value::Table::IsValid);

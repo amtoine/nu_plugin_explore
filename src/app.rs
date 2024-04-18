@@ -102,11 +102,7 @@ impl App {
     }
 
     pub(super) fn enter_editor(&mut self) -> Result<(), String> {
-        let value = self
-            .value
-            .clone()
-            .follow_cell_path(&self.position.members, false)
-            .unwrap();
+        let value = self.value_under_cursor(None);
 
         if matches!(value, Value::String { .. }) {
             self.mode = Mode::Insert;
@@ -120,5 +116,22 @@ impl App {
                 value.get_type()
             ))
         }
+    }
+
+    pub(crate) fn value_under_cursor(&self, alternate_cursor: Option<CellPath>) -> Value {
+        self.value
+            .clone()
+            .follow_cell_path(
+                &alternate_cursor.unwrap_or(self.position.clone()).members,
+                false,
+            )
+            .unwrap_or_else(|_| {
+                panic!(
+                    "unexpected error when following {:?} in {}",
+                    self.position.members,
+                    self.value
+                        .to_expanded_string(" ", &nu_protocol::Config::default())
+                )
+            })
     }
 }

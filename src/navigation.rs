@@ -41,20 +41,7 @@ impl App {
             .pop()
             .unwrap_or_else(|| panic!("unexpected error: position is empty"));
 
-        let cell = self
-            .value
-            .clone()
-            .follow_cell_path(&self.position.members, false)
-            .unwrap_or_else(|_| {
-                panic!(
-                    "unexpected error when following {:?} in {}",
-                    self.position.members,
-                    self.value
-                        .to_expanded_string(" ", &nu_protocol::Config::default())
-                )
-            });
-
-        match cell {
+        match self.value_under_cursor(None) {
             Value::List { vals, .. } => {
                 let new = match current {
                     PathMember::Int {
@@ -127,20 +114,7 @@ impl App {
     /// > - push a new *cell path* member to the state if there is more depth ahead
     /// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
     pub(super) fn go_deeper_in_data(&mut self) {
-        let cell = self
-            .value
-            .clone()
-            .follow_cell_path(&self.position.members, false)
-            .unwrap_or_else(|_| {
-                panic!(
-                    "unexpected error when following {:?} in {}",
-                    self.position.members,
-                    self.value
-                        .to_expanded_string(" ", &nu_protocol::Config::default())
-                )
-            });
-
-        match cell {
+        match self.value_under_cursor(None) {
             Value::List { vals, .. } => self.position.members.push(PathMember::Int {
                 val: 0,
                 span: Span::unknown(),

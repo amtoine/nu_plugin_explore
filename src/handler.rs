@@ -186,17 +186,9 @@ pub fn handle_key_events(
                 return Ok(TransitionResult::Return(app.value.clone()));
             } else if key_event == config.keybindings.peeking.view {
                 app.position.members.pop();
-                return Ok(TransitionResult::Return(
-                    app.value
-                        .clone()
-                        .follow_cell_path(&app.position.members, false)?,
-                ));
+                return Ok(TransitionResult::Return(app.value_under_cursor(None)));
             } else if key_event == config.keybindings.peeking.under {
-                return Ok(TransitionResult::Return(
-                    app.value
-                        .clone()
-                        .follow_cell_path(&app.position.members, false)?,
-                ));
+                return Ok(TransitionResult::Return(app.value_under_cursor(None)));
             } else if key_event == config.keybindings.peeking.cell_path {
                 return Ok(TransitionResult::Return(Value::cell_path(
                     app.position.clone(),
@@ -211,11 +203,7 @@ pub fn handle_key_events(
                 app.mode = Mode::Normal;
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.peek {
-                return Ok(TransitionResult::Return(
-                    app.value
-                        .clone()
-                        .follow_cell_path(&app.position.members, false)?,
-                ));
+                return Ok(TransitionResult::Return(app.value_under_cursor(None)));
             }
         }
     }
