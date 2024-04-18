@@ -19,8 +19,10 @@ use nu_protocol::{Span, Value};
 use app::{App, Mode};
 use config::Config;
 use handler::{handle_key_events, TransitionResult};
-use tui::event::{Event, EventHandler};
-use tui::Tui;
+use tui::{
+    event::{Event, EventHandler},
+    Tui,
+};
 
 pub fn explore(config: &Value, input: Value) -> Result<Value> {
     let config = Config::from_value(config.clone())?;
