@@ -9,13 +9,17 @@ use crate::edit::Editor;
 /// the mode in which the application is
 #[derive(Clone, Debug, PartialEq)]
 pub enum Mode {
-    /// the NORMAL mode is the *navigation* mode, where the user can move around in the data
+    /// the *navigation* mode, where the user can move around in the data
     Normal,
-    /// the INSERT mode lets the user edit cells of the structured data
+    /// lets the user edit cells of the structured data
     Insert,
-    /// the PEEKING mode lets the user *peek* data out of the application, to be reused later
+    /// lets the user *peek* data out of the application, to be reused later
     Peeking,
+    /// indicates that the user has arrived to the very bottom of the nested data, i.e. there is
+    /// nothing more to the right
     Bottom,
+    /// waits for more keys to perform an action, e.g. jumping to a line or motion repetition that
+    /// both require to enter a number before the actual action
     Waiting(usize),
 }
 
