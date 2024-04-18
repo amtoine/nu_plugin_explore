@@ -35,11 +35,8 @@ impl App {
             return;
         }
 
-        let current = self
-            .position
-            .members
-            .pop()
-            .unwrap_or_else(|| panic!("unexpected error: position is empty"));
+        // NOTE: this should never fail by construction
+        let current = self.position.members.pop().unwrap();
 
         match self.value_under_cursor(None) {
             Value::List { vals, .. } => {
@@ -76,12 +73,13 @@ impl App {
                         span,
                         optional,
                     } => {
-                        let cols = rec.columns().cloned().collect::<Vec<_>>();
+                        let cols = rec.columns().collect::<Vec<_>>();
 
                         PathMember::String {
                             val: if cols.is_empty() {
                                 "".into()
                             } else {
+                                // NOTE: this should never fail
                                 let index = rec.columns().position(|x| x == &val).unwrap();
                                 let new_index = match direction {
                                     Direction::Up(step) => index.saturating_sub(step).max(0),
@@ -93,7 +91,7 @@ impl App {
                                     Direction::At(id) => id.min(cols.len() - 1),
                                 };
 
-                                cols[new_index].clone()
+                                cols[new_index].to_string()
                             },
                             span,
                             optional,
