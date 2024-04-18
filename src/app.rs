@@ -7,9 +7,10 @@ use nu_protocol::{
 use crate::edit::Editor;
 
 /// the mode in which the application is
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum Mode {
     /// the *navigation* mode, where the user can move around in the data
+    #[default]
     Normal,
     /// lets the user edit cells of the structured data
     Insert,
@@ -21,12 +22,6 @@ pub enum Mode {
     /// waits for more keys to perform an action, e.g. jumping to a line or motion repetition that
     /// both require to enter a number before the actual action
     Waiting(usize),
-}
-
-impl Default for Mode {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 impl std::fmt::Display for Mode {
