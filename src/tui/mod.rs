@@ -7,10 +7,10 @@ use ratatui::Terminal;
 use std::io;
 use std::panic;
 
-use crate::app::App;
-use crate::config::Config;
-use crate::event::EventHandler;
-use crate::ui;
+pub(crate) mod event;
+
+use crate::{app::App, config::Config, ui};
+use event::EventHandler;
 
 /// Representation of a terminal user interface.
 ///

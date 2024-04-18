@@ -2,7 +2,6 @@
 mod app;
 mod config;
 mod edit;
-mod event;
 mod handler;
 mod navigation;
 mod nu;
@@ -19,8 +18,8 @@ use nu_protocol::{Span, Value};
 
 use app::{App, Mode};
 use config::Config;
-use event::{Event, EventHandler};
 use handler::{handle_key_events, TransitionResult};
+use tui::event::{Event, EventHandler};
 use tui::Tui;
 
 pub fn explore(config: &Value, input: Value) -> Result<Value> {
