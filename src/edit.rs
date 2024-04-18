@@ -10,21 +10,11 @@ use nu_protocol::{Span, Value};
 
 use crate::config::Config;
 
+#[derive(Default)]
 pub struct Editor {
-    pub buffer: String,
+    buffer: String,
     cursor_position: (usize, usize),
     width: usize,
-}
-
-#[allow(clippy::derivable_impls)]
-impl Default for Editor {
-    fn default() -> Self {
-        Self {
-            buffer: String::new(),
-            cursor_position: (0, 0),
-            width: 0,
-        }
-    }
 }
 
 impl Editor {
