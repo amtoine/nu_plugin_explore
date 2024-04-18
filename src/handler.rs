@@ -94,11 +94,11 @@ pub fn handle_key_events(
                 let mut path = app.position.clone();
                 path.members.pop();
 
-                let view = app.value.clone().follow_cell_path(&path.members, false)?;
+                let view = app.value_under_cursor(Some(path.clone()));
                 let transpose = transpose(&view);
 
                 if transpose != view {
-                    match transpose.clone() {
+                    match &transpose {
                         Value::Record { val: rec, .. } => {
                             let cols = rec.columns().cloned().collect::<Vec<_>>();
 
