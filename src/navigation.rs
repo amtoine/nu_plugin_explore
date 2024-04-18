@@ -17,164 +17,168 @@ pub enum Direction {
     At(usize),
 }
 
-/// go up or down in the data
-///
-/// depending on the direction (see [`Direction`]), this function will
-/// - early return if the user is already at the bottom => this is to avoid the confusing following
-/// situation: you are at the bottom of the data, looking at one item in a list, without this early
-/// return, you'd be able to scroll the list without seeing it as a whole... confusing, right?
-/// - cycle the list indices or the record column names => the index / column will wrap around
-///
-/// > :bulb: **Note**  
-/// > this function will only modify the last element of the state's *cell path* either by
-/// > - not doing anything
-/// > - poping the last element to know where we are and then pushing back the new element
-pub(super) fn go_up_or_down_in_data(app: &mut App, direction: Direction) {
-    if app.is_at_bottom() {
-        return;
-    }
-
-    let current = app
-        .position
-        .members
-        .pop()
-        .unwrap_or_else(|| panic!("unexpected error: position is empty"));
-
-    let cell = app
-        .value
-        .clone()
-        .follow_cell_path(&app.position.members, false)
-        .unwrap_or_else(|_| {
-            panic!(
-                "unexpected error when following {:?} in {}",
-                app.position.members,
-                app.value
-                    .to_expanded_string(" ", &nu_protocol::Config::default())
-            )
-        });
-
-    match cell {
-        Value::List { vals, .. } => {
-            let new = match current {
-                PathMember::Int {
-                    val,
-                    span,
-                    optional,
-                } => PathMember::Int {
-                    val: if vals.is_empty() {
-                        val
-                    } else {
-                        match direction {
-                            Direction::Up(step) => val.saturating_sub(step).max(0),
-                            Direction::Down(step) => val.saturating_add(step).min(vals.len() - 1),
-                            Direction::Top => 0,
-                            Direction::Bottom => vals.len() - 1,
-                            Direction::At(id) => id.min(vals.len() - 1),
-                        }
-                    },
-                    span,
-                    optional,
-                },
-                _ => panic!("current should be an integer path member"),
-            };
-            app.position.members.push(new);
+impl App {
+    /// go up or down in the data
+    ///
+    /// depending on the direction (see [`Direction`]), this function will
+    /// - early return if the user is already at the bottom => this is to avoid the confusing following
+    /// situation: you are at the bottom of the data, looking at one item in a list, without this early
+    /// return, you'd be able to scroll the list without seeing it as a whole... confusing, right?
+    /// - cycle the list indices or the record column names => the index / column will wrap around
+    ///
+    /// > :bulb: **Note**  
+    /// > this function will only modify the last element of the state's *cell path* either by
+    /// > - not doing anything
+    /// > - poping the last element to know where we are and then pushing back the new element
+    pub(super) fn go_up_or_down_in_data(&mut self, direction: Direction) {
+        if self.is_at_bottom() {
+            return;
         }
-        Value::Record { val: rec, .. } => {
-            let new = match current {
-                PathMember::String {
-                    val,
-                    span,
-                    optional,
-                } => {
-                    let cols = rec.columns().cloned().collect::<Vec<_>>();
 
-                    PathMember::String {
-                        val: if cols.is_empty() {
-                            "".into()
+        let current = self
+            .position
+            .members
+            .pop()
+            .unwrap_or_else(|| panic!("unexpected error: position is empty"));
+
+        let cell = self
+            .value
+            .clone()
+            .follow_cell_path(&self.position.members, false)
+            .unwrap_or_else(|_| {
+                panic!(
+                    "unexpected error when following {:?} in {}",
+                    self.position.members,
+                    self.value
+                        .to_expanded_string(" ", &nu_protocol::Config::default())
+                )
+            });
+
+        match cell {
+            Value::List { vals, .. } => {
+                let new = match current {
+                    PathMember::Int {
+                        val,
+                        span,
+                        optional,
+                    } => PathMember::Int {
+                        val: if vals.is_empty() {
+                            val
                         } else {
-                            let index = rec.columns().position(|x| x == &val).unwrap();
-                            let new_index = match direction {
-                                Direction::Up(step) => index.saturating_sub(step).max(0),
+                            match direction {
+                                Direction::Up(step) => val.saturating_sub(step).max(0),
                                 Direction::Down(step) => {
-                                    index.saturating_add(step).min(cols.len() - 1)
+                                    val.saturating_add(step).min(vals.len() - 1)
                                 }
                                 Direction::Top => 0,
-                                Direction::Bottom => cols.len() - 1,
-                                Direction::At(id) => id.min(cols.len() - 1),
-                            };
-
-                            cols[new_index].clone()
+                                Direction::Bottom => vals.len() - 1,
+                                Direction::At(id) => id.min(vals.len() - 1),
+                            }
                         },
                         span,
                         optional,
+                    },
+                    _ => panic!("current should be an integer path member"),
+                };
+                self.position.members.push(new);
+            }
+            Value::Record { val: rec, .. } => {
+                let new = match current {
+                    PathMember::String {
+                        val,
+                        span,
+                        optional,
+                    } => {
+                        let cols = rec.columns().cloned().collect::<Vec<_>>();
+
+                        PathMember::String {
+                            val: if cols.is_empty() {
+                                "".into()
+                            } else {
+                                let index = rec.columns().position(|x| x == &val).unwrap();
+                                let new_index = match direction {
+                                    Direction::Up(step) => index.saturating_sub(step).max(0),
+                                    Direction::Down(step) => {
+                                        index.saturating_add(step).min(cols.len() - 1)
+                                    }
+                                    Direction::Top => 0,
+                                    Direction::Bottom => cols.len() - 1,
+                                    Direction::At(id) => id.min(cols.len() - 1),
+                                };
+
+                                cols[new_index].clone()
+                            },
+                            span,
+                            optional,
+                        }
                     }
-                }
-                _ => panic!("current should be an string path member"),
-            };
-            app.position.members.push(new);
+                    _ => panic!("current should be an string path member"),
+                };
+                self.position.members.push(new);
+            }
+            _ => {}
         }
-        _ => {}
     }
-}
 
-/// go one level deeper in the data
-///
-/// > :bulb: **Note**  
-/// > this function will
-/// > - push a new *cell path* member to the state if there is more depth ahead
-/// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
-pub(super) fn go_deeper_in_data(app: &mut App) {
-    let cell = app
-        .value
-        .clone()
-        .follow_cell_path(&app.position.members, false)
-        .unwrap_or_else(|_| {
-            panic!(
-                "unexpected error when following {:?} in {}",
-                app.position.members,
-                app.value
-                    .to_expanded_string(" ", &nu_protocol::Config::default())
-            )
-        });
+    /// go one level deeper in the data
+    ///
+    /// > :bulb: **Note**  
+    /// > this function will
+    /// > - push a new *cell path* member to the state if there is more depth ahead
+    /// > - mark the state as *at the bottom* if the value at the new depth is of a simple type
+    pub(super) fn go_deeper_in_data(&mut self) {
+        let cell = self
+            .value
+            .clone()
+            .follow_cell_path(&self.position.members, false)
+            .unwrap_or_else(|_| {
+                panic!(
+                    "unexpected error when following {:?} in {}",
+                    self.position.members,
+                    self.value
+                        .to_expanded_string(" ", &nu_protocol::Config::default())
+                )
+            });
 
-    match cell {
-        Value::List { vals, .. } => app.position.members.push(PathMember::Int {
-            val: 0,
-            span: Span::unknown(),
-            optional: vals.is_empty(),
-        }),
-        Value::Record { val: rec, .. } => {
-            let cols = rec.columns().cloned().collect::<Vec<_>>();
-
-            app.position.members.push(PathMember::String {
-                val: cols.first().unwrap_or(&"".to_string()).into(),
+        match cell {
+            Value::List { vals, .. } => self.position.members.push(PathMember::Int {
+                val: 0,
                 span: Span::unknown(),
-                optional: cols.is_empty(),
-            })
+                optional: vals.is_empty(),
+            }),
+            Value::Record { val: rec, .. } => {
+                let cols = rec.columns().cloned().collect::<Vec<_>>();
+
+                self.position.members.push(PathMember::String {
+                    val: cols.first().unwrap_or(&"".to_string()).into(),
+                    span: Span::unknown(),
+                    optional: cols.is_empty(),
+                })
+            }
+            _ => self.hit_bottom(),
         }
-        _ => app.hit_bottom(),
+
+        self.rendering_tops.push(0);
     }
 
-    app.rendering_tops.push(0);
-}
-
-/// pop one level of depth from the data
-///
-/// > :bulb: **Note**  
-/// > - the state is always marked as *not at the bottom*
-/// > - the state *cell path* can have it's last member popped if possible
-pub(super) fn go_back_in_data(app: &mut App) {
-    if !app.is_at_bottom() & (app.position.members.len() > 1) {
-        app.position.members.pop();
+    /// pop one level of depth from the data
+    ///
+    /// > :bulb: **Note**  
+    /// > - the state is always marked as *not at the bottom*
+    /// > - the state *cell path* can have it's last member popped if possible
+    pub(super) fn go_back_in_data(&mut self) {
+        if !self.is_at_bottom() & (self.position.members.len() > 1) {
+            self.position.members.pop();
+        }
+        self.mode = Mode::Normal;
+        self.rendering_tops.pop();
     }
-    app.mode = Mode::Normal;
-    app.rendering_tops.pop();
 }
 
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
-    use super::{go_back_in_data, go_deeper_in_data, go_up_or_down_in_data, Direction};
+    use super::Direction;
     use crate::app::App;
     use nu_protocol::{ast::PathMember, record, Span, Value};
 
@@ -219,7 +223,7 @@ mod tests {
             (Direction::At(2), 2),
         ];
         for (direction, id) in sequence {
-            go_up_or_down_in_data(&mut app, direction);
+            app.go_up_or_down_in_data(direction);
             let expected = vec![test_int_pathmember(id)];
             assert_eq!(app.position.members, expected);
         }
@@ -250,7 +254,7 @@ mod tests {
             (Direction::At(2), "c"),
         ];
         for (direction, id) in sequence {
-            go_up_or_down_in_data(&mut app, direction);
+            app.go_up_or_down_in_data(direction);
             let expected = vec![test_string_pathmember(id)];
             assert_eq!(app.position.members, expected);
         }
@@ -266,11 +270,11 @@ mod tests {
         let mut expected = vec![test_int_pathmember(0)];
         assert_eq!(app.position.members, expected);
 
-        go_deeper_in_data(&mut app);
+        app.go_deeper_in_data();
         expected.push(test_string_pathmember("a"));
         assert_eq!(app.position.members, expected);
 
-        go_deeper_in_data(&mut app);
+        app.go_deeper_in_data();
         expected.push(test_int_pathmember(0));
         assert_eq!(app.position.members, expected);
     }
@@ -282,7 +286,7 @@ mod tests {
 
         assert!(!app.is_at_bottom());
 
-        go_deeper_in_data(&mut app);
+        app.go_deeper_in_data();
         assert!(app.is_at_bottom());
     }
 
@@ -301,18 +305,18 @@ mod tests {
 
         let mut expected = app.position.members.clone();
 
-        go_back_in_data(&mut app);
+        app.go_back_in_data();
         assert_eq!(app.position.members, expected);
 
-        go_back_in_data(&mut app);
+        app.go_back_in_data();
         expected.pop();
         assert_eq!(app.position.members, expected);
 
-        go_back_in_data(&mut app);
+        app.go_back_in_data();
         expected.pop();
         assert_eq!(app.position.members, expected);
 
-        go_back_in_data(&mut app);
+        app.go_back_in_data();
         assert_eq!(app.position.members, expected);
     }
 }

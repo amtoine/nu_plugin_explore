@@ -8,7 +8,7 @@ use nu_protocol::{
 use crate::{
     app::{App, Mode},
     config::Config,
-    navigation::{self, Direction},
+    navigation::Direction,
     nu::value::transpose,
 };
 
@@ -56,17 +56,17 @@ pub fn handle_key_events(
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.half_page_down {
                 // TODO: add a margin to the bottom
-                navigation::go_up_or_down_in_data(app, Direction::Down(half_page));
+                app.go_up_or_down_in_data(Direction::Down(half_page));
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.half_page_up {
                 // TODO: add a margin to the top
-                navigation::go_up_or_down_in_data(app, Direction::Up(half_page));
+                app.go_up_or_down_in_data(Direction::Up(half_page));
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.goto_bottom {
-                navigation::go_up_or_down_in_data(app, Direction::Bottom);
+                app.go_up_or_down_in_data(Direction::Bottom);
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.goto_top {
-                navigation::go_up_or_down_in_data(app, Direction::Top);
+                app.go_up_or_down_in_data(Direction::Top);
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.quit {
                 return Ok(TransitionResult::Quit);
@@ -79,16 +79,16 @@ pub fn handle_key_events(
                 app.mode = Mode::Peeking;
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.down {
-                navigation::go_up_or_down_in_data(app, Direction::Down(1));
+                app.go_up_or_down_in_data(Direction::Down(1));
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.up {
-                navigation::go_up_or_down_in_data(app, Direction::Up(1));
+                app.go_up_or_down_in_data(Direction::Up(1));
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.right {
-                navigation::go_deeper_in_data(app);
+                app.go_deeper_in_data();
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.left {
-                navigation::go_back_in_data(app);
+                app.go_back_in_data();
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.transpose {
                 let mut path = app.position.clone();
@@ -146,15 +146,15 @@ pub fn handle_key_events(
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.down {
                 app.mode = Mode::Normal;
-                navigation::go_up_or_down_in_data(app, Direction::Down(n));
+                app.go_up_or_down_in_data(Direction::Down(n));
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.up {
                 app.mode = Mode::Normal;
-                navigation::go_up_or_down_in_data(app, Direction::Up(n));
+                app.go_up_or_down_in_data(Direction::Up(n));
                 return Ok(TransitionResult::Continue);
             } else if key_event == config.keybindings.navigation.goto_line {
                 app.mode = Mode::Normal;
-                navigation::go_up_or_down_in_data(app, Direction::At(n.saturating_sub(1)));
+                app.go_up_or_down_in_data(Direction::At(n.saturating_sub(1)));
                 return Ok(TransitionResult::Continue);
             }
         }
