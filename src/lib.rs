@@ -25,7 +25,7 @@ use tui::{
 };
 
 pub fn explore(config: &Value, input: Value) -> Result<Value> {
-    let config = Config::from_value(config.clone())?;
+    let config = Config::from_value(config)?;
 
     let mut tui = Tui::new(
         Terminal::new(CrosstermBackend::new(io::stderr()))?,
