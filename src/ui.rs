@@ -5,7 +5,7 @@ use crate::{
     nu::{strings::SpecialString, value::is_table},
 };
 
-use super::{App, Config, Mode};
+use super::{App, Mode};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use nu_protocol::ast::{CellPath, PathMember};
 use nu_protocol::{Record, Type, Value};
@@ -20,19 +20,19 @@ use ratatui::{
 };
 
 /// render the whole ui
-pub(super) fn render_ui(frame: &mut Frame, app: &mut App, config: &Config, error: Option<&str>) {
-    render_data(frame, app, config);
-    if config.show_cell_path {
+pub(super) fn render_ui(frame: &mut Frame, app: &mut App, error: Option<&str>) {
+    render_data(frame, app);
+    if app.config.show_cell_path {
         render_cell_path(frame, app);
     }
 
     match error {
         Some(err) => render_error(frame, err),
         None => {
-            render_status_bar(frame, app, config);
+            render_status_bar(frame, app);
 
             if app.mode == Mode::Insert {
-                app.editor.render(frame, config);
+                app.editor.render(frame, &app.config);
             }
         }
     }
@@ -226,7 +226,9 @@ fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) 
 ///
 /// the data will be rendered on top of the bar, and on top of the cell path in case
 /// [`crate::config::Config::show_cell_path`] is set to `true`.
-fn render_data(frame: &mut Frame, app: &mut App, config: &Config) {
+fn render_data(frame: &mut Frame, app: &mut App) {
+    let config = &app.config;
+
     let mut data_path = app.position.members.clone();
     let current = if !app.is_at_bottom() {
         data_path.pop()
@@ -624,7 +626,8 @@ fn render_cell_path(frame: &mut Frame, app: &App) {
 /// ```text
 /// ||PEEKING ... <esc> to NORMAL | a to peek all | c to peek current view | u to peek under cursor | q to quit||
 /// ```
-fn render_status_bar(frame: &mut Frame, app: &App, config: &Config) {
+fn render_status_bar(frame: &mut Frame, app: &App) {
+    let config = &app.config;
     let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
 
     let bg_style = match app.mode {

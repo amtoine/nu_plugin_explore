@@ -10,7 +10,7 @@ use nu_protocol::{Span, Value};
 
 use crate::config::Config;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Editor {
     buffer: String,
     cursor_position: (usize, usize),

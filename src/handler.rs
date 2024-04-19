@@ -7,7 +7,6 @@ use nu_protocol::{
 
 use crate::{
     app::{App, Mode},
-    config::Config,
     navigation::Direction,
     nu::value::transpose,
 };
@@ -35,9 +34,10 @@ impl App {
     pub fn handle_key_events(
         &mut self,
         key_event: KeyEvent,
-        config: &Config,
         half_page: usize,
     ) -> Result<TransitionResult, ShellError> {
+        let config = &self.config;
+
         match self.mode {
             Mode::Normal => {
                 if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9'))
@@ -277,11 +277,8 @@ mod tests {
 
     #[test]
     fn switch_modes() {
-        let config = Config::default();
-        let keybindings = config.clone().keybindings;
-
-        let value = Value::test_string("foo");
-        let mut app = App::from_value(value);
+        let mut app = App::from_value(Value::test_string("foo"));
+        let keybindings = app.config.clone().keybindings;
 
         assert!(app.mode == Mode::Normal);
 
@@ -298,7 +295,7 @@ mod tests {
         for (key, expected_mode) in transitions {
             let mode = app.mode.clone();
 
-            let result = app.handle_key_events(key, &config, 0).unwrap();
+            let result = app.handle_key_events(key, 0).unwrap();
 
             assert!(
                 !result.is_quit(),
@@ -319,11 +316,8 @@ mod tests {
 
     #[test]
     fn quit() {
-        let config = Config::default();
-        let keybindings = config.clone().keybindings;
-
-        let value = test_value();
-        let mut app = App::from_value(value);
+        let mut app = App::from_value(test_value());
+        let keybindings = app.config.clone().keybindings;
 
         let transitions = vec![
             (keybindings.insert, false),
@@ -337,7 +331,7 @@ mod tests {
         for (key, exit) in transitions {
             let mode = app.mode.clone();
 
-            let result = app.handle_key_events(key, &config, 0).unwrap();
+            let result = app.handle_key_events(key, 0).unwrap();
 
             if exit {
                 assert!(
@@ -375,11 +369,8 @@ mod tests {
 
     #[test]
     fn navigate_the_data() {
-        let config = Config::default();
-        let nav = config.clone().keybindings.navigation;
-
-        let value = test_value();
-        let mut app = App::from_value(value.clone());
+        let mut app = App::from_value(test_value());
+        let nav = app.config.clone().keybindings.navigation;
 
         assert!(!app.is_at_bottom());
         assert_eq!(app.position.members, to_path_member_vec(&[PM::S("l")]));
@@ -440,7 +431,7 @@ mod tests {
 
         for (key, cell_path, bottom) in transitions {
             let expected = to_path_member_vec(&cell_path);
-            app.handle_key_events(key, &config, 0).unwrap();
+            app.handle_key_events(key, 0).unwrap();
 
             if bottom {
                 assert!(
@@ -467,15 +458,15 @@ mod tests {
 
     fn run_peeking_scenario(
         transitions: Vec<(KeyEvent, bool, Option<Value>)>,
-        config: &Config,
+        config: Config,
         value: Value,
     ) {
-        let mut app = App::from_value(value);
+        let mut app = App::from_value(value).with_config(config);
 
         for (key, exit, expected) in transitions {
             let mode = app.mode.clone();
 
-            let result = app.handle_key_events(key, config, 0).unwrap();
+            let result = app.handle_key_events(key, 0).unwrap();
 
             if exit {
                 assert!(
@@ -534,13 +525,13 @@ mod tests {
             (keybindings.peek, false, None),
             (keybindings.peeking.all, true, Some(value.clone())),
         ];
-        run_peeking_scenario(peek_all_from_top, &config, value.clone());
+        run_peeking_scenario(peek_all_from_top, config.clone(), value.clone());
 
         let peek_current_from_top = vec![
             (keybindings.peek, false, None),
             (keybindings.peeking.view, true, Some(value.clone())),
         ];
-        run_peeking_scenario(peek_current_from_top, &config, value.clone());
+        run_peeking_scenario(peek_current_from_top, config.clone(), value.clone());
 
         let go_in_the_data_and_peek_all_and_current = vec![
             (keybindings.navigation.down, false, None),
@@ -558,7 +549,7 @@ mod tests {
         ];
         run_peeking_scenario(
             go_in_the_data_and_peek_all_and_current,
-            &config,
+            config.clone(),
             value.clone(),
         );
 
@@ -569,7 +560,7 @@ mod tests {
             (keybindings.peeking.all, true, Some(value.clone())),
             (keybindings.peeking.under, true, Some(Value::test_int(1))),
         ];
-        run_peeking_scenario(go_in_the_data_and_peek_under, &config, value.clone());
+        run_peeking_scenario(go_in_the_data_and_peek_under, config.clone(), value.clone());
 
         let go_in_the_data_and_peek_cell_path = vec![
             (keybindings.navigation.down, false, None), // on {r: {a: 1, b: 2}}
@@ -594,27 +585,28 @@ mod tests {
                 })),
             ),
         ];
-        run_peeking_scenario(go_in_the_data_and_peek_cell_path, &config, value.clone());
+        run_peeking_scenario(
+            go_in_the_data_and_peek_cell_path,
+            config.clone(),
+            value.clone(),
+        );
 
         let peek_at_the_bottom = vec![
             (keybindings.navigation.right, false, None), // on l: ["my", "list", "elements"],
             (keybindings.navigation.right, false, None), // on "my"
             (keybindings.peek, true, Some(Value::test_string("my"))),
         ];
-        run_peeking_scenario(peek_at_the_bottom, &config, value);
+        run_peeking_scenario(peek_at_the_bottom, config.clone(), value);
     }
 
     #[test]
     fn transpose_the_data() {
-        let config = Config::default();
-        let kmap = config.clone().keybindings;
-
-        let value = Value::test_record(record!(
+        let mut app = App::from_value(Value::test_record(record!(
             "a" => Value::test_int(1),
             "b" => Value::test_int(2),
             "c" => Value::test_int(3),
-        ));
-        let mut app = App::from_value(value.clone());
+        )));
+        let kmap = app.config.clone().keybindings;
 
         assert!(!app.is_at_bottom());
         assert_eq!(app.position.members, to_path_member_vec(&[PM::S("a")]));
@@ -628,9 +620,7 @@ mod tests {
 
         for (key, cell_path) in transitions {
             let expected = to_path_member_vec(&cell_path);
-            if let TransitionResult::Mutate(cell, path) =
-                app.handle_key_events(key, &config, 0).unwrap()
-            {
+            if let TransitionResult::Mutate(cell, path) = app.handle_key_events(key, 0).unwrap() {
                 app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell).unwrap()
             }
 

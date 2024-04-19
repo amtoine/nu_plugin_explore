@@ -4,7 +4,7 @@ use nu_protocol::{
     Span, Value,
 };
 
-use crate::edit::Editor;
+use crate::{config::Config, edit::Editor};
 
 /// the mode in which the application is
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -37,6 +37,7 @@ impl std::fmt::Display for Mode {
     }
 }
 
+#[derive(Clone)]
 /// the complete state of the application
 pub struct App {
     /// the full current path in the data
@@ -49,6 +50,8 @@ pub struct App {
     pub editor: Editor,
     /// the value that is being explored
     pub value: Value,
+    /// the configuration for the app
+    pub config: Config,
 }
 
 impl Default for App {
@@ -59,6 +62,7 @@ impl Default for App {
             mode: Mode::default(),
             editor: Editor::default(),
             value: Value::default(),
+            config: Config::default(),
         }
     }
 }
@@ -133,5 +137,11 @@ impl App {
                         .to_expanded_string(" ", &nu_protocol::Config::default())
                 )
             })
+    }
+
+    pub(crate) fn with_config(&self, config: Config) -> Self {
+        let mut app = self.clone();
+        app.config = config;
+        app
     }
 }
