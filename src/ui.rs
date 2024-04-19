@@ -355,7 +355,11 @@ fn render_data(frame: &mut Frame, app: &mut App) {
             line_numbers.push(i as usize);
         }
 
-        let mut lines = vec![ListItem::new(Line::from("")); 2];
+        let mut lines = if app.config.layout == Layout::Compact && !is_a_table {
+            vec![]
+        } else {
+            vec![ListItem::new(Line::from("")); 2]
+        };
         for i in line_numbers {
             lines.push(ListItem::new(Line::from(Span::styled(
                 format!("{}", i),
@@ -363,10 +367,15 @@ fn render_data(frame: &mut Frame, app: &mut App) {
             ))));
         }
 
+        let mut offset = selected - margin_offset;
+        if app.config.layout == Layout::Table || is_a_table {
+            offset += 2;
+        }
+
         frame.render_stateful_widget(
             List::new(lines).highlight_style(highlight_line_style),
             rect_lines_without_bottom_bar,
-            &mut ListState::default().with_selected(Some(selected - margin_offset + 2)),
+            &mut ListState::default().with_selected(Some(offset)),
         );
     }
 
