@@ -319,7 +319,7 @@ mod tests {
 
         let transitions = vec![
             (keybindings.insert, false),
-            (keybindings.quit, true),
+            (keybindings.quit, false),
             (keybindings.normal, false),
             (keybindings.quit, true),
             (keybindings.peek, false),
