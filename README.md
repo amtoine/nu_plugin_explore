@@ -124,9 +124,10 @@ in order to help, you can have a look at
 - [x] show true tables as such
 - [x] get the config from `$env.config` => can parse configuration from CLI
 - [x] add check for the config to make sure it's valid
-- [ ] support for editing cells in INSERT mode
+- [x] support for editing cells in INSERT mode
   - [x] string cells
-  - [ ] other simple cells
+  - [x] other simple cells
+  - [x] all the cells
 - [x] detect if a string is of a particular type, path, URL, ...
 
 ## internal

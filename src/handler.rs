@@ -7,6 +7,7 @@ use nu_protocol::{
 
 use crate::{
     app::{App, Mode},
+    edit::EditorTransition,
     navigation::Direction,
     nu::value::transpose,
 };
@@ -73,10 +74,8 @@ impl App {
                 } else if key_event == config.keybindings.quit {
                     return Ok(TransitionResult::Quit);
                 } else if key_event == config.keybindings.insert {
-                    match self.enter_editor() {
-                        Ok(_) => return Ok(TransitionResult::Continue),
-                        Err(err) => return Ok(TransitionResult::Error(err)),
-                    }
+                    self.enter_editor();
+                    return Ok(TransitionResult::Continue);
                 } else if key_event == config.keybindings.peek {
                     self.mode = Mode::Peeking;
                     return Ok(TransitionResult::Continue);
@@ -168,15 +167,16 @@ impl App {
                 }
 
                 match self.editor.handle_key(&key_event.code) {
-                    Some(Some(v)) => {
+                    Ok(EditorTransition::Value(v)) => {
                         self.mode = Mode::Normal;
                         return Ok(TransitionResult::Mutate(v, self.position.clone()));
                     }
-                    Some(None) => {
+                    Ok(EditorTransition::Quit) => {
                         self.mode = Mode::Normal;
                         return Ok(TransitionResult::Continue);
                     }
-                    None => return Ok(TransitionResult::Continue),
+                    Ok(EditorTransition::Continue) => return Ok(TransitionResult::Continue),
+                    Err(err) => return Ok(TransitionResult::Error(err)),
                 }
             }
             Mode::Peeking => {
@@ -321,7 +321,7 @@ mod tests {
 
         let transitions = vec![
             (keybindings.insert, false),
-            (keybindings.quit, true),
+            (keybindings.quit, false),
             (keybindings.normal, false),
             (keybindings.quit, true),
             (keybindings.peek, false),
@@ -330,6 +330,11 @@ mod tests {
 
         for (key, exit) in transitions {
             let mode = app.mode.clone();
+
+            // NOTE: yeah this is a bit clunky...
+            if app.mode == Mode::Insert {
+                app.editor.set_width(10);
+            }
 
             let result = app.handle_key_events(key, 0).unwrap();
 

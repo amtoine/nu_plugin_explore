@@ -1,4 +1,5 @@
 use crossterm::event::KeyCode;
+use nuon::{from_nuon, to_nuon};
 use ratatui::{
     prelude::Rect,
     style::Style,
@@ -17,6 +18,13 @@ pub struct Editor {
     width: usize,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum EditorTransition {
+    Continue,
+    Quit,
+    Value(Value),
+}
+
 impl Editor {
     /// set the width of the editor
     ///
@@ -27,7 +35,8 @@ impl Editor {
 
     pub(super) fn from_value(value: &Value) -> Self {
         Self {
-            buffer: value.to_expanded_string(" ", &nu_protocol::Config::default()),
+            // NOTE: `value` should be a valid [`Value`] and thus the conversion should never fail
+            buffer: to_nuon(value, true, None, None, None).unwrap(),
             cursor_position: (0, 0),
             width: 0,
         }
@@ -107,7 +116,7 @@ impl Editor {
         self.delete_char(0);
     }
 
-    pub(super) fn handle_key(&mut self, key: &KeyCode) -> Option<Option<Value>> {
+    pub(super) fn handle_key(&mut self, key: &KeyCode) -> Result<EditorTransition, String> {
         match key {
             KeyCode::Left => self.move_cursor_left(),
             KeyCode::Right => self.move_cursor_right(),
@@ -116,15 +125,15 @@ impl Editor {
             KeyCode::Char(c) => self.enter_char(*c),
             KeyCode::Backspace => self.delete_char_before_cursor(),
             KeyCode::Delete => self.delete_char_under_cursor(),
-            KeyCode::Enter => {
-                let val = Value::string(self.buffer.clone(), Span::unknown());
-                return Some(Some(val));
-            }
-            KeyCode::Esc => return Some(None),
+            KeyCode::Enter => match from_nuon(&self.buffer, Some(Span::unknown())) {
+                Ok(val) => return Ok(EditorTransition::Value(val)),
+                Err(err) => return Err(format!("could not convert back from NUON: {}", err)),
+            },
+            KeyCode::Esc => return Ok(EditorTransition::Quit),
             _ => {}
         }
 
-        None
+        Ok(EditorTransition::Continue)
     }
 
     pub(super) fn render(&self, frame: &mut Frame, config: &Config) {
@@ -171,68 +180,188 @@ mod tests {
     use crossterm::event::KeyCode;
     use nu_protocol::Value;
 
-    use super::Editor;
+    use super::{Editor, EditorTransition};
 
     #[test]
     fn edit_cells() {
         let mut editor = Editor::default();
         editor.set_width(10 + 2);
+        editor.buffer = r#""""#.to_string();
 
+        // NOTE: for the NUON conversion to work, the test string buffer needs to be wrapped in
+        // parentheses.
+        // in order not to make the strokes clunky, the quotes are added in the for loop below and
+        // are implicite in the strokes below.
         let strokes = vec![
-            (KeyCode::Enter, "", Some(Some(Value::test_string("")))),
-            (KeyCode::Char('a'), "a", None),
-            (KeyCode::Char('b'), "ab", None),
-            (KeyCode::Char('c'), "abc", None),
-            (KeyCode::Char('d'), "abcd", None),
-            (KeyCode::Char('e'), "abcde", None),
-            (KeyCode::Left, "abcde", None),
-            (KeyCode::Char('f'), "abcdfe", None),
-            (KeyCode::Left, "abcdfe", None),
-            (KeyCode::Left, "abcdfe", None),
-            (KeyCode::Char('g'), "abcgdfe", None),
-            (KeyCode::Right, "abcgdfe", None),
-            (KeyCode::Right, "abcgdfe", None),
-            (KeyCode::Right, "abcgdfe", None),
-            (KeyCode::Up, "abcgdfe", None),
-            (KeyCode::Down, "abcgdfe", None),
-            (KeyCode::Char('h'), "abcgdfeh", None),
-            (KeyCode::Char('i'), "abcgdfehi", None),
-            (KeyCode::Char('j'), "abcgdfehij", None),
-            (KeyCode::Char('k'), "abcgdfehijk", None),
-            (KeyCode::Char('l'), "abcgdfehijkl", None),
-            (KeyCode::Up, "abcgdfehijkl", None),
-            (KeyCode::Char('m'), "abmcgdfehijkl", None),
-            (KeyCode::Down, "abmcgdfehijkl", None),
-            (KeyCode::Left, "abmcgdfehijkl", None),
-            (KeyCode::Char('n'), "abmcgdfehijknl", None),
-            (KeyCode::Left, "abmcgdfehijknl", None),
-            (KeyCode::Left, "abmcgdfehijknl", None),
-            (KeyCode::Left, "abmcgdfehijknl", None),
-            (KeyCode::Left, "abmcgdfehijknl", None),
-            (KeyCode::Left, "abmcgdfehijknl", None),
-            (KeyCode::Char('o'), "abmcgdfeohijknl", None),
-            (KeyCode::Right, "abmcgdfeohijknl", None),
-            (KeyCode::Right, "abmcgdfeohijknl", None),
+            (
+                KeyCode::Enter,
+                "",
+                Ok(EditorTransition::Value(Value::test_string(""))),
+            ),
+            (KeyCode::Right, "", Ok(EditorTransition::Continue)),
+            (KeyCode::Char('a'), "a", Ok(EditorTransition::Continue)),
+            (KeyCode::Char('b'), "ab", Ok(EditorTransition::Continue)),
+            (KeyCode::Char('c'), "abc", Ok(EditorTransition::Continue)),
+            (KeyCode::Char('d'), "abcd", Ok(EditorTransition::Continue)),
+            (KeyCode::Char('e'), "abcde", Ok(EditorTransition::Continue)),
+            (KeyCode::Left, "abcde", Ok(EditorTransition::Continue)),
+            (KeyCode::Char('f'), "abcdfe", Ok(EditorTransition::Continue)),
+            (KeyCode::Left, "abcdfe", Ok(EditorTransition::Continue)),
+            (KeyCode::Left, "abcdfe", Ok(EditorTransition::Continue)),
+            (
+                KeyCode::Char('g'),
+                "abcgdfe",
+                Ok(EditorTransition::Continue),
+            ),
+            (KeyCode::Right, "abcgdfe", Ok(EditorTransition::Continue)),
+            (KeyCode::Right, "abcgdfe", Ok(EditorTransition::Continue)),
+            (KeyCode::Right, "abcgdfe", Ok(EditorTransition::Continue)),
+            (KeyCode::Up, "abcgdfe", Ok(EditorTransition::Continue)),
+            (KeyCode::Down, "abcgdfe", Ok(EditorTransition::Continue)),
+            (
+                KeyCode::Char('h'),
+                "abcgdfeh",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Char('i'),
+                "abcgdfehi",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Char('j'),
+                "abcgdfehij",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Char('k'),
+                "abcgdfehijk",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Char('l'),
+                "abcgdfehijkl",
+                Ok(EditorTransition::Continue),
+            ),
+            (KeyCode::Up, "abcgdfehijkl", Ok(EditorTransition::Continue)),
+            (
+                KeyCode::Char('m'),
+                "abmcgdfehijkl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Down,
+                "abmcgdfehijkl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Left,
+                "abmcgdfehijkl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Char('n'),
+                "abmcgdfehijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Left,
+                "abmcgdfehijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Left,
+                "abmcgdfehijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Left,
+                "abmcgdfehijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Left,
+                "abmcgdfehijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Left,
+                "abmcgdfehijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Char('o'),
+                "abmcgdfeohijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Right,
+                "abmcgdfeohijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Right,
+                "abmcgdfeohijknl",
+                Ok(EditorTransition::Continue),
+            ),
             (
                 KeyCode::Enter,
                 "abmcgdfeohijknl",
-                Some(Some(Value::test_string("abmcgdfeohijknl"))),
+                Ok(EditorTransition::Value(Value::test_string(
+                    "abmcgdfeohijknl",
+                ))),
             ),
-            (KeyCode::Right, "abmcgdfeohijknl", None),
-            (KeyCode::Right, "abmcgdfeohijknl", None),
-            (KeyCode::Char('p'), "abmcgdfeohijkpnl", None),
-            (KeyCode::Backspace, "abmcgdfeohijknl", None),
-            (KeyCode::Backspace, "abmcgdfeohijnl", None),
-            (KeyCode::Backspace, "abmcgdfeohinl", None),
-            (KeyCode::Up, "abmcgdfeohinl", None),
-            (KeyCode::Delete, "amcgdfeohinl", None),
-            (KeyCode::Delete, "acgdfeohinl", None),
-            (KeyCode::Delete, "agdfeohinl", None),
-            (KeyCode::Esc, "agdfeohinl", Some(None)),
+            (
+                KeyCode::Right,
+                "abmcgdfeohijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Right,
+                "abmcgdfeohijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Char('p'),
+                "abmcgdfeohijkpnl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Backspace,
+                "abmcgdfeohijknl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Backspace,
+                "abmcgdfeohijnl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Backspace,
+                "abmcgdfeohinl",
+                Ok(EditorTransition::Continue),
+            ),
+            (KeyCode::Up, "abmcgdfeohinl", Ok(EditorTransition::Continue)),
+            (
+                KeyCode::Delete,
+                "amcgdfeohinl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Delete,
+                "acgdfeohinl",
+                Ok(EditorTransition::Continue),
+            ),
+            (
+                KeyCode::Delete,
+                "agdfeohinl",
+                Ok(EditorTransition::Continue),
+            ),
+            (KeyCode::Esc, "agdfeohinl", Ok(EditorTransition::Quit)),
             (
                 KeyCode::Enter,
                 "agdfeohinl",
-                Some(Some(Value::test_string("agdfeohinl"))),
+                Ok(EditorTransition::Value(Value::test_string("agdfeohinl"))),
             ),
         ];
 
@@ -240,7 +369,7 @@ mod tests {
             let result = editor.handle_key(&key);
 
             assert_eq!(result, expected);
-            assert_eq!(editor.buffer, expected_buffer.to_string());
+            assert_eq!(editor.buffer, format!(r#""{}""#, expected_buffer));
         }
     }
 }
