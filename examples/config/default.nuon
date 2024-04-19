@@ -1,6 +1,7 @@
 {
     show_cell_path: true,  # whether or not to show the current cell path above the status bar
     show_table_header: true,  # whether or not to show the table header in "table" layout
+    show_hints: true, # whether or not to show the hints with keybindings
     layout: "table",  # the layout of the data, either "table" or "compact"
     margin: 10, # the number of lines to keep between the cursor and the top / bottom
     number: false, # show line numbers

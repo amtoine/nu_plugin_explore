@@ -149,6 +149,7 @@ pub struct Config {
     pub margin: usize,
     pub number: bool,
     pub relativenumber: bool,
+    pub show_hints: bool,
 }
 
 impl Default for Config {
@@ -162,6 +163,7 @@ impl Default for Config {
             margin: 10,
             number: false,
             relativenumber: false,
+            show_hints: true,
             colors: ColorConfig {
                 normal: TableRowColorConfig {
                     name: BgFgColorConfig {
@@ -295,6 +297,11 @@ impl Config {
                 "relativenumber" => {
                     if let Some(val) = try_bool(value, &["relativenumber"])? {
                         config.relativenumber = val
+                    }
+                }
+                "show_hints" => {
+                    if let Some(val) = try_bool(value, &["show_hints"])? {
+                        config.show_hints = val
                     }
                 }
                 "colors" => {
