@@ -671,7 +671,7 @@ fn render_status_bar(frame: &mut Frame, app: &App) {
         bottom_bar_rect,
     );
 
-    if app.config.show_hints {
+    if app.config.show_hints || matches!(app.mode, Mode::Waiting(..)) {
         let hints = match app.mode {
             Mode::Normal => format!(
                 "{} to {} | {}{}{}{} to move around | {} to peek | {} to transpose | {} to quit",
@@ -685,11 +685,17 @@ fn render_status_bar(frame: &mut Frame, app: &App) {
                 repr_key(&config.keybindings.transpose),
                 repr_key(&config.keybindings.quit),
             ),
-            Mode::Waiting(n) => format!(
-                "{} to quit | will run next motion {} times",
-                repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-                n
-            ),
+            Mode::Waiting(n) => {
+                if app.config.show_hints {
+                    format!(
+                        "{} to quit | will run next motion {} times",
+                        repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+                        n
+                    )
+                } else {
+                    format!("{}", n)
+                }
+            },
             Mode::Insert => format!(
                 "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",
                 repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
