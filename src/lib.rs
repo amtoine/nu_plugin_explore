@@ -18,7 +18,7 @@ use nu_protocol::{Span, Value};
 
 use app::{App, Mode};
 use config::Config;
-use handler::{handle_key_events, TransitionResult};
+use handler::TransitionResult;
 use tui::{
     event::{Event, EventHandler},
     Tui,
@@ -46,9 +46,8 @@ pub fn explore(config: &Value, input: Value) -> Result<Value> {
             Event::Tick => app.tick(),
             Event::Key(key_event) => {
                 if key_event.kind == KeyEventKind::Press {
-                    match handle_key_events(
+                    match app.handle_key_events(
                         key_event,
-                        &mut app,
                         &config,
                         (tui.size()?.height as usize - 5) / 2,
                     )? {
