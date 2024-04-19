@@ -460,11 +460,17 @@ fn render_data(frame: &mut Frame, app: &mut App) {
                 .highlight_style(highlight_style)
                 .highlight_symbol(&config.colors.selected_symbol);
 
+            let selected = if app.is_at_bottom() {
+                None
+            } else {
+                Some(selected)
+            };
+
             frame.render_stateful_widget(
                 items,
                 rect_without_bottom_bar,
                 &mut ListState::default()
-                    .with_selected(Some(selected))
+                    .with_selected(selected)
                     .with_offset(margin_offset),
             )
         }
