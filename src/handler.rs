@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use nu_protocol::{
     ast::{CellPath, PathMember},
@@ -7,8 +7,7 @@ use nu_protocol::{
 
 use crate::{
     app::{App, Mode},
-    config::Config,
-    navigation::{self, Direction},
+    navigation::Direction,
     nu::value::transpose,
 };
 
@@ -29,198 +28,213 @@ impl TransitionResult {
     }
 }
 
-/// Handles the key events and updates the state of [`App`].
-#[allow(clippy::collapsible_if)]
-pub fn handle_key_events(
-    key_event: KeyEvent,
-    app: &mut App,
-    config: &Config,
-    half_page: usize,
-) -> Result<TransitionResult, ShellError> {
-    match app.mode {
-        Mode::Normal => {
-            if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9')) {
-                app.mode = Mode::Waiting(match key_event.code {
-                    KeyCode::Char('0') => 0,
-                    KeyCode::Char('1') => 1,
-                    KeyCode::Char('2') => 2,
-                    KeyCode::Char('3') => 3,
-                    KeyCode::Char('4') => 4,
-                    KeyCode::Char('5') => 5,
-                    KeyCode::Char('6') => 6,
-                    KeyCode::Char('7') => 7,
-                    KeyCode::Char('8') => 8,
-                    KeyCode::Char('9') => 9,
-                    _ => unreachable!(),
-                });
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.half_page_down {
-                // TODO: add a margin to the bottom
-                navigation::go_up_or_down_in_data(app, Direction::Down(half_page));
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.half_page_up {
-                // TODO: add a margin to the top
-                navigation::go_up_or_down_in_data(app, Direction::Up(half_page));
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.goto_bottom {
-                navigation::go_up_or_down_in_data(app, Direction::Bottom);
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.goto_top {
-                navigation::go_up_or_down_in_data(app, Direction::Top);
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.quit {
-                return Ok(TransitionResult::Quit);
-            } else if key_event == config.keybindings.insert {
-                match app.enter_editor() {
-                    Ok(_) => return Ok(TransitionResult::Continue),
-                    Err(err) => return Ok(TransitionResult::Error(err)),
-                }
-            } else if key_event == config.keybindings.peek {
-                app.mode = Mode::Peeking;
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.down {
-                navigation::go_up_or_down_in_data(app, Direction::Down(1));
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.up {
-                navigation::go_up_or_down_in_data(app, Direction::Up(1));
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.right {
-                navigation::go_deeper_in_data(app);
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.left {
-                navigation::go_back_in_data(app);
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.transpose {
-                let mut path = app.position.clone();
-                path.members.pop();
+impl App {
+    /// Handles the key events and updates the state of [`App`].
+    #[allow(clippy::collapsible_if)]
+    pub fn handle_key_events(
+        &mut self,
+        key_event: KeyEvent,
+        half_page: usize,
+    ) -> Result<TransitionResult, ShellError> {
+        let config = &self.config;
 
-                let view = app.value.clone().follow_cell_path(&path.members, false)?;
-                let transpose = transpose(&view);
-
-                if transpose != view {
-                    match transpose.clone() {
-                        Value::Record { val: rec, .. } => {
-                            let cols = rec.columns().cloned().collect::<Vec<_>>();
-
-                            // NOTE: app.position.members should never be empty by construction
-                            *app.position.members.last_mut().unwrap() = PathMember::String {
-                                val: cols.first().unwrap_or(&"".to_string()).to_string(),
-                                span: Span::unknown(),
-                                optional: cols.is_empty(),
-                            };
-                        }
-                        _ => {
-                            // NOTE: app.position.members should never be empty by construction
-                            *app.position.members.last_mut().unwrap() = PathMember::Int {
-                                val: 0,
-                                span: Span::unknown(),
-                                optional: false,
-                            };
-                        }
+        match self.mode {
+            Mode::Normal => {
+                if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9'))
+                {
+                    self.mode = Mode::Waiting(match key_event.code {
+                        KeyCode::Char('0') => 0,
+                        KeyCode::Char('1') => 1,
+                        KeyCode::Char('2') => 2,
+                        KeyCode::Char('3') => 3,
+                        KeyCode::Char('4') => 4,
+                        KeyCode::Char('5') => 5,
+                        KeyCode::Char('6') => 6,
+                        KeyCode::Char('7') => 7,
+                        KeyCode::Char('8') => 8,
+                        KeyCode::Char('9') => 9,
+                        _ => unreachable!(),
+                    });
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.half_page_down {
+                    // TODO: add a margin to the bottom
+                    self.go_up_or_down_in_data(Direction::Down(half_page));
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.half_page_up {
+                    // TODO: add a margin to the top
+                    self.go_up_or_down_in_data(Direction::Up(half_page));
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.goto_bottom {
+                    self.go_up_or_down_in_data(Direction::Bottom);
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.goto_top {
+                    self.go_up_or_down_in_data(Direction::Top);
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.quit {
+                    return Ok(TransitionResult::Quit);
+                } else if key_event == config.keybindings.insert {
+                    match self.enter_editor() {
+                        Ok(_) => return Ok(TransitionResult::Continue),
+                        Err(err) => return Ok(TransitionResult::Error(err)),
                     }
-                    return Ok(TransitionResult::Mutate(transpose, path));
-                }
+                } else if key_event == config.keybindings.peek {
+                    self.mode = Mode::Peeking;
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.down {
+                    self.go_up_or_down_in_data(Direction::Down(1));
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.up {
+                    self.go_up_or_down_in_data(Direction::Up(1));
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.right {
+                    self.go_deeper_in_data();
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.left {
+                    self.go_back_in_data();
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.transpose {
+                    let mut path = self.position.clone();
+                    path.members.pop();
 
-                return Ok(TransitionResult::Continue);
-            }
-        }
-        Mode::Waiting(n) => {
-            if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9')) {
-                let u = match key_event.code {
-                    KeyCode::Char('0') => 0,
-                    KeyCode::Char('1') => 1,
-                    KeyCode::Char('2') => 2,
-                    KeyCode::Char('3') => 3,
-                    KeyCode::Char('4') => 4,
-                    KeyCode::Char('5') => 5,
-                    KeyCode::Char('6') => 6,
-                    KeyCode::Char('7') => 7,
-                    KeyCode::Char('8') => 8,
-                    KeyCode::Char('9') => 9,
-                    _ => unreachable!(),
-                };
-                app.mode = Mode::Waiting(n * 10 + u);
-                return Ok(TransitionResult::Continue);
-            } else if key_event.code == KeyCode::Esc {
-                app.mode = Mode::Normal;
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.down {
-                app.mode = Mode::Normal;
-                navigation::go_up_or_down_in_data(app, Direction::Down(n));
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.up {
-                app.mode = Mode::Normal;
-                navigation::go_up_or_down_in_data(app, Direction::Up(n));
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.navigation.goto_line {
-                app.mode = Mode::Normal;
-                navigation::go_up_or_down_in_data(app, Direction::At(n.saturating_sub(1)));
-                return Ok(TransitionResult::Continue);
-            }
-        }
-        Mode::Insert => {
-            if key_event == config.keybindings.normal {
-                app.mode = Mode::Normal;
-                return Ok(TransitionResult::Continue);
-            }
+                    let view = self.value_under_cursor(Some(path.clone()));
+                    let transpose = transpose(&view);
 
-            match app.editor.handle_key(&key_event.code) {
-                Some(Some(v)) => {
-                    app.mode = Mode::Normal;
-                    return Ok(TransitionResult::Mutate(v, app.position.clone()));
-                }
-                Some(None) => {
-                    app.mode = Mode::Normal;
+                    if transpose != view {
+                        match &transpose {
+                            Value::Record { val: rec, .. } => {
+                                let cols = rec.columns().cloned().collect::<Vec<_>>();
+
+                                // NOTE: app.position.members should never be empty by construction
+                                *self.position.members.last_mut().unwrap() = PathMember::String {
+                                    val: cols.first().unwrap_or(&"".to_string()).to_string(),
+                                    span: Span::unknown(),
+                                    optional: cols.is_empty(),
+                                };
+                            }
+                            _ => {
+                                // NOTE: app.position.members should never be empty by construction
+                                *self.position.members.last_mut().unwrap() = PathMember::Int {
+                                    val: 0,
+                                    span: Span::unknown(),
+                                    optional: false,
+                                };
+                            }
+                        }
+                        return Ok(TransitionResult::Mutate(transpose, path));
+                    }
+
                     return Ok(TransitionResult::Continue);
                 }
-                None => return Ok(TransitionResult::Continue),
             }
-        }
-        Mode::Peeking => {
-            if key_event == config.keybindings.quit {
-                return Ok(TransitionResult::Quit);
-            } else if key_event == config.keybindings.normal {
-                app.mode = Mode::Normal;
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.peeking.all {
-                return Ok(TransitionResult::Return(app.value.clone()));
-            } else if key_event == config.keybindings.peeking.view {
-                app.position.members.pop();
-                return Ok(TransitionResult::Return(
-                    app.value
-                        .clone()
-                        .follow_cell_path(&app.position.members, false)?,
-                ));
-            } else if key_event == config.keybindings.peeking.under {
-                return Ok(TransitionResult::Return(
-                    app.value
-                        .clone()
-                        .follow_cell_path(&app.position.members, false)?,
-                ));
-            } else if key_event == config.keybindings.peeking.cell_path {
-                return Ok(TransitionResult::Return(Value::cell_path(
-                    app.position.clone(),
-                    Span::unknown(),
-                )));
+            Mode::Waiting(n) => {
+                if key_event.code.ge(&KeyCode::Char('0')) && key_event.code.le(&KeyCode::Char('9'))
+                {
+                    let u = match key_event.code {
+                        KeyCode::Char('0') => 0,
+                        KeyCode::Char('1') => 1,
+                        KeyCode::Char('2') => 2,
+                        KeyCode::Char('3') => 3,
+                        KeyCode::Char('4') => 4,
+                        KeyCode::Char('5') => 5,
+                        KeyCode::Char('6') => 6,
+                        KeyCode::Char('7') => 7,
+                        KeyCode::Char('8') => 8,
+                        KeyCode::Char('9') => 9,
+                        _ => unreachable!(),
+                    };
+                    self.mode = Mode::Waiting(n * 10 + u);
+                    return Ok(TransitionResult::Continue);
+                } else if key_event.code == KeyCode::Esc {
+                    self.mode = Mode::Normal;
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.down {
+                    self.mode = Mode::Normal;
+                    self.go_up_or_down_in_data(Direction::Down(n));
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.up {
+                    self.mode = Mode::Normal;
+                    self.go_up_or_down_in_data(Direction::Up(n));
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.navigation.goto_line {
+                    self.mode = Mode::Normal;
+                    self.go_up_or_down_in_data(Direction::At(n.saturating_sub(1)));
+                    return Ok(TransitionResult::Continue);
+                }
             }
-        }
-        Mode::Bottom => {
-            if key_event == config.keybindings.quit {
-                return Ok(TransitionResult::Quit);
-            } else if key_event == config.keybindings.navigation.left {
-                app.mode = Mode::Normal;
-                return Ok(TransitionResult::Continue);
-            } else if key_event == config.keybindings.peek {
-                return Ok(TransitionResult::Return(
-                    app.value
-                        .clone()
-                        .follow_cell_path(&app.position.members, false)?,
-                ));
-            }
-        }
-    }
+            Mode::Insert => {
+                if key_event == config.keybindings.normal {
+                    self.mode = Mode::Normal;
+                    return Ok(TransitionResult::Continue);
+                }
 
-    Ok(TransitionResult::Continue)
+                match self.editor.handle_key(&key_event.code) {
+                    Some(Some(v)) => {
+                        self.mode = Mode::Normal;
+                        return Ok(TransitionResult::Mutate(v, self.position.clone()));
+                    }
+                    Some(None) => {
+                        self.mode = Mode::Normal;
+                        return Ok(TransitionResult::Continue);
+                    }
+                    None => return Ok(TransitionResult::Continue),
+                }
+            }
+            Mode::Peeking => {
+                if key_event == config.keybindings.quit {
+                    return Ok(TransitionResult::Quit);
+                } else if key_event == config.keybindings.normal {
+                    self.mode = Mode::Normal;
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.peeking.all {
+                    return Ok(TransitionResult::Return(self.value.clone()));
+                } else if key_event == config.keybindings.peeking.view {
+                    self.position.members.pop();
+                    return Ok(TransitionResult::Return(self.value_under_cursor(None)));
+                } else if key_event == config.keybindings.peeking.under {
+                    return Ok(TransitionResult::Return(self.value_under_cursor(None)));
+                } else if key_event == config.keybindings.peeking.cell_path {
+                    return Ok(TransitionResult::Return(Value::cell_path(
+                        self.position.clone(),
+                        Span::unknown(),
+                    )));
+                }
+            }
+            Mode::Bottom => {
+                if key_event == config.keybindings.quit {
+                    return Ok(TransitionResult::Quit);
+                } else if key_event == config.keybindings.navigation.left {
+                    self.mode = Mode::Normal;
+                    return Ok(TransitionResult::Continue);
+                } else if key_event == config.keybindings.peek {
+                    return Ok(TransitionResult::Return(self.value_under_cursor(None)));
+                }
+            }
+        }
+
+        Ok(TransitionResult::Continue)
+    }
+}
+
+/// represent a [`KeyEvent`] as a simple string
+pub fn repr_key(key: &KeyEvent) -> String {
+    let code = match key.code {
+        KeyCode::Char(c) => c.to_string(),
+        KeyCode::Left => char::from_u32(0x2190).unwrap().into(),
+        KeyCode::Up => char::from_u32(0x2191).unwrap().into(),
+        KeyCode::Right => char::from_u32(0x2192).unwrap().into(),
+        KeyCode::Down => char::from_u32(0x2193).unwrap().into(),
+        KeyCode::Esc => "<esc>".into(),
+        KeyCode::Enter => char::from_u32(0x23ce).unwrap().into(),
+        KeyCode::Backspace => char::from_u32(0x232b).unwrap().into(),
+        KeyCode::Delete => char::from_u32(0x2326).unwrap().into(),
+        _ => "??".into(),
+    };
+
+    match key.modifiers {
+        KeyModifiers::NONE => code,
+        KeyModifiers::CONTROL => format!("<c-{}>", code),
+        _ => "??".into(),
+    }
 }
 
 #[cfg(test)]
@@ -231,10 +245,10 @@ mod tests {
         record, Span, Value,
     };
 
-    use super::{handle_key_events, App, TransitionResult};
+    use super::{repr_key, App, TransitionResult};
     use crate::{
         app::Mode,
-        config::{repr_key, Config},
+        config::Config,
         nu::cell_path::{to_path_member_vec, PM},
     };
 
@@ -263,11 +277,8 @@ mod tests {
 
     #[test]
     fn switch_modes() {
-        let config = Config::default();
-        let keybindings = config.clone().keybindings;
-
-        let value = Value::test_string("foo");
-        let mut app = App::from_value(value);
+        let mut app = App::from_value(Value::test_string("foo"));
+        let keybindings = app.config.clone().keybindings;
 
         assert!(app.mode == Mode::Normal);
 
@@ -284,7 +295,7 @@ mod tests {
         for (key, expected_mode) in transitions {
             let mode = app.mode.clone();
 
-            let result = handle_key_events(key, &mut app, &config, 0).unwrap();
+            let result = app.handle_key_events(key, 0).unwrap();
 
             assert!(
                 !result.is_quit(),
@@ -305,11 +316,8 @@ mod tests {
 
     #[test]
     fn quit() {
-        let config = Config::default();
-        let keybindings = config.clone().keybindings;
-
-        let value = test_value();
-        let mut app = App::from_value(value);
+        let mut app = App::from_value(test_value());
+        let keybindings = app.config.clone().keybindings;
 
         let transitions = vec![
             (keybindings.insert, false),
@@ -323,7 +331,7 @@ mod tests {
         for (key, exit) in transitions {
             let mode = app.mode.clone();
 
-            let result = handle_key_events(key, &mut app, &config, 0).unwrap();
+            let result = app.handle_key_events(key, 0).unwrap();
 
             if exit {
                 assert!(
@@ -361,11 +369,8 @@ mod tests {
 
     #[test]
     fn navigate_the_data() {
-        let config = Config::default();
-        let nav = config.clone().keybindings.navigation;
-
-        let value = test_value();
-        let mut app = App::from_value(value.clone());
+        let mut app = App::from_value(test_value());
+        let nav = app.config.clone().keybindings.navigation;
 
         assert!(!app.is_at_bottom());
         assert_eq!(app.position.members, to_path_member_vec(&[PM::S("l")]));
@@ -426,7 +431,7 @@ mod tests {
 
         for (key, cell_path, bottom) in transitions {
             let expected = to_path_member_vec(&cell_path);
-            handle_key_events(key, &mut app, &config, 0).unwrap();
+            app.handle_key_events(key, 0).unwrap();
 
             if bottom {
                 assert!(
@@ -453,15 +458,15 @@ mod tests {
 
     fn run_peeking_scenario(
         transitions: Vec<(KeyEvent, bool, Option<Value>)>,
-        config: &Config,
+        config: Config,
         value: Value,
     ) {
-        let mut app = App::from_value(value);
+        let mut app = App::from_value(value).with_config(config);
 
         for (key, exit, expected) in transitions {
             let mode = app.mode.clone();
 
-            let result = handle_key_events(key, &mut app, config, 0).unwrap();
+            let result = app.handle_key_events(key, 0).unwrap();
 
             if exit {
                 assert!(
@@ -520,13 +525,13 @@ mod tests {
             (keybindings.peek, false, None),
             (keybindings.peeking.all, true, Some(value.clone())),
         ];
-        run_peeking_scenario(peek_all_from_top, &config, value.clone());
+        run_peeking_scenario(peek_all_from_top, config.clone(), value.clone());
 
         let peek_current_from_top = vec![
             (keybindings.peek, false, None),
             (keybindings.peeking.view, true, Some(value.clone())),
         ];
-        run_peeking_scenario(peek_current_from_top, &config, value.clone());
+        run_peeking_scenario(peek_current_from_top, config.clone(), value.clone());
 
         let go_in_the_data_and_peek_all_and_current = vec![
             (keybindings.navigation.down, false, None),
@@ -544,7 +549,7 @@ mod tests {
         ];
         run_peeking_scenario(
             go_in_the_data_and_peek_all_and_current,
-            &config,
+            config.clone(),
             value.clone(),
         );
 
@@ -555,7 +560,7 @@ mod tests {
             (keybindings.peeking.all, true, Some(value.clone())),
             (keybindings.peeking.under, true, Some(Value::test_int(1))),
         ];
-        run_peeking_scenario(go_in_the_data_and_peek_under, &config, value.clone());
+        run_peeking_scenario(go_in_the_data_and_peek_under, config.clone(), value.clone());
 
         let go_in_the_data_and_peek_cell_path = vec![
             (keybindings.navigation.down, false, None), // on {r: {a: 1, b: 2}}
@@ -580,27 +585,28 @@ mod tests {
                 })),
             ),
         ];
-        run_peeking_scenario(go_in_the_data_and_peek_cell_path, &config, value.clone());
+        run_peeking_scenario(
+            go_in_the_data_and_peek_cell_path,
+            config.clone(),
+            value.clone(),
+        );
 
         let peek_at_the_bottom = vec![
             (keybindings.navigation.right, false, None), // on l: ["my", "list", "elements"],
             (keybindings.navigation.right, false, None), // on "my"
             (keybindings.peek, true, Some(Value::test_string("my"))),
         ];
-        run_peeking_scenario(peek_at_the_bottom, &config, value);
+        run_peeking_scenario(peek_at_the_bottom, config.clone(), value);
     }
 
     #[test]
     fn transpose_the_data() {
-        let config = Config::default();
-        let kmap = config.clone().keybindings;
-
-        let value = Value::test_record(record!(
+        let mut app = App::from_value(Value::test_record(record!(
             "a" => Value::test_int(1),
             "b" => Value::test_int(2),
             "c" => Value::test_int(3),
-        ));
-        let mut app = App::from_value(value.clone());
+        )));
+        let kmap = app.config.clone().keybindings;
 
         assert!(!app.is_at_bottom());
         assert_eq!(app.position.members, to_path_member_vec(&[PM::S("a")]));
@@ -614,10 +620,8 @@ mod tests {
 
         for (key, cell_path) in transitions {
             let expected = to_path_member_vec(&cell_path);
-            if let TransitionResult::Mutate(cell, path) =
-                handle_key_events(key, &mut app, &config, 0).unwrap()
-            {
-                app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell)
+            if let TransitionResult::Mutate(cell, path) = app.handle_key_events(key, 0).unwrap() {
+                app.value = crate::nu::value::mutate_value_cell(&app.value, &path, &cell).unwrap()
             }
 
             assert!(

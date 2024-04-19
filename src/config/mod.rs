@@ -11,11 +11,9 @@ use nu_protocol::{LabeledError, Span, Value};
 
 mod parsing;
 use parsing::{
-    follow_cell_path, invalid_field, invalid_type, try_bool, try_fg_bg_colors, try_key, try_layout,
-    try_modifier, try_string,
+    follow_cell_path, invalid_field, invalid_type, positive_integer, try_bool, try_fg_bg_colors,
+    try_int, try_key, try_layout, try_modifier, try_string,
 };
-
-use self::parsing::{positive_integer, try_int};
 
 /// the configuration for the status bar colors in all [`crate::app::Mode`]s
 #[derive(Clone, PartialEq, Debug)]
@@ -257,28 +255,32 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn from_value(value: Value) -> Result<Self, LabeledError> {
+    // NOTE: all the _unwraps_ called on the output of [`parsing::follow_cell_path`] are safe
+    // because they all follow the same cell path as the parsing branch they are in, e.g.
+    // `follow_cell_path(&value, &["colors", "line_numbers"])` is only found in the "colors" and
+    // "line_numbers" branch of the parsing.
+    pub fn from_value(value: &Value) -> Result<Self, LabeledError> {
         let mut config = Config::default();
 
         for column in value.columns() {
             match column.as_str() {
                 "show_cell_path" => {
-                    if let Some(val) = try_bool(&value, &["show_cell_path"])? {
+                    if let Some(val) = try_bool(value, &["show_cell_path"])? {
                         config.show_cell_path = val
                     }
                 }
                 "show_table_header" => {
-                    if let Some(val) = try_bool(&value, &["show_table_header"])? {
+                    if let Some(val) = try_bool(value, &["show_table_header"])? {
                         config.show_table_header = val
                     }
                 }
                 "layout" => {
-                    if let Some(val) = try_layout(&value, &["layout"])? {
+                    if let Some(val) = try_layout(value, &["layout"])? {
                         config.layout = val
                     }
                 }
                 "margin" => {
-                    if let Some(val) = try_int(&value, &["margin"])? {
+                    if let Some(val) = try_int(value, &["margin"])? {
                         if val < 0 {
                             return Err(positive_integer(val, &["margin"], Span::unknown()));
                         }
@@ -286,17 +288,17 @@ impl Config {
                     }
                 }
                 "number" => {
-                    if let Some(val) = try_bool(&value, &["number"])? {
+                    if let Some(val) = try_bool(value, &["number"])? {
                         config.number = val
                     }
                 }
                 "relativenumber" => {
-                    if let Some(val) = try_bool(&value, &["relativenumber"])? {
+                    if let Some(val) = try_bool(value, &["relativenumber"])? {
                         config.relativenumber = val
                     }
                 }
                 "colors" => {
-                    let cell = follow_cell_path(&value, &["colors"]).unwrap();
+                    let cell = follow_cell_path(value, &["colors"]).unwrap();
                     let columns = match &cell {
                         Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
                         x => return Err(invalid_type(x, &["colors"], "record")),
@@ -305,7 +307,7 @@ impl Config {
                     for column in columns {
                         match column.as_str() {
                             "normal" => {
-                                let cell = follow_cell_path(&value, &["colors", "normal"]).unwrap();
+                                let cell = follow_cell_path(value, &["colors", "normal"]).unwrap();
                                 let columns = match &cell {
                                     Value::Record { val: rec, .. } => {
                                         rec.columns().collect::<Vec<_>>()
@@ -323,7 +325,7 @@ impl Config {
                                     match column.as_str() {
                                         "name" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "normal", "name"],
                                                 &config.colors.normal.name,
                                             )? {
@@ -332,7 +334,7 @@ impl Config {
                                         }
                                         "data" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "normal", "data"],
                                                 &config.colors.normal.data,
                                             )? {
@@ -341,7 +343,7 @@ impl Config {
                                         }
                                         "shape" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "normal", "shape"],
                                                 &config.colors.normal.shape,
                                             )? {
@@ -359,7 +361,7 @@ impl Config {
                             }
                             "selected" => {
                                 if let Some(val) = try_fg_bg_colors(
-                                    &value,
+                                    value,
                                     &["colors", "selected"],
                                     &config.colors.selected,
                                 )? {
@@ -368,21 +370,21 @@ impl Config {
                             }
                             "selected_symbol" => {
                                 if let Some(val) =
-                                    try_string(&value, &["colors", "selected_symbol"])?
+                                    try_string(value, &["colors", "selected_symbol"])?
                                 {
                                     config.colors.selected_symbol = val
                                 }
                             }
                             "selected_modifier" => {
                                 if let Some(val) =
-                                    try_modifier(&value, &["colors", "selected_modifier"])?
+                                    try_modifier(value, &["colors", "selected_modifier"])?
                                 {
                                     config.colors.selected_modifier = val
                                 }
                             }
                             "status_bar" => {
                                 let cell =
-                                    follow_cell_path(&value, &["colors", "status_bar"]).unwrap();
+                                    follow_cell_path(value, &["colors", "status_bar"]).unwrap();
                                 let columns = match &cell {
                                     Value::Record { val: rec, .. } => {
                                         rec.columns().collect::<Vec<_>>()
@@ -400,7 +402,7 @@ impl Config {
                                     match column.as_str() {
                                         "normal" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "status_bar", "normal"],
                                                 &config.colors.status_bar.normal,
                                             )? {
@@ -409,7 +411,7 @@ impl Config {
                                         }
                                         "insert" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "status_bar", "insert"],
                                                 &config.colors.status_bar.insert,
                                             )? {
@@ -418,7 +420,7 @@ impl Config {
                                         }
                                         "peek" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "status_bar", "peek"],
                                                 &config.colors.status_bar.peek,
                                             )? {
@@ -427,7 +429,7 @@ impl Config {
                                         }
                                         "bottom" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "status_bar", "bottom"],
                                                 &config.colors.status_bar.bottom,
                                             )? {
@@ -444,7 +446,7 @@ impl Config {
                                 }
                             }
                             "editor" => {
-                                let cell = follow_cell_path(&value, &["colors", "editor"]).unwrap();
+                                let cell = follow_cell_path(value, &["colors", "editor"]).unwrap();
                                 let columns = match &cell {
                                     Value::Record { val: rec, .. } => {
                                         rec.columns().collect::<Vec<_>>()
@@ -462,7 +464,7 @@ impl Config {
                                     match column.as_str() {
                                         "frame" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "editor", "frame"],
                                                 &config.colors.editor.frame,
                                             )? {
@@ -471,7 +473,7 @@ impl Config {
                                         }
                                         "buffer" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "editor", "buffer"],
                                                 &config.colors.editor.buffer,
                                             )? {
@@ -489,7 +491,7 @@ impl Config {
                             }
                             "warning" => {
                                 if let Some(val) = try_fg_bg_colors(
-                                    &value,
+                                    value,
                                     &["colors", "warning"],
                                     &config.colors.warning,
                                 )? {
@@ -498,7 +500,7 @@ impl Config {
                             }
                             "line_numbers" => {
                                 let cell =
-                                    follow_cell_path(&value, &["colors", "line_numbers"]).unwrap();
+                                    follow_cell_path(value, &["colors", "line_numbers"]).unwrap();
                                 let columns = match &cell {
                                     Value::Record { val: rec, .. } => {
                                         rec.columns().collect::<Vec<_>>()
@@ -516,7 +518,7 @@ impl Config {
                                     match column.as_str() {
                                         "normal" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "line_numbers", "normal"],
                                                 &config.colors.line_numbers.normal,
                                             )? {
@@ -525,7 +527,7 @@ impl Config {
                                         }
                                         "selected" => {
                                             if let Some(val) = try_fg_bg_colors(
-                                                &value,
+                                                value,
                                                 &["colors", "line_numbers", "selected"],
                                                 &config.colors.line_numbers.selected,
                                             )? {
@@ -546,7 +548,7 @@ impl Config {
                     }
                 }
                 "keybindings" => {
-                    let cell = follow_cell_path(&value, &["keybindings"]).unwrap();
+                    let cell = follow_cell_path(value, &["keybindings"]).unwrap();
                     let columns = match &cell {
                         Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
                         x => return Err(invalid_type(x, &["keybindings"], "record")),
@@ -555,22 +557,22 @@ impl Config {
                     for column in columns {
                         match column.as_str() {
                             "quit" => {
-                                if let Some(val) = try_key(&value, &["keybindings", "quit"])? {
+                                if let Some(val) = try_key(value, &["keybindings", "quit"])? {
                                     config.keybindings.quit = val
                                 }
                             }
                             "insert" => {
-                                if let Some(val) = try_key(&value, &["keybindings", "insert"])? {
+                                if let Some(val) = try_key(value, &["keybindings", "insert"])? {
                                     config.keybindings.insert = val
                                 }
                             }
                             "normal" => {
-                                if let Some(val) = try_key(&value, &["keybindings", "normal"])? {
+                                if let Some(val) = try_key(value, &["keybindings", "normal"])? {
                                     config.keybindings.normal = val
                                 }
                             }
                             "navigation" => {
-                                let cell = follow_cell_path(&value, &["keybindings", "navigation"])
+                                let cell = follow_cell_path(value, &["keybindings", "navigation"])
                                     .unwrap();
                                 let columns = match &cell {
                                     Value::Record { val: rec, .. } => {
@@ -589,7 +591,7 @@ impl Config {
                                     match column.as_str() {
                                         "up" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "up"],
                                             )? {
                                                 config.keybindings.navigation.up = val
@@ -597,7 +599,7 @@ impl Config {
                                         }
                                         "down" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "down"],
                                             )? {
                                                 config.keybindings.navigation.down = val
@@ -605,7 +607,7 @@ impl Config {
                                         }
                                         "left" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "left"],
                                             )? {
                                                 config.keybindings.navigation.left = val
@@ -613,7 +615,7 @@ impl Config {
                                         }
                                         "right" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "right"],
                                             )? {
                                                 config.keybindings.navigation.right = val
@@ -621,7 +623,7 @@ impl Config {
                                         }
                                         "half_page_up" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "half_page_up"],
                                             )? {
                                                 config.keybindings.navigation.half_page_up = val
@@ -629,7 +631,7 @@ impl Config {
                                         }
                                         "half_page_down" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "half_page_down"],
                                             )? {
                                                 config.keybindings.navigation.half_page_down = val
@@ -637,7 +639,7 @@ impl Config {
                                         }
                                         "goto_top" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "goto_top"],
                                             )? {
                                                 config.keybindings.navigation.goto_top = val
@@ -645,7 +647,7 @@ impl Config {
                                         }
                                         "goto_bottom" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "goto_bottom"],
                                             )? {
                                                 config.keybindings.navigation.goto_bottom = val
@@ -653,7 +655,7 @@ impl Config {
                                         }
                                         "goto_line" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "navigation", "goto_line"],
                                             )? {
                                                 config.keybindings.navigation.goto_line = val
@@ -669,13 +671,13 @@ impl Config {
                                 }
                             }
                             "peek" => {
-                                if let Some(val) = try_key(&value, &["keybindings", "peek"])? {
+                                if let Some(val) = try_key(value, &["keybindings", "peek"])? {
                                     config.keybindings.peek = val
                                 }
                             }
                             "peeking" => {
                                 let cell =
-                                    follow_cell_path(&value, &["keybindings", "peeking"]).unwrap();
+                                    follow_cell_path(value, &["keybindings", "peeking"]).unwrap();
                                 let columns = match &cell {
                                     Value::Record { val: rec, .. } => {
                                         rec.columns().collect::<Vec<_>>()
@@ -693,14 +695,14 @@ impl Config {
                                     match column.as_str() {
                                         "all" => {
                                             if let Some(val) =
-                                                try_key(&value, &["keybindings", "peeking", "all"])?
+                                                try_key(value, &["keybindings", "peeking", "all"])?
                                             {
                                                 config.keybindings.peeking.all = val
                                             }
                                         }
                                         "cell_path" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "peeking", "cell_path"],
                                             )? {
                                                 config.keybindings.peeking.cell_path = val
@@ -708,17 +710,16 @@ impl Config {
                                         }
                                         "under" => {
                                             if let Some(val) = try_key(
-                                                &value,
+                                                value,
                                                 &["keybindings", "peeking", "under"],
                                             )? {
                                                 config.keybindings.peeking.under = val
                                             }
                                         }
                                         "view" => {
-                                            if let Some(val) = try_key(
-                                                &value,
-                                                &["keybindings", "peeking", "view"],
-                                            )? {
+                                            if let Some(val) =
+                                                try_key(value, &["keybindings", "peeking", "view"])?
+                                            {
                                                 config.keybindings.peeking.view = val
                                             }
                                         }
@@ -732,7 +733,7 @@ impl Config {
                                 }
                             }
                             "transpose" => {
-                                if let Some(val) = try_key(&value, &["keybindings", "tranpose"])? {
+                                if let Some(val) = try_key(value, &["keybindings", "tranpose"])? {
                                     config.keybindings.transpose = val
                                 }
                             }
@@ -748,37 +749,15 @@ impl Config {
     }
 }
 
-/// represent a [`KeyEvent`] as a simple string
-pub fn repr_key(key: &KeyEvent) -> String {
-    let code = match key.code {
-        KeyCode::Char(c) => c.to_string(),
-        KeyCode::Left => char::from_u32(0x2190).unwrap().into(),
-        KeyCode::Up => char::from_u32(0x2191).unwrap().into(),
-        KeyCode::Right => char::from_u32(0x2192).unwrap().into(),
-        KeyCode::Down => char::from_u32(0x2193).unwrap().into(),
-        KeyCode::Esc => "<esc>".into(),
-        KeyCode::Enter => char::from_u32(0x23ce).unwrap().into(),
-        KeyCode::Backspace => char::from_u32(0x232b).unwrap().into(),
-        KeyCode::Delete => char::from_u32(0x2326).unwrap().into(),
-        _ => "??".into(),
-    };
-
-    match key.modifiers {
-        KeyModifiers::NONE => code,
-        KeyModifiers::CONTROL => format!("<c-{}>", code),
-        _ => "??".into(),
-    }
-}
-
 // TODO: add proper assert error messages
 #[cfg(test)]
 mod tests {
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use nu_protocol::{record, Record, Value};
 
-    use crate::nu::value::from_nuon;
+    use crate::handler::repr_key;
 
-    use super::{repr_key, Config};
+    use super::Config;
 
     #[test]
     fn keycode_representation() {
@@ -797,7 +776,7 @@ mod tests {
     #[test]
     fn parse_invalid_config() {
         assert_eq!(
-            Config::from_value(Value::test_string("x")),
+            Config::from_value(&Value::test_string("x")),
             Ok(Config::default())
         );
     }
@@ -805,7 +784,7 @@ mod tests {
     #[test]
     fn parse_empty_config() {
         assert_eq!(
-            Config::from_value(Value::test_record(Record::new())),
+            Config::from_value(&Value::test_record(Record::new())),
             Ok(Config::default())
         );
     }
@@ -815,7 +794,7 @@ mod tests {
         let value = Value::test_record(record! {
             "x" => Value::test_nothing()
         });
-        let result = Config::from_value(value);
+        let result = Config::from_value(&value);
         assert!(result.is_err());
         let error = result.err().unwrap();
         assert!(error.labels[0].text.contains("not a valid config field"));
@@ -825,7 +804,7 @@ mod tests {
                 "foo" => Value::test_nothing()
             })
         });
-        let result = Config::from_value(value);
+        let result = Config::from_value(&value);
         assert!(result.is_err());
         let error = result.err().unwrap();
         assert!(error.labels[0].text.contains("not a valid config field"));
@@ -836,7 +815,7 @@ mod tests {
         let value = Value::test_record(record! {
             "show_cell_path" => Value::test_bool(true)
         });
-        assert_eq!(Config::from_value(value), Ok(Config::default()));
+        assert_eq!(Config::from_value(&value), Ok(Config::default()));
 
         let value = Value::test_record(record! {
             "show_cell_path" => Value::test_bool(false)
@@ -845,7 +824,7 @@ mod tests {
             show_cell_path: false,
             ..Default::default()
         };
-        assert_eq!(Config::from_value(value), Ok(expected));
+        assert_eq!(Config::from_value(&value), Ok(expected));
 
         let value = Value::test_record(record! {
             "keybindings" => Value::test_record(record!{
@@ -857,7 +836,7 @@ mod tests {
 
         let mut expected = Config::default();
         expected.keybindings.navigation.up = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
-        assert_eq!(Config::from_value(value), Ok(expected));
+        assert_eq!(Config::from_value(&value), Ok(expected));
     }
 
     #[test]
@@ -865,7 +844,7 @@ mod tests {
         assert_eq!(
             Config::default(),
             Config::from_value(
-                from_nuon(include_str!("../../examples/config/default.nuon")).unwrap()
+                &nuon::from_nuon(include_str!("../../examples/config/default.nuon"), None).unwrap()
             )
             .unwrap()
         )

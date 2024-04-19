@@ -1,25 +1,64 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use nu_protocol::{
-    ast::{CellPath, Expr, Expression, PathMember, RecordItem},
-    engine::{EngineState, StateWorkingSet},
-    record, Range, Record, ShellError, Span, Type, Unit, Value,
+    ast::{CellPath, PathMember},
+    record, Record, Span, Type, Value,
 };
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Table {
+    /// value is a list but with no items in it
     Empty,
+    /// row at index {0} should be a record but is a {1}
     RowNotARecord(usize, Type),
+    /// row at index {0} should have same length as first row, {2}, but has
+    /// length {1}
     RowIncompatibleLen(usize, usize, usize),
+    /// row at index {0} and subkey {1} has type {2} but was expected to have
+    /// the same type as first row {3}
     RowIncompatibleType(usize, String, Type, Type),
+    /// row at index {0} contains an invalid key {1} but expected one of {2}
     RowInvalidKey(usize, String, Vec<String>),
+    /// value is a valid table
     IsValid,
+    /// valis is not even a list
     NotAList,
 }
 
-pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Value) -> Value {
+impl Table {
+    pub(crate) fn to_msg(&self) -> Option<String> {
+        match self {
+            Table::Empty => None,
+            Table::RowNotARecord(i, t) => Some(format!("row $.{} is not a record: {}", i, t)),
+            Table::RowIncompatibleLen(i, l, e) => Some(format!(
+                "row $.{} has incompatible length with first row: expected {} found {}",
+                i, e, l
+            )),
+            Table::RowIncompatibleType(i, k, t, e) => Some(format!(
+                "cell $.{}.{} has incompatible type with first row: expected {} found {}",
+                i, k, e, t
+            )),
+            Table::RowInvalidKey(i, k, ks) => Some(format!(
+                "row $.{} does not contain key '{}': list of keys {:?}",
+                i, k, ks
+            )),
+            Table::NotAList => None,
+            Table::IsValid => None,
+        }
+    }
+}
+
+/// mutate the input `value`, changing the _value_ at `cell_path` into the `cell` argument
+///
+/// > **Note**  
+/// > returns [`None`] if the `cell_path` is not valid in `value`.
+pub(crate) fn mutate_value_cell(
+    value: &Value,
+    cell_path: &CellPath,
+    cell: &Value,
+) -> Option<Value> {
     if cell_path.members.is_empty() {
-        return cell.clone();
+        return Some(cell.clone());
     }
 
     if value
@@ -27,31 +66,32 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
         .follow_cell_path(&cell_path.members, false)
         .is_err()
     {
-        return value.clone();
+        return None;
     }
 
     let mut cell_path = cell_path.clone();
 
-    // NOTE: cell_path.members cannot be empty thanks to the guard above
+    // NOTE: `cell_path.members` cannot be empty because the last branch of the match bellot
+    // does not call `aux` recursively
     let first = cell_path.members.first().unwrap();
 
-    match value {
+    let res = match value {
         Value::List { vals, .. } => {
             let id = match first {
                 PathMember::Int { val, .. } => *val,
-                _ => panic!("first cell path element should be an int"),
+                _ => unreachable!(),
             };
             cell_path.members.remove(0);
 
             let mut vals = vals.clone();
-            vals[id] = mutate_value_cell(&vals[id], &cell_path, cell);
+            vals[id] = mutate_value_cell(&vals[id], &cell_path, cell).unwrap();
 
             Value::list(vals, Span::unknown())
         }
         Value::Record { val: rec, .. } => {
             let col = match first {
                 PathMember::String { val, .. } => val.clone(),
-                _ => panic!("first cell path element should be an string"),
+                _ => unreachable!(),
             };
             cell_path.members.remove(0);
 
@@ -64,7 +104,7 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
                 .enumerate()
                 .map(|(i, v)| {
                     if i == id {
-                        mutate_value_cell(&v, &cell_path, cell)
+                        mutate_value_cell(&v, &cell_path, cell).unwrap()
                     } else {
                         v
                     }
@@ -72,12 +112,17 @@ pub(crate) fn mutate_value_cell(value: &Value, cell_path: &CellPath, cell: &Valu
                 .collect();
 
             Value::record(
+                // NOTE: this cannot fail because `cols` and `vals` have the same length by
+                // contruction, they have been constructed by iterating over `rec.columns()`
+                // and `rec.values()` respectively, both of which have the same length
                 Record::from_raw_cols_vals(cols, vals, Span::unknown(), Span::unknown()).unwrap(),
                 Span::unknown(),
             )
         }
         _ => cell.clone(),
-    }
+    };
+
+    Some(res)
 }
 
 pub(crate) fn is_table(value: &Value) -> Table {
@@ -178,6 +223,7 @@ pub(crate) fn is_table(value: &Value) -> Table {
 ///     assert equal (open Cargo.toml | transpose | transpose) (open Cargo.toml)
 /// }
 /// ```
+// WARNING: some _unwraps_ haven't been proven to be safe in this function
 pub(crate) fn transpose(value: &Value) -> Value {
     if matches!(is_table(value), Table::IsValid) {
         let value_rows = match value {
@@ -185,6 +231,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             _ => return value.clone(),
         };
 
+        // NOTE: because `value` is a valid table, it's first row is guaranteed to be a record
         let first_row = value_rows[0].as_record().unwrap();
 
         let full_columns = (1..=(first_row.len()))
@@ -204,6 +251,8 @@ pub(crate) fn transpose(value: &Value) -> Value {
                     .collect();
 
                 return Value::record(
+                    // NOTE: `cols` and `value_rows` have the same length by contruction
+                    // because they have been created by iterating over `value_rows`
                     Record::from_raw_cols_vals(cols, vals, Span::unknown(), Span::unknown())
                         .unwrap(),
                     Span::unknown(),
@@ -217,6 +266,8 @@ pub(crate) fn transpose(value: &Value) -> Value {
 
                 for i in 0..(first_row.len() - 1) {
                     rows.push(Value::record(
+                        // NOTE: `cols` and `value_rows` have the same length by contruction
+                        // because `cols` has been created by iterating over `value_rows`
                         Record::from_raw_cols_vals(
                             cols.clone(),
                             value_rows
@@ -246,6 +297,7 @@ pub(crate) fn transpose(value: &Value) -> Value {
             }
 
             rows.push(Value::record(
+                // NOTE: `cols` and `vs` have the same length by construction
                 Record::from_raw_cols_vals(cols, vs, Span::unknown(), Span::unknown()).unwrap(),
                 Span::unknown(),
             ));
@@ -271,448 +323,6 @@ pub(crate) fn transpose(value: &Value) -> Value {
         }
         _ => value.clone(),
     }
-}
-
-#[inline(always)]
-fn convert_to_value(
-    expr: Expression,
-    span: Span,
-    original_text: &str,
-) -> Result<Value, ShellError> {
-    match expr.expr {
-        Expr::BinaryOp(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "binary operators not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::UnaryNot(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "unary operators not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Block(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "blocks not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Closure(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "closures not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Binary(val) => Ok(Value::binary(val, span)),
-        Expr::Bool(val) => Ok(Value::bool(val, span)),
-        Expr::Call(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "calls not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::CellPath(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "subexpressions and cellpaths not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::DateTime(dt) => Ok(Value::date(dt, span)),
-        Expr::ExternalCall(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "calls not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Filepath(val, _) => Ok(Value::string(val, span)),
-        Expr::Directory(val, _) => Ok(Value::string(val, span)),
-        Expr::Float(val) => Ok(Value::float(val, span)),
-        Expr::FullCellPath(full_cell_path) => {
-            if !full_cell_path.tail.is_empty() {
-                Err(ShellError::OutsideSpannedLabeledError {
-                    src: original_text.to_string(),
-                    error: "Error when loading".into(),
-                    msg: "subexpressions and cellpaths not supported in nuon".into(),
-                    span: expr.span,
-                })
-            } else {
-                convert_to_value(full_cell_path.head, span, original_text)
-            }
-        }
-
-        Expr::Garbage => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "extra tokens in input file".into(),
-            span: expr.span,
-        }),
-        Expr::GlobPattern(val, _) => Ok(Value::string(val, span)),
-        Expr::ImportPattern(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "imports not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Overlay(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "overlays not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Int(val) => Ok(Value::int(val, span)),
-        Expr::Keyword(kw, ..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: format!("{} not supported in nuon", String::from_utf8_lossy(&kw)),
-            span: expr.span,
-        }),
-        Expr::List(vals) => {
-            let mut output = vec![];
-            for val in vals {
-                output.push(convert_to_value(val, span, original_text)?);
-            }
-
-            Ok(Value::list(output, span))
-        }
-        Expr::MatchBlock(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "match blocks not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Nothing => Ok(Value::nothing(span)),
-        Expr::Operator(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "operators not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Range(from, next, to, operator) => {
-            let from = if let Some(f) = from {
-                convert_to_value(*f, span, original_text)?
-            } else {
-                Value::nothing(expr.span)
-            };
-
-            let next = if let Some(s) = next {
-                convert_to_value(*s, span, original_text)?
-            } else {
-                Value::nothing(expr.span)
-            };
-
-            let to = if let Some(t) = to {
-                convert_to_value(*t, span, original_text)?
-            } else {
-                Value::nothing(expr.span)
-            };
-
-            Ok(Value::range(
-                Range::new(from, next, to, operator.inclusion, expr.span)?,
-                expr.span,
-            ))
-        }
-        Expr::Record(key_vals) => {
-            let mut record = Record::with_capacity(key_vals.len());
-            let mut key_spans = Vec::with_capacity(key_vals.len());
-
-            for key_val in key_vals {
-                match key_val {
-                    RecordItem::Pair(key, val) => {
-                        let key_str = match key.expr {
-                            Expr::String(key_str) => key_str,
-                            _ => {
-                                return Err(ShellError::OutsideSpannedLabeledError {
-                                    src: original_text.to_string(),
-                                    error: "Error when loading".into(),
-                                    msg: "only strings can be keys".into(),
-                                    span: key.span,
-                                })
-                            }
-                        };
-
-                        if let Some(i) = record.index_of(&key_str) {
-                            return Err(ShellError::ColumnDefinedTwice {
-                                col_name: key_str,
-                                second_use: key.span,
-                                first_use: key_spans[i],
-                            });
-                        } else {
-                            key_spans.push(key.span);
-                            record.push(key_str, convert_to_value(val, span, original_text)?);
-                        }
-                    }
-                    RecordItem::Spread(_, inner) => {
-                        return Err(ShellError::OutsideSpannedLabeledError {
-                            src: original_text.to_string(),
-                            error: "Error when loading".into(),
-                            msg: "spread operator not supported in nuon".into(),
-                            span: inner.span,
-                        });
-                    }
-                }
-            }
-
-            Ok(Value::record(record, span))
-        }
-        Expr::RowCondition(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "row conditions not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Signature(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "signatures not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Spread(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "spread operator not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::String(s) => Ok(Value::string(s, span)),
-        Expr::StringInterpolation(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "string interpolation not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Subexpression(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "subexpressions not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::Table(mut headers, cells) => {
-            let mut cols = vec![];
-
-            let mut output = vec![];
-
-            for key in headers.iter_mut() {
-                let key_str = match &mut key.expr {
-                    Expr::String(key_str) => key_str,
-                    _ => {
-                        return Err(ShellError::OutsideSpannedLabeledError {
-                            src: original_text.to_string(),
-                            error: "Error when loading".into(),
-                            msg: "only strings can be keys".into(),
-                            span: expr.span,
-                        })
-                    }
-                };
-
-                if let Some(idx) = cols.iter().position(|existing| existing == key_str) {
-                    return Err(ShellError::ColumnDefinedTwice {
-                        col_name: key_str.clone(),
-                        second_use: key.span,
-                        first_use: headers[idx].span,
-                    });
-                } else {
-                    cols.push(std::mem::take(key_str));
-                }
-            }
-
-            for row in cells {
-                if cols.len() != row.len() {
-                    return Err(ShellError::OutsideSpannedLabeledError {
-                        src: original_text.to_string(),
-                        error: "Error when loading".into(),
-                        msg: "table has mismatched columns".into(),
-                        span: expr.span,
-                    });
-                }
-
-                let record = cols
-                    .iter()
-                    .zip(row)
-                    .map(|(col, cell)| {
-                        convert_to_value(cell, span, original_text).map(|val| (col.clone(), val))
-                    })
-                    .collect::<Result<_, _>>()?;
-
-                output.push(Value::record(record, span));
-            }
-
-            Ok(Value::list(output, span))
-        }
-        Expr::ValueWithUnit(val, unit) => {
-            let size = match val.expr {
-                Expr::Int(val) => val,
-                _ => {
-                    return Err(ShellError::OutsideSpannedLabeledError {
-                        src: original_text.to_string(),
-                        error: "Error when loading".into(),
-                        msg: "non-integer unit value".into(),
-                        span: expr.span,
-                    })
-                }
-            };
-
-            match unit.item {
-                Unit::Byte => Ok(Value::filesize(size, span)),
-                Unit::Kilobyte => Ok(Value::filesize(size * 1000, span)),
-                Unit::Megabyte => Ok(Value::filesize(size * 1000 * 1000, span)),
-                Unit::Gigabyte => Ok(Value::filesize(size * 1000 * 1000 * 1000, span)),
-                Unit::Terabyte => Ok(Value::filesize(size * 1000 * 1000 * 1000 * 1000, span)),
-                Unit::Petabyte => Ok(Value::filesize(
-                    size * 1000 * 1000 * 1000 * 1000 * 1000,
-                    span,
-                )),
-                Unit::Exabyte => Ok(Value::filesize(
-                    size * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
-                    span,
-                )),
-
-                Unit::Kibibyte => Ok(Value::filesize(size * 1024, span)),
-                Unit::Mebibyte => Ok(Value::filesize(size * 1024 * 1024, span)),
-                Unit::Gibibyte => Ok(Value::filesize(size * 1024 * 1024 * 1024, span)),
-                Unit::Tebibyte => Ok(Value::filesize(size * 1024 * 1024 * 1024 * 1024, span)),
-                Unit::Pebibyte => Ok(Value::filesize(
-                    size * 1024 * 1024 * 1024 * 1024 * 1024,
-                    span,
-                )),
-                Unit::Exbibyte => Ok(Value::filesize(
-                    size * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-                    span,
-                )),
-
-                Unit::Nanosecond => Ok(Value::duration(size, span)),
-                Unit::Microsecond => Ok(Value::duration(size * 1000, span)),
-                Unit::Millisecond => Ok(Value::duration(size * 1000 * 1000, span)),
-                Unit::Second => Ok(Value::duration(size * 1000 * 1000 * 1000, span)),
-                Unit::Minute => Ok(Value::duration(size * 1000 * 1000 * 1000 * 60, span)),
-                Unit::Hour => Ok(Value::duration(size * 1000 * 1000 * 1000 * 60 * 60, span)),
-                Unit::Day => match size.checked_mul(1000 * 1000 * 1000 * 60 * 60 * 24) {
-                    Some(val) => Ok(Value::duration(val, span)),
-                    None => Err(ShellError::OutsideSpannedLabeledError {
-                        src: original_text.to_string(),
-                        error: "day duration too large".into(),
-                        msg: "day duration too large".into(),
-                        span: expr.span,
-                    }),
-                },
-
-                Unit::Week => match size.checked_mul(1000 * 1000 * 1000 * 60 * 60 * 24 * 7) {
-                    Some(val) => Ok(Value::duration(val, span)),
-                    None => Err(ShellError::OutsideSpannedLabeledError {
-                        src: original_text.to_string(),
-                        error: "week duration too large".into(),
-                        msg: "week duration too large".into(),
-                        span: expr.span,
-                    }),
-                },
-            }
-        }
-        Expr::Var(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "variables not supported in nuon".into(),
-            span: expr.span,
-        }),
-        Expr::VarDecl(..) => Err(ShellError::OutsideSpannedLabeledError {
-            src: original_text.to_string(),
-            error: "Error when loading".into(),
-            msg: "variable declarations not supported in nuon".into(),
-            span: expr.span,
-        }),
-    }
-}
-
-#[allow(dead_code)] // this is only used in tests for `config`
-pub(crate) fn from_nuon(input: &str) -> Result<Value, ShellError> {
-    let engine_state = EngineState::default();
-
-    let mut working_set = StateWorkingSet::new(&engine_state);
-
-    let mut block = nu_parser::parse(&mut working_set, None, input.as_bytes(), false);
-
-    if let Some(pipeline) = block.pipelines.get(1) {
-        if let Some(element) = pipeline.elements.first() {
-            return Err(ShellError::GenericError {
-                error: "error when loading nuon text".into(),
-                msg: "could not load nuon text".into(),
-                span: None,
-                help: None,
-                inner: vec![ShellError::OutsideSpannedLabeledError {
-                    src: input.to_string(),
-                    error: "error when loading".into(),
-                    msg: "excess values when loading".into(),
-                    span: element.expr.span,
-                }],
-            });
-        } else {
-            return Err(ShellError::GenericError {
-                error: "error when loading nuon text".into(),
-                msg: "could not load nuon text".into(),
-                span: None,
-                help: None,
-                inner: vec![ShellError::GenericError {
-                    error: "error when loading".into(),
-                    msg: "excess values when loading".into(),
-                    span: None,
-                    help: None,
-                    inner: vec![],
-                }],
-            });
-        }
-    }
-
-    let expr = if block.pipelines.is_empty() {
-        Expression {
-            expr: Expr::Nothing,
-            span: Span::unknown(),
-            custom_completion: None,
-            ty: Type::Nothing,
-        }
-    } else {
-        let mut pipeline = Arc::make_mut(&mut block).pipelines.remove(0);
-
-        if let Some(expr) = pipeline.elements.get(1) {
-            return Err(ShellError::GenericError {
-                error: "error when loading nuon text".into(),
-                msg: "could not load nuon text".into(),
-                span: None,
-                help: None,
-                inner: vec![ShellError::OutsideSpannedLabeledError {
-                    src: input.to_string(),
-                    error: "error when loading".into(),
-                    msg: "detected a pipeline in nuon file".into(),
-                    span: expr.expr.span,
-                }],
-            });
-        }
-
-        if pipeline.elements.is_empty() {
-            Expression {
-                expr: Expr::Nothing,
-                span: Span::unknown(),
-                custom_completion: None,
-                ty: Type::Nothing,
-            }
-        } else {
-            pipeline.elements.remove(0).expr
-        }
-    };
-
-    if let Some(err) = working_set.parse_errors.first() {
-        return Err(ShellError::GenericError {
-            error: "error when parsing nuon text".into(),
-            msg: "could not parse nuon text".into(),
-            span: None,
-            help: None,
-            inner: vec![ShellError::OutsideSpannedLabeledError {
-                src: input.to_string(),
-                error: "error when parsing".into(),
-                msg: err.to_string(),
-                span: err.span(),
-            }],
-        });
-    }
-
-    convert_to_value(expr, Span::unknown(), input)
 }
 
 #[cfg(test)]
@@ -747,68 +357,67 @@ mod tests {
                 Value::test_string("foo"),
                 vec![],
                 Value::test_string("bar"),
-                Value::test_string("bar"),
+                Some(Value::test_string("bar")),
             ),
             // list -> simple value
             (
                 list.clone(),
                 vec![],
                 Value::test_nothing(),
-                Value::test_nothing(),
+                Some(Value::test_nothing()),
             ),
             // record -> simple value
             (
                 record.clone(),
                 vec![],
                 Value::test_nothing(),
-                Value::test_nothing(),
+                Some(Value::test_nothing()),
             ),
             // mutate a list element with simple value
             (
                 list.clone(),
                 vec![PM::I(0)],
                 Value::test_int(0),
-                Value::test_list(vec![
+                Some(Value::test_list(vec![
                     Value::test_int(0),
                     Value::test_int(2),
                     Value::test_int(3),
-                ]),
+                ])),
             ),
             // mutate a list element with complex value
             (
                 list.clone(),
                 vec![PM::I(1)],
                 record.clone(),
-                Value::test_list(vec![Value::test_int(1), record.clone(), Value::test_int(3)]),
+                Some(Value::test_list(vec![
+                    Value::test_int(1),
+                    record.clone(),
+                    Value::test_int(3),
+                ])),
             ),
-            // invalid list index -> do not mutate
-            (
-                list.clone(),
-                vec![PM::I(5)],
-                Value::test_int(0),
-                list.clone(),
-            ),
+            // invalid list index
+            (list.clone(), vec![PM::I(5)], Value::test_int(0), None),
             // mutate a record field with a simple value
             (
                 record.clone(),
                 vec![PM::S("a")],
                 Value::test_nothing(),
-                Value::test_record(record! {
+                Some(Value::test_record(record! {
                     "a" => Value::test_nothing(),
                     "b" => Value::test_int(2),
                     "c" => Value::test_int(3),
-                }),
+                })),
             ),
             // mutate a record field with a complex value
             (
                 record.clone(),
                 vec![PM::S("c")],
                 list.clone(),
-                Value::test_record(record! {
+                Some(Value::test_record(record! {
                     "a" => Value::test_int(1),
                     "b" => Value::test_int(2),
                     "c" => list.clone(),
-                }),
+                })),
             ),
             // mutate a deeply-nested list element
             (
@@ -817,9 +426,9 @@ mod tests {
                 ])])]),
                 vec![PM::I(0), PM::I(0), PM::I(0)],
                 Value::test_string("bar"),
-                Value::test_list(vec![Value::test_list(vec![Value::test_list(vec![
-                    Value::test_string("bar"),
-                ])])]),
+                Some(Value::test_list(vec![Value::test_list(vec![
+                    Value::test_list(vec![Value::test_string("bar")]),
+                ])])),
             ),
             // mutate a deeply-nested record field
             (
@@ -832,13 +441,26 @@ mod tests {
                 }),
                 vec![PM::S("a"), PM::S("b"), PM::S("c")],
                 Value::test_string("bar"),
-                Value::test_record(record! {
+                Some(Value::test_record(record! {
                     "a" => Value::test_record(record! {
                         "b" => Value::test_record(record! {
                             "c" => Value::test_string("bar"),
                         }),
                     }),
+                })),
+            ),
+            // try to mutate bad cell path
+            (
+                Value::test_record(record! {
+                    "a" => Value::test_record(record! {
+                        "b" => Value::test_record(record! {
+                            "c" => Value::test_string("foo"),
+                        }),
+                    }),
                 }),
+                vec![PM::S("a"), PM::I(0), PM::S("c")],
+                Value::test_string("bar"),
+                None,
             ),
         ];
 
@@ -855,15 +477,21 @@ mod tests {
                 default_value_repr(&value),
                 PM::as_cell_path(&members),
                 default_value_repr(&cell),
-                default_value_repr(&expected),
-                default_value_repr(&result)
+                default_value_repr(&match expected.clone() {
+                    Some(v) => v,
+                    None => Value::test_nothing(),
+                }),
+                default_value_repr(&match result.clone() {
+                    Some(v) => v,
+                    None => Value::test_nothing(),
+                }),
             );
         }
     }
 
     #[test]
     fn is_a_table() {
-        let table = Value::test_list(vec![
+        let simple_table = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_string("foo"),
                 "b" => Value::test_int(1),
@@ -873,13 +501,6 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
-            is_table(&table),
-            Table::IsValid,
-            "{} should be a table",
-            default_value_repr(&table)
-        );
-
         let table_with_out_of_order_columns = Value::test_list(vec![
             Value::test_record(record! {
                 "b" => Value::test_int(1),
@@ -890,13 +511,6 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
-            is_table(&table_with_out_of_order_columns),
-            Table::IsValid,
-            "{} should be a table",
-            default_value_repr(&table_with_out_of_order_columns)
-        );
-
         let table_with_nulls = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_nothing(),
@@ -907,13 +521,6 @@ mod tests {
                 "b" => Value::test_int(2),
             }),
         ]);
-        assert_eq!(
-            is_table(&table_with_nulls),
-            Table::IsValid,
-            "{} should be a table",
-            default_value_repr(&table_with_nulls)
-        );
-
         let table_with_number_colum = Value::test_list(vec![
             Value::test_record(record! {
                 "a" => Value::test_string("foo"),
@@ -924,85 +531,89 @@ mod tests {
                 "b" => Value::test_float(2.34),
             }),
         ]);
-        assert_eq!(
-            is_table(&table_with_number_colum),
-            Table::IsValid,
-            "{} should be a table",
-            default_value_repr(&table_with_number_colum)
-        );
+        for table in [
+            simple_table,
+            table_with_out_of_order_columns,
+            table_with_nulls,
+            table_with_number_colum,
+        ] {
+            assert_eq!(
+                is_table(&table),
+                Table::IsValid,
+                "{} should be a table",
+                default_value_repr(&table)
+            );
+        }
 
-        let not_a_table_missing_field = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-            }),
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-        ]);
-        assert_eq!(
-            is_table(&not_a_table_missing_field),
+        let not_a_table_missing_field = (
+            Value::test_list(vec![
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                }),
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_int(1),
+                }),
+            ]),
             Table::RowIncompatibleLen(1, 2, 1),
-            "{} should not be a table",
-            default_value_repr(&not_a_table_missing_field)
         );
-
-        let not_a_table_incompatible_types = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_list(vec![Value::test_int(1)]),
-            }),
-        ]);
-        assert_eq!(
-            is_table(&not_a_table_incompatible_types),
+        let not_a_table_incompatible_types = (
+            Value::test_list(vec![
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_int(1),
+                }),
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_list(vec![Value::test_int(1)]),
+                }),
+            ]),
             Table::RowIncompatibleType(
                 1,
                 "b".to_string(),
                 Type::List(Box::new(Type::Int)),
-                Type::Int
+                Type::Int,
             ),
-            "{} should not be a table",
-            default_value_repr(&not_a_table_incompatible_types)
         );
+        let not_a_table_row_not_record = (
+            Value::test_list(vec![
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_int(1),
+                }),
+                Value::test_int(0),
+            ]),
+            Table::RowNotARecord(1, Type::Int),
+        );
+        let not_a_table_row_invalid_key = (
+            Value::test_list(vec![
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "b" => Value::test_int(1),
+                }),
+                Value::test_record(record! {
+                    "a" => Value::test_string("a"),
+                    "c" => Value::test_int(2),
+                }),
+            ]),
+            Table::RowInvalidKey(1, "b".into(), vec!["a".into(), "c".into()]),
+        );
+        for (not_a_table, expected) in [
+            not_a_table_missing_field,
+            not_a_table_incompatible_types,
+            not_a_table_row_not_record,
+            not_a_table_row_invalid_key,
+        ] {
+            assert_eq!(
+                is_table(&not_a_table),
+                expected,
+                "{} should not be a table",
+                default_value_repr(&not_a_table)
+            );
+        }
 
         assert_eq!(is_table(&Value::test_int(0)), Table::NotAList);
-
         assert_eq!(is_table(&Value::test_list(vec![])), Table::Empty);
-
-        let not_a_table_row_not_record = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-            Value::test_int(0),
-        ]);
-        assert_eq!(
-            is_table(&not_a_table_row_not_record),
-            Table::RowNotARecord(1, Type::Int),
-            "{} should not be a table",
-            default_value_repr(&not_a_table_row_not_record)
-        );
-
-        let not_a_table_row_invalid_key = Value::test_list(vec![
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "b" => Value::test_int(1),
-            }),
-            Value::test_record(record! {
-                "a" => Value::test_string("a"),
-                "c" => Value::test_int(2),
-            }),
-        ]);
-        assert_eq!(
-            is_table(&not_a_table_row_invalid_key),
-            Table::RowInvalidKey(1, "b".into(), vec!["a".into(), "c".into()]),
-            "{} should not be a table",
-            default_value_repr(&not_a_table_row_invalid_key)
-        );
     }
 
     #[test]
@@ -1095,26 +706,5 @@ mod tests {
             ])),
             Value::test_list(vec![Value::test_int(1), Value::test_int(2)])
         );
-    }
-
-    #[test]
-    fn from_nuon() {
-        assert_eq!(super::from_nuon(""), Ok(Value::test_nothing()));
-        assert_eq!(super::from_nuon("{}"), Ok(Value::test_record(record!())));
-        assert_eq!(
-            super::from_nuon("{a: 123}"),
-            Ok(Value::test_record(record!("a" =>Value::test_int(123))))
-        );
-        assert_eq!(
-            super::from_nuon("[1, 2, 3]"),
-            Ok(Value::test_list(vec![
-                Value::test_int(1),
-                Value::test_int(2),
-                Value::test_int(3)
-            ])),
-        );
-        assert!(super::from_nuon("{invalid").is_err());
-
-        assert!(super::from_nuon(include_str!("../../examples/config/default.nuon")).is_ok());
     }
 }

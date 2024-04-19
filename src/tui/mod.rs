@@ -7,10 +7,10 @@ use ratatui::Terminal;
 use std::io;
 use std::panic;
 
-use crate::app::App;
-use crate::config::Config;
-use crate::event::EventHandler;
-use crate::ui;
+pub(crate) mod event;
+
+use crate::{app::App, ui};
+use event::EventHandler;
 
 /// Representation of a terminal user interface.
 ///
@@ -54,9 +54,9 @@ impl<B: Backend> Tui<B> {
     ///
     /// [`Draw`]: tui::Terminal::draw
     /// [`rendering`]: crate::ui:render
-    pub fn draw(&mut self, app: &mut App, config: &Config, error: Option<&str>) -> Result<()> {
+    pub fn draw(&mut self, app: &mut App, error: Option<&str>) -> Result<()> {
         self.terminal
-            .draw(|frame| ui::render_ui(frame, app, config, error))?;
+            .draw(|frame| ui::render_ui(frame, app, error))?;
         Ok(())
     }
 

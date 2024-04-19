@@ -4,25 +4,24 @@ use nu_protocol::{
     Span, Value,
 };
 
-use crate::edit::Editor;
+use crate::{config::Config, edit::Editor};
 
 /// the mode in which the application is
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum Mode {
-    /// the NORMAL mode is the *navigation* mode, where the user can move around in the data
+    /// the *navigation* mode, where the user can move around in the data
+    #[default]
     Normal,
-    /// the INSERT mode lets the user edit cells of the structured data
+    /// lets the user edit cells of the structured data
     Insert,
-    /// the PEEKING mode lets the user *peek* data out of the application, to be reused later
+    /// lets the user *peek* data out of the application, to be reused later
     Peeking,
+    /// indicates that the user has arrived to the very bottom of the nested data, i.e. there is
+    /// nothing more to the right
     Bottom,
+    /// waits for more keys to perform an action, e.g. jumping to a line or motion repetition that
+    /// both require to enter a number before the actual action
     Waiting(usize),
-}
-
-impl Default for Mode {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 impl std::fmt::Display for Mode {
@@ -38,6 +37,7 @@ impl std::fmt::Display for Mode {
     }
 }
 
+#[derive(Clone)]
 /// the complete state of the application
 pub struct App {
     /// the full current path in the data
@@ -50,6 +50,8 @@ pub struct App {
     pub editor: Editor,
     /// the value that is being explored
     pub value: Value,
+    /// the configuration for the app
+    pub config: Config,
 }
 
 impl Default for App {
@@ -60,6 +62,7 @@ impl Default for App {
             mode: Mode::default(),
             editor: Editor::default(),
             value: Value::default(),
+            config: Config::default(),
         }
     }
 }
@@ -103,11 +106,7 @@ impl App {
     }
 
     pub(super) fn enter_editor(&mut self) -> Result<(), String> {
-        let value = self
-            .value
-            .clone()
-            .follow_cell_path(&self.position.members, false)
-            .unwrap();
+        let value = self.value_under_cursor(None);
 
         if matches!(value, Value::String { .. }) {
             self.mode = Mode::Insert;
@@ -121,5 +120,28 @@ impl App {
                 value.get_type()
             ))
         }
+    }
+
+    pub(crate) fn value_under_cursor(&self, alternate_cursor: Option<CellPath>) -> Value {
+        self.value
+            .clone()
+            .follow_cell_path(
+                &alternate_cursor.unwrap_or(self.position.clone()).members,
+                false,
+            )
+            .unwrap_or_else(|_| {
+                panic!(
+                    "unexpected error when following {:?} in {}",
+                    self.position.members,
+                    self.value
+                        .to_expanded_string(" ", &nu_protocol::Config::default())
+                )
+            })
+    }
+
+    pub(crate) fn with_config(&self, config: Config) -> Self {
+        let mut app = self.clone();
+        app.config = config;
+        app
     }
 }

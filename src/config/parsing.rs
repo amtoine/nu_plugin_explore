@@ -131,7 +131,7 @@ pub fn try_modifier(value: &Value, cell_path: &[&str]) -> Result<Option<Modifier
 }
 
 /// try to parse a color in the *value* at the given *cell path*
-pub fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, LabeledError> {
+fn try_color(value: &Value, cell_path: &[&str]) -> Result<Option<Color>, LabeledError> {
     match follow_cell_path(value, cell_path) {
         Some(Value::String { val, .. }) => match val.as_str() {
             "reset" => Ok(Some(Color::Reset)),
@@ -214,7 +214,11 @@ pub fn try_fg_bg_colors(
     cell_path: &[&str],
     default: &BgFgColorConfig,
 ) -> Result<Option<BgFgColorConfig>, LabeledError> {
-    let cell = follow_cell_path(value, cell_path).unwrap();
+    let cell = match follow_cell_path(value, cell_path) {
+        Some(c) => c,
+        None => return Ok(None),
+    };
+
     let columns = match &cell {
         Value::Record { val: rec, .. } => rec.columns().collect::<Vec<_>>(),
         x => return Err(invalid_type(x, cell_path, "record")),
@@ -266,6 +270,7 @@ pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyEvent>, La
                     {
                         #[allow(clippy::iter_nth_zero)]
                         return Ok(Some(KeyEvent::new(
+                            // NOTE: this `unwrap` cannot fail because the length of `x` is `5`
                             KeyCode::Char(x.to_string().chars().nth(3).unwrap()),
                             KeyModifiers::CONTROL,
                         )));
@@ -284,6 +289,7 @@ pub fn try_key(value: &Value, cell_path: &[&str]) -> Result<Option<KeyEvent>, La
 
                 #[allow(clippy::iter_nth_zero)]
                 Ok(Some(KeyEvent::new(
+                    // NOTE: this `unwrap` cannot fail because the length of `x` is `1`
                     KeyCode::Char(x.to_string().chars().nth(0).unwrap()),
                     KeyModifiers::NONE,
                 )))

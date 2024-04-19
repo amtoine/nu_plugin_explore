@@ -1,21 +1,24 @@
 CLIPPY_OPTIONS="-D warnings"
 
-.PHONY: all check test fmt doc build register install clean
-DEFAULT: check lock test
+.PHONY: fmt-check fmt check lock clippy test doc build register install clean
+DEFAULT: fmt-check check lock clippy test
+
+fmt-check:
+	cargo fmt --all --verbose -- --check --verbose
+fmt:
+	cargo fmt --all --verbose
 
 check:
-	cargo fmt --all --verbose -- --check --verbose
 	cargo check --workspace --lib --tests
-	cargo clippy --workspace -- "${CLIPPY_OPTIONS}"
 
 lock: check
 	./.github/workflows/scripts/check-cargo-lock.sh
 
-test: check
-	cargo test --workspace
+clippy:
+	cargo clippy --workspace -- "${CLIPPY_OPTIONS}"
 
-fmt:
-	cargo fmt --all --verbose
+test:
+	cargo test --workspace
 
 doc:
 	cargo doc --document-private-items --no-deps --open

@@ -5,7 +5,7 @@ use nu_plugin::{
     SimplePluginCommand,
 };
 use nu_plugin_explore::explore;
-use nu_protocol::{Example, LabeledError, Record, ShellError, Signature, Span, Type, Value};
+use nu_protocol::{Example, LabeledError, Record, Signature, Span, Type, Value};
 
 struct ExplorePlugin;
 
@@ -39,12 +39,13 @@ impl SimplePluginCommand for Explore {
     fn examples(&self) -> Vec<nu_protocol::Example> {
         vec![
             Example {
-                example: "open Cargo.toml | explore",
+                example: "open Cargo.toml | nu_plugin_explore",
                 description: "explore the Cargo.toml file of this project",
                 result: None,
             },
             Example {
-                example: r#"$nu | explore {show_cell_path: false, layout: "compact"}"#,
+                example: r#"$env.config.plugins.explore = { show_cell_path: false, layout: "compact" }
+    $nu | nu_plugin_explore"#,
                 description: "explore `$nu` and set some config options",
                 result: None,
             },
@@ -75,8 +76,8 @@ impl SimplePluginCommand for Explore {
         let foreground = engine.enter_foreground()?;
 
         let value = explore(config, input.clone()).map_err(|err| {
-            match err.downcast_ref::<ShellError>() {
-                Some(shell_error) => LabeledError::from(shell_error.clone()),
+            match err.downcast_ref::<LabeledError>() {
+                Some(err) => err.clone(),
                 None => LabeledError::new("unexpected internal error").with_label(
                     "could not transform error into ShellError, there was another kind of crash...",
                     call.head,
