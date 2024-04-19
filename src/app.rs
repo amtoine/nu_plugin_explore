@@ -105,21 +105,11 @@ impl App {
         self.mode = Mode::Bottom;
     }
 
-    pub(super) fn enter_editor(&mut self) -> Result<(), String> {
+    pub(super) fn enter_editor(&mut self) {
         let value = self.value_under_cursor(None);
 
-        if matches!(value, Value::String { .. }) {
-            self.mode = Mode::Insert;
-            self.editor = Editor::from_value(&value);
-
-            Ok(())
-        } else {
-            // TODO: support more diverse cell edition
-            Err(format!(
-                "can only edit string cells, found {}",
-                value.get_type()
-            ))
-        }
+        self.mode = Mode::Insert;
+        self.editor = Editor::from_value(&value);
     }
 
     pub(crate) fn value_under_cursor(&self, alternate_cursor: Option<CellPath>) -> Value {

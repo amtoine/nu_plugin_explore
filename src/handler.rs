@@ -73,10 +73,8 @@ impl App {
                 } else if key_event == config.keybindings.quit {
                     return Ok(TransitionResult::Quit);
                 } else if key_event == config.keybindings.insert {
-                    match self.enter_editor() {
-                        Ok(_) => return Ok(TransitionResult::Continue),
-                        Err(err) => return Ok(TransitionResult::Error(err)),
-                    }
+                    self.enter_editor();
+                    return Ok(TransitionResult::Continue);
                 } else if key_event == config.keybindings.peek {
                     self.mode = Mode::Peeking;
                     return Ok(TransitionResult::Continue);
@@ -330,6 +328,11 @@ mod tests {
 
         for (key, exit) in transitions {
             let mode = app.mode.clone();
+
+            // NOTE: yeah this is a bit clunky...
+            if app.mode == Mode::Insert {
+                app.editor.set_width(10);
+            }
 
             let result = app.handle_key_events(key, 0).unwrap();
 

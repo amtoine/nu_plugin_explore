@@ -1,4 +1,5 @@
 use crossterm::event::KeyCode;
+use nuon::{from_nuon, to_nuon};
 use ratatui::{
     prelude::Rect,
     style::Style,
@@ -27,7 +28,8 @@ impl Editor {
 
     pub(super) fn from_value(value: &Value) -> Self {
         Self {
-            buffer: value.to_expanded_string(" ", &nu_protocol::Config::default()),
+            // NOTE: `value` should be a valid [`Value`] and thus the conversion should never fail
+            buffer: to_nuon(value, true, None, None, None).unwrap(),
             cursor_position: (0, 0),
             width: 0,
         }
@@ -117,7 +119,8 @@ impl Editor {
             KeyCode::Backspace => self.delete_char_before_cursor(),
             KeyCode::Delete => self.delete_char_under_cursor(),
             KeyCode::Enter => {
-                let val = Value::string(self.buffer.clone(), Span::unknown());
+                let val = from_nuon(&self.buffer, Some(Span::unknown()))
+                    .expect("could not convert buffer back to NUON");
                 return Some(Some(val));
             }
             KeyCode::Esc => return Some(None),
@@ -177,9 +180,15 @@ mod tests {
     fn edit_cells() {
         let mut editor = Editor::default();
         editor.set_width(10 + 2);
+        editor.buffer = r#""""#.to_string();
 
+        // NOTE: for the NUON conversion to work, the test string buffer needs to be wrapped in
+        // parentheses.
+        // in order not to make the strokes clunky, the quotes are added in the for loop below and
+        // are implicite in the strokes below.
         let strokes = vec![
             (KeyCode::Enter, "", Some(Some(Value::test_string("")))),
+            (KeyCode::Right, "", None),
             (KeyCode::Char('a'), "a", None),
             (KeyCode::Char('b'), "ab", None),
             (KeyCode::Char('c'), "abc", None),
@@ -240,7 +249,7 @@ mod tests {
             let result = editor.handle_key(&key);
 
             assert_eq!(result, expected);
-            assert_eq!(editor.buffer, expected_buffer.to_string());
+            assert_eq!(editor.buffer, format!(r#""{}""#, expected_buffer));
         }
     }
 }
