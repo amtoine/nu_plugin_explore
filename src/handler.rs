@@ -7,6 +7,7 @@ use nu_protocol::{
 
 use crate::{
     app::{App, Mode},
+    edit::EditorTransition,
     navigation::Direction,
     nu::value::transpose,
 };
@@ -166,15 +167,16 @@ impl App {
                 }
 
                 match self.editor.handle_key(&key_event.code) {
-                    Some(Some(v)) => {
+                    Ok(EditorTransition::Value(v)) => {
                         self.mode = Mode::Normal;
                         return Ok(TransitionResult::Mutate(v, self.position.clone()));
                     }
-                    Some(None) => {
+                    Ok(EditorTransition::Quit) => {
                         self.mode = Mode::Normal;
                         return Ok(TransitionResult::Continue);
                     }
-                    None => return Ok(TransitionResult::Continue),
+                    Ok(EditorTransition::Continue) => return Ok(TransitionResult::Continue),
+                    Err(err) => return Ok(TransitionResult::Error(err)),
                 }
             }
             Mode::Peeking => {
