@@ -646,69 +646,68 @@ fn render_status_bar(frame: &mut Frame, app: &App) {
         Mode::Bottom => bg_style.fg(config.colors.status_bar.bottom.foreground),
     };
 
-    let hints = match app.mode {
-        Mode::Normal => format!(
-            "{} to {} | {}{}{}{} to move around | {} to peek | {} to transpose | {} to quit",
-            repr_key(&config.keybindings.insert),
-            Mode::Insert,
-            repr_key(&config.keybindings.navigation.left),
-            repr_key(&config.keybindings.navigation.down),
-            repr_key(&config.keybindings.navigation.up),
-            repr_key(&config.keybindings.navigation.right),
-            repr_key(&config.keybindings.peek),
-            repr_key(&config.keybindings.transpose),
-            repr_key(&config.keybindings.quit),
-        ),
-        Mode::Waiting(n) => format!(
-            "{} to quit | will run next motion {} times",
-            repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            n
-        ),
-        Mode::Insert => format!(
-            "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",
-            repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            repr_key(&KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)),
-            repr_key(&KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
-            repr_key(&KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
-            repr_key(&KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
-            repr_key(&KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)),
-            repr_key(&KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE)),
-            repr_key(&KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-        ),
-        Mode::Peeking => format!(
-            "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to peek the cell path",
-            repr_key(&config.keybindings.normal),
-            Mode::Normal,
-            repr_key(&config.keybindings.peeking.all),
-            repr_key(&config.keybindings.peeking.view),
-            repr_key(&config.keybindings.peeking.under),
-            repr_key(&config.keybindings.peeking.cell_path),
-        ),
-        Mode::Bottom => format!(
-            "{} to {} | {} to peek | {} to quit",
-            repr_key(&config.keybindings.navigation.left),
-            Mode::Normal,
-            repr_key(&config.keybindings.peek),
-            repr_key(&config.keybindings.quit),
-        ),
-    };
-
-    let left = Line::from(Span::styled(
-        format!(" {} ", app.mode),
-        style.add_modifier(Modifier::REVERSED),
-    ));
-    let right = Line::from(Span::styled(hints, style));
-
     frame.render_widget(
-        Paragraph::new(left)
-            .alignment(Alignment::Left)
-            .style(bg_style),
+        Paragraph::new(Line::from(Span::styled(
+            format!(" {} ", app.mode),
+            style.add_modifier(Modifier::REVERSED),
+        )))
+        .alignment(Alignment::Left)
+        .style(bg_style),
         bottom_bar_rect,
     );
-    frame.render_widget(
-        Paragraph::new(right).alignment(Alignment::Right),
-        bottom_bar_rect,
-    );
+
+    if app.config.show_hints {
+        let hints = match app.mode {
+            Mode::Normal => format!(
+                "{} to {} | {}{}{}{} to move around | {} to peek | {} to transpose | {} to quit",
+                repr_key(&config.keybindings.insert),
+                Mode::Insert,
+                repr_key(&config.keybindings.navigation.left),
+                repr_key(&config.keybindings.navigation.down),
+                repr_key(&config.keybindings.navigation.up),
+                repr_key(&config.keybindings.navigation.right),
+                repr_key(&config.keybindings.peek),
+                repr_key(&config.keybindings.transpose),
+                repr_key(&config.keybindings.quit),
+            ),
+            Mode::Waiting(n) => format!(
+                "{} to quit | will run next motion {} times",
+                repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+                n
+            ),
+            Mode::Insert => format!(
+                "{} to quit | {}{}{}{} to move the cursor | {}{} to delete characters | {} to confirm",
+                repr_key(&KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+                repr_key(&KeyEvent::new(KeyCode::Left, KeyModifiers::NONE)),
+                repr_key(&KeyEvent::new(KeyCode::Right, KeyModifiers::NONE)),
+                repr_key(&KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
+                repr_key(&KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+                repr_key(&KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE)),
+                repr_key(&KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE)),
+                repr_key(&KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            ),
+            Mode::Peeking => format!(
+                "{} to {} | {} to peek all | {} to peek current view | {} to peek under cursor | {} to peek the cell path",
+                repr_key(&config.keybindings.normal),
+                Mode::Normal,
+                repr_key(&config.keybindings.peeking.all),
+                repr_key(&config.keybindings.peeking.view),
+                repr_key(&config.keybindings.peeking.under),
+                repr_key(&config.keybindings.peeking.cell_path),
+            ),
+            Mode::Bottom => format!(
+                "{} to {} | {} to peek | {} to quit",
+                repr_key(&config.keybindings.navigation.left),
+                Mode::Normal,
+                repr_key(&config.keybindings.peek),
+                repr_key(&config.keybindings.quit),
+            ),
+        };
+        frame.render_widget(
+            Paragraph::new(Line::from(Span::styled(hints, style))).alignment(Alignment::Right),
+            bottom_bar_rect,
+        );
+    }
 }
 
 // TODO: add proper assert error messages
