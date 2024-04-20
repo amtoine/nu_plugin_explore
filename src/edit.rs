@@ -1,5 +1,4 @@
 use crossterm::event::KeyCode;
-use nuon::{from_nuon, to_nuon};
 use ratatui::{
     prelude::Rect,
     style::Style,
@@ -8,6 +7,7 @@ use ratatui::{
 };
 
 use nu_protocol::{Span, Value};
+use nuon::{from_nuon, to_nuon, ToStyle};
 
 use crate::config::Config;
 
@@ -36,7 +36,7 @@ impl Editor {
     pub(super) fn from_value(value: &Value) -> Self {
         Self {
             // NOTE: `value` should be a valid [`Value`] and thus the conversion should never fail
-            buffer: to_nuon(value, true, None, None, None).unwrap(),
+            buffer: to_nuon(value, ToStyle::Raw, None).unwrap(),
             cursor_position: (0, 0),
             width: 0,
         }
