@@ -6,9 +6,9 @@ name = "nu_plugin_explore"
 anyhow = "1.0.73"
 console = "0.15.7"
 crossterm = "0.27.0"
-nuon = { git = "https://github.com/nushell/nushell", rev = "55edef5ddaf3d3d55290863446c2dd50c012e9bc", package = "nuon" }
-nu-plugin = { git = "https://github.com/nushell/nushell", rev = "55edef5ddaf3d3d55290863446c2dd50c012e9bc", package = "nu-plugin" }
-nu-protocol = { git = "https://github.com/nushell/nushell", rev = "55edef5ddaf3d3d55290863446c2dd50c012e9bc", package = "nu-protocol", features = ["plugin"] }
+nuon = { git = "https://github.com/nushell/nushell", rev = "be5ed3290cb116cbe9f3038f7a2d46aaac85a25c", package = "nuon" }
+nu-plugin = { git = "https://github.com/nushell/nushell", rev = "be5ed3290cb116cbe9f3038f7a2d46aaac85a25c", package = "nu-plugin" }
+nu-protocol = { git = "https://github.com/nushell/nushell", rev = "be5ed3290cb116cbe9f3038f7a2d46aaac85a25c", package = "nu-protocol", features = ["plugin"] }
 ratatui = "0.26.1"
 url = "2.4.0"
 
