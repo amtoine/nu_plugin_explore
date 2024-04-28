@@ -1030,7 +1030,7 @@ dependencies = [
 [[package]]
 name = "nu-engine"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 dependencies = [
  "nu-glob",
  "nu-path",
@@ -1041,12 +1041,12 @@ dependencies = [
 [[package]]
 name = "nu-glob"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 
 [[package]]
 name = "nu-parser"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 dependencies = [
  "bytesize",
  "chrono",
@@ -1061,7 +1061,7 @@ dependencies = [
 [[package]]
 name = "nu-path"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 dependencies = [
  "dirs-next",
  "omnipath",
@@ -1071,30 +1071,49 @@ dependencies = [
 [[package]]
 name = "nu-plugin"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 dependencies = [
- "bincode",
- "interprocess",
  "log",
- "miette",
  "nix",
  "nu-engine",
+ "nu-plugin-core",
+ "nu-plugin-protocol",
  "nu-protocol",
- "nu-system",
- "nu-utils",
+ "thiserror",
+]
+
+[[package]]
+name = "nu-plugin-core"
+version = "0.92.3"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
+dependencies = [
+ "interprocess",
+ "log",
+ "nu-plugin-protocol",
+ "nu-protocol",
  "rmp-serde",
- "semver",
  "serde",
  "serde_json",
- "thiserror",
- "typetag",
  "windows 0.54.0",
+]
+
+[[package]]
+name = "nu-plugin-protocol"
+version = "0.92.3"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
+dependencies = [
+ "bincode",
+ "nu-protocol",
+ "nu-utils",
+ "semver",
+ "serde",
+ "typetag",
 ]
 
 [[package]]
 name = "nu-protocol"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 dependencies = [
  "brotli",
  "byte-unit",
@@ -1118,7 +1137,7 @@ dependencies = [
 [[package]]
 name = "nu-system"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 dependencies = [
  "chrono",
  "libc",
@@ -1136,7 +1155,7 @@ dependencies = [
 [[package]]
 name = "nu-utils"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 dependencies = [
  "crossterm_winapi",
  "log",
@@ -1185,7 +1204,7 @@ dependencies = [
 [[package]]
 name = "nuon"
 version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=2595f31541554c6d8602ebebc9dffbc4dd29dd89#2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+source = "git+https://github.com/nushell/nushell?rev=59ee96c70d2aa2d1d24d364eebe9c711700e3155#59ee96c70d2aa2d1d24d364eebe9c711700e3155"
 dependencies = [
  "fancy-regex",
  "nu-engine",

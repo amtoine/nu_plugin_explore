@@ -136,9 +136,12 @@ pub(crate) fn is_table(value: &Value) -> Table {
             let mut rows = Vec::new();
             for (i, val) in vals.iter().enumerate() {
                 match val.get_type() {
-                    Type::Record(fields) => {
-                        rows.push(fields.into_iter().collect::<HashMap<String, Type>>())
-                    }
+                    Type::Record(fields) => rows.push(
+                        fields
+                            .into_iter()
+                            .cloned()
+                            .collect::<HashMap<String, Type>>(),
+                    ),
                     t => return Table::RowNotARecord(i, t),
                 };
             }
