@@ -4,7 +4,6 @@ name = "nu_plugin_explore"
 
 [dependencies]
 anyhow = "1.0.73"
-console = "0.15.7"
 crossterm = "0.27.0"
 nuon = { git = "https://github.com/nushell/nushell", rev = "2595f31541554c6d8602ebebc9dffbc4dd29dd89", package = "nuon" }
 nu-plugin = { git = "https://github.com/nushell/nushell", rev = "2595f31541554c6d8602ebebc9dffbc4dd29dd89", package = "nu-plugin" }
