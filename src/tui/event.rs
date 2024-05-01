@@ -44,17 +44,21 @@ impl EventHandler {
                         .unwrap_or(tick_rate);
 
                     if event::poll(timeout).expect("no events available") {
-                        match event::read().expect("unable to read event") {
+                        let result = match event::read().expect("unable to read event") {
                             CrosstermEvent::Key(e) => sender.send(Event::Key(e)),
                             CrosstermEvent::Mouse(e) => sender.send(Event::Mouse(e)),
                             CrosstermEvent::Resize(w, h) => sender.send(Event::Resize(w, h)),
                             _ => Ok(()),
+                        };
+                        if result.is_err() {
+                            break;
                         }
-                        .expect("failed to send terminal event")
                     }
 
                     if last_tick.elapsed() >= tick_rate {
-                        sender.send(Event::Tick).expect("failed to send tick event");
+                        if sender.send(Event::Tick).is_err() {
+                            break;
+                        }
                         last_tick = Instant::now();
                     }
                 }

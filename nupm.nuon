@@ -1,6 +1,6 @@
 {
     name: nu_plugin_explore,
-    version: "0.92.3-2595f31541554c6d8602ebebc9dffbc4dd29dd89"
+    version: "0.93.0",
     description: "A fast structured data explorer for Nushell.",
     license: LICENSE,
     type: custom
