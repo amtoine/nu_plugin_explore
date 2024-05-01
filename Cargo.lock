@@ -1010,8 +1010,8 @@ dependencies = [
 
 [[package]]
 name = "nu-engine"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "nu-glob",
  "nu-path",
@@ -1021,13 +1021,13 @@ dependencies = [
 
 [[package]]
 name = "nu-glob"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 
 [[package]]
 name = "nu-parser"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "bytesize",
  "chrono",
@@ -1041,8 +1041,8 @@ dependencies = [
 
 [[package]]
 name = "nu-path"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "dirs-next",
  "omnipath",
@@ -1051,8 +1051,8 @@ dependencies = [
 
 [[package]]
 name = "nu-plugin"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "log",
  "nix",
@@ -1065,8 +1065,8 @@ dependencies = [
 
 [[package]]
 name = "nu-plugin-core"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "interprocess",
  "log",
@@ -1080,8 +1080,8 @@ dependencies = [
 
 [[package]]
 name = "nu-plugin-protocol"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "bincode",
  "nu-protocol",
@@ -1093,8 +1093,8 @@ dependencies = [
 
 [[package]]
 name = "nu-protocol"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "brotli",
  "byte-unit",
@@ -1117,8 +1117,8 @@ dependencies = [
 
 [[package]]
 name = "nu-system"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "chrono",
  "libc",
@@ -1135,8 +1135,8 @@ dependencies = [
 
 [[package]]
 name = "nu-utils"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "crossterm_winapi",
  "log",
@@ -1151,7 +1151,7 @@ dependencies = [
 
 [[package]]
 name = "nu_plugin_explore"
-version = "0.92.3-37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -1183,8 +1183,8 @@ dependencies = [
 
 [[package]]
 name = "nuon"
-version = "0.92.3"
-source = "git+https://github.com/nushell/nushell?rev=37123950043c1fe5e60174ed32d72e03fc3d7c66#37123950043c1fe5e60174ed32d72e03fc3d7c66"
+version = "0.93.0"
+source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
 dependencies = [
  "fancy-regex",
  "nu-engine",
