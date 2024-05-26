@@ -15,6 +15,7 @@ A fast *interactive explorer* tool for *structured data* inspired by [`nu-explor
     - [*an example*](#an-example)
     - [*some convenience*](#-some-convenience)
 - [*see the documentation locally*](#see-the-documentation-locally)
+- [*troubleshooting*](#troubleshooting)
 - [*contributing*](#contributing)
 - [*TODO*](#todo)
     - [*features*](#features)
@@ -109,6 +110,20 @@ and voila :yum:
 ```nushell
 cargo doc --document-private-items --no-deps --open
 ```
+
+# troubleshooting
+in case you get some weird error or behaviour, before filing any issue, the
+easiest is to make sure the plugin is compiled with the same revision as the
+Nushell you are using!
+```nushell
+use scripts/deps.nu; deps --current
+```
+and then you can come back to the [*installation*](#installation) section.
+
+> **Note**
+> of course, this will not work if the version of Nushell you are using is too
+> old, because then the state of `nu_plugin_explore` will be too recent for
+> everything to compile properly...
 
 # contributing
 in order to help, you can have a look at
