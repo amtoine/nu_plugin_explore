@@ -1011,7 +1011,8 @@ dependencies = [
 [[package]]
 name = "nu-engine"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe4acc8037f975add7e0f7d5543af22594ae836d6b87c518f1faee4b5e1667b5"
 dependencies = [
  "nu-glob",
  "nu-path",
@@ -1022,12 +1023,14 @@ dependencies = [
 [[package]]
 name = "nu-glob"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c3ce70012e0edbcffee9ed789c55082a0f981a9d64de3f3f44ea2ad364c634c"
 
 [[package]]
 name = "nu-parser"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8dbe76d8e9ab4f14e64f71ca6c635562bf1a5642d1363013641d0bc2127fae1"
 dependencies = [
  "bytesize",
  "chrono",
@@ -1042,7 +1045,8 @@ dependencies = [
 [[package]]
 name = "nu-path"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79efe5ac6af42907fb7cc498f7c38c9ad4a7fa3168922bc4411f14459067a44f"
 dependencies = [
  "dirs-next",
  "omnipath",
@@ -1052,7 +1056,8 @@ dependencies = [
 [[package]]
 name = "nu-plugin"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97553a124421684234379dbd7cdc9d97c71be03555d33d9fa3cf97e3fef9e5b7"
 dependencies = [
  "log",
  "nix",
@@ -1066,7 +1071,8 @@ dependencies = [
 [[package]]
 name = "nu-plugin-core"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ca62c471f46e3a573e3190a08e7913c385391965e2343c22fc0bb84c9678ab2"
 dependencies = [
  "interprocess",
  "log",
@@ -1081,7 +1087,8 @@ dependencies = [
 [[package]]
 name = "nu-plugin-protocol"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c0e09413e5e8dca9d3c082dde54ea02d13a1f4424e8244284bba4e3e5db746f"
 dependencies = [
  "bincode",
  "nu-protocol",
@@ -1094,7 +1101,8 @@ dependencies = [
 [[package]]
 name = "nu-protocol"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4de57dd87e27ffa98ad8b6d7f12608f07827ca1545731059dfa34e3362f4693"
 dependencies = [
  "brotli",
  "byte-unit",
@@ -1118,7 +1126,8 @@ dependencies = [
 [[package]]
 name = "nu-system"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c17de2c65b6b10d503ce02ccbb7fb66de63bd2f24cf717c2aa6ad4a954459fc"
 dependencies = [
  "chrono",
  "libc",
@@ -1136,7 +1145,8 @@ dependencies = [
 [[package]]
 name = "nu-utils"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fcfe5ef7f89e30142fee34efeaecdcffa45666cffd17e894fe5d83c430e7fcc"
 dependencies = [
  "crossterm_winapi",
  "log",
@@ -1184,7 +1194,8 @@ dependencies = [
 [[package]]
 name = "nuon"
 version = "0.93.0"
-source = "git+https://github.com/nushell/nushell?tag=0.93.0#3b220e07e3e3652bc722d4bc8370f2413df69473"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6509b9ce371001a018d7cd2b963c4f1fe478dececef64d09e67bddd6a7371b4e"
 dependencies = [
  "fancy-regex",
  "nu-engine",
