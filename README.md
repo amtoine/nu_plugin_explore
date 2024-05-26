@@ -42,6 +42,13 @@ will come very handy in a day-to-day basis for me at least :)
 so here we are... LET'S GO :muscle:
 
 # installation
+> **Important**
+> if you are using bleeding-edge versions of Nushell, please make sure the
+> Nushell dependencies are the same as your Nushell install by running
+> ```nushell
+> use scripts/deps.nu; deps --current
+> ```
+
 ## using `nupm install` (recommended)
 - download [nushell/nupm](https://github.com/nushell/nupm)
 - load the `nupm` module
