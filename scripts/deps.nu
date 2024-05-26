@@ -30,6 +30,13 @@ export def main [
         }
     }
 
+    let dependencies = open Cargo.toml | get dependencies
+    for pkg in $PKGS {
+        if $pkg in $dependencies {
+            cargo remove $pkg
+        }
+    }
+
     for pkg in $PKGS {
         cargo add $pkg --git $NUSHELL_REMOTE ...$opts
     }
