@@ -20,4 +20,4 @@ bench = false
 [package]
 edition = "2021"
 name = "nu_plugin_explore"
-version = "0.94.0"
+version = "0.95.0"
