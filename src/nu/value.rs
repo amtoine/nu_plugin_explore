@@ -548,6 +548,13 @@ mod tests {
                 "{} should be a table",
                 default_value_repr(&table)
             );
+
+            assert_eq!(
+                is_table(&table, true),
+                Table::IsValid,
+                "{} should be a loose table",
+                default_value_repr(&table)
+            );
         }
 
         let not_a_table_missing_field = (
@@ -614,6 +621,26 @@ mod tests {
                 expected,
                 "{} should not be a table",
                 default_value_repr(&not_a_table)
+            );
+        }
+
+        let loosy_table_incompatible_types = Value::test_list(vec![
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_int(1),
+            }),
+            Value::test_record(record! {
+                "a" => Value::test_string("a"),
+                "b" => Value::test_list(vec![Value::test_int(1)]),
+            }),
+        ]);
+
+        for loosy_table in [loosy_table_incompatible_types] {
+            assert_eq!(
+                is_table(&loosy_table, true),
+                Table::IsValid,
+                "{} should be a loose table",
+                default_value_repr(&loosy_table)
             );
         }
 
