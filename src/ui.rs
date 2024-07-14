@@ -299,7 +299,10 @@ fn render_data(frame: &mut Frame, app: &mut App) {
     let rect_without_bottom_bar =
         Rect::new(line_numbers_width, 0, frame.size().width, data_frame_height);
 
-    let height = data_frame_height as i32 - 3; // 3: border x 2 + header
+    let height = match config.layout {
+        Layout::Compact => data_frame_height as i32,
+        Layout::Table => data_frame_height as i32 - 3, // 3: border x 2 + header
+    };
     let cursor = selected as i32;
     let top = *app.rendering_tops.last().unwrap_or(&0);
     let margin = config.margin as i32;
