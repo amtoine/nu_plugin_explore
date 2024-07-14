@@ -238,7 +238,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
 
     let value = app.value_under_cursor(Some(CellPath { members: data_path }));
 
-    let table_type = is_table(&value);
+    let table_type = is_table(&value, false);
     let is_a_table = matches!(table_type, crate::nu::value::Table::IsValid);
 
     let mut data_frame_height = if config.show_cell_path {

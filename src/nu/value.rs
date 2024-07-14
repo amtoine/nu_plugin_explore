@@ -125,7 +125,7 @@ pub(crate) fn mutate_value_cell(
     Some(res)
 }
 
-pub(crate) fn is_table(value: &Value) -> Table {
+pub(crate) fn is_table(value: &Value, loose: bool) -> Table {
     match value {
         Value::List { vals, .. } => {
             if vals.is_empty() {
@@ -143,6 +143,10 @@ pub(crate) fn is_table(value: &Value) -> Table {
                     ),
                     t => return Table::RowNotARecord(i, t),
                 };
+            }
+
+            if loose {
+                return Table::IsValid;
             }
 
             // check the number of columns for each row
@@ -227,7 +231,7 @@ pub(crate) fn is_table(value: &Value) -> Table {
 /// ```
 // WARNING: some _unwraps_ haven't been proven to be safe in this function
 pub(crate) fn transpose(value: &Value) -> Value {
-    if matches!(is_table(value), Table::IsValid) {
+    if matches!(is_table(value, false), Table::IsValid) {
         let value_rows = match value {
             Value::List { vals, .. } => vals,
             _ => return value.clone(),
@@ -540,7 +544,7 @@ mod tests {
             table_with_number_colum,
         ] {
             assert_eq!(
-                is_table(&table),
+                is_table(&table, false),
                 Table::IsValid,
                 "{} should be a table",
                 default_value_repr(&table)
@@ -607,15 +611,15 @@ mod tests {
             not_a_table_row_invalid_key,
         ] {
             assert_eq!(
-                is_table(&not_a_table),
+                is_table(&not_a_table, false),
                 expected,
                 "{} should not be a table",
                 default_value_repr(&not_a_table)
             );
         }
 
-        assert_eq!(is_table(&Value::test_int(0)), Table::NotAList);
-        assert_eq!(is_table(&Value::test_list(vec![])), Table::Empty);
+        assert_eq!(is_table(&Value::test_int(0), false), Table::NotAList);
+        assert_eq!(is_table(&Value::test_list(vec![]), false), Table::Empty);
     }
 
     #[test]
