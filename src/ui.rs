@@ -943,4 +943,26 @@ mod tests {
 
         assert_eq!(repr_table(&table), expected);
     }
+
+    #[test]
+    fn repr_loose_table_with_mixed_types() {
+        let table = vec![
+            record! {
+                "a" => Value::test_string("x"),
+                "b" => Value::test_int(1),
+            },
+            record! {
+                "a" => Value::test_string("y"),
+                "b" => Value::test_string("z"),
+            },
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["string".into(), "any".into()],
+            vec![vec!["x".into(), "1".into()], vec!["y".into(), "z".into()]],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
 }
