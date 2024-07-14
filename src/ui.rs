@@ -191,7 +191,7 @@ fn repr_data(data: &Value) -> Vec<DataRowRepr> {
 ///
 /// > see the tests for detailed examples
 fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) {
-    let mut shapes = vec![Type::Any; table[0].len()];
+    let mut shapes = vec![Type::Nothing; table[0].len()];
 
     let mut rows = vec![vec![]; table.len()];
 
@@ -201,17 +201,16 @@ fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) 
             let val = row.get(col).unwrap();
 
             let cell_type = val.get_type();
-            if !matches!(cell_type, Type::Nothing) {
-                if shapes[j] != Type::Any && shapes[j] != cell_type {
-                    shapes[j] = Type::Any;
-                } else if shapes[j].is_numeric()
-                    && cell_type.is_numeric()
-                    && (shapes[j] != cell_type)
-                {
-                    shapes[j] = Type::Number;
-                } else {
-                    shapes[j] = cell_type;
-                }
+
+            if shapes[j].is_numeric() && cell_type.is_numeric() && (shapes[j] != cell_type) {
+                shapes[j] = Type::Number;
+            } else if shapes[j] == Type::Nothing && cell_type != Type::Nothing {
+                shapes[j] = cell_type;
+            } else if shapes[j] != Type::Nothing && cell_type == Type::Nothing {
+            } else if shapes[j] != cell_type {
+                shapes[j] = Type::Any;
+            } else {
+                shapes[j] = cell_type;
             }
 
             rows[i].push(repr_value(val).data);
