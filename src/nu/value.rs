@@ -145,10 +145,6 @@ pub(crate) fn is_table(value: &Value, loose: bool) -> Table {
                 };
             }
 
-            if loose {
-                return Table::IsValid;
-            }
-
             // check the number of columns for each row
             let n = rows[0].keys().len();
             for (i, row) in rows.iter().skip(1).enumerate() {
@@ -168,6 +164,9 @@ pub(crate) fn is_table(value: &Value, loose: bool) -> Table {
                         Some(v) => match ty {
                             Type::Nothing => ty = v,
                             _ => {
+                                if loose {
+                                    continue;
+                                }
                                 if !matches!(v, Type::Nothing) {
                                     if v.is_numeric() && ty.is_numeric() {
                                     } else if (!v.is_numeric() && ty.is_numeric())
