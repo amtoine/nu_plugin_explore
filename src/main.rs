@@ -28,7 +28,7 @@ impl SimplePluginCommand for Explore {
         "nu_plugin_explore"
     }
 
-    fn usage(&self) -> &str {
+    fn description(&self) -> &str {
         "interactively explore Nushell structured data"
     }
 

@@ -5,9 +5,9 @@ name = "nu_plugin_explore"
 [dependencies]
 anyhow = "1.0.73"
 crossterm = "0.27.0"
-nuon = "0.97.0"
-nu-plugin = "0.97.0"
-nu-protocol = "0.97.0"
+nuon = "0.98.0"
+nu-plugin = "0.98.0"
+nu-protocol = "0.98.0"
 ratatui = "0.26.1"
 url = "2.4.0"
 
@@ -20,4 +20,4 @@ bench = false
 [package]
 edition = "2021"
 name = "nu_plugin_explore"
-version = "0.97.0"
+version = "0.98.0"
