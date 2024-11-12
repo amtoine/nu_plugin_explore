@@ -6,6 +6,7 @@
     margin: 10, # the number of lines to keep between the cursor and the top / bottom
     number: false, # show line numbers
     relativenumber: false, # show line numbers, relative to the current one (overrides number)
+    strict_tables: false, # only render tables when all rows have the same keys with the same types
 
     # "reset" is used instead of "black" in a dark terminal because, when the terminal is actually
     # black, "black" is not really black which is ugly, whereas "reset" is really black.
