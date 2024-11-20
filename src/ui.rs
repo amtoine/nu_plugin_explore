@@ -582,8 +582,9 @@ fn render_data(frame: &mut Frame, app: &mut App) {
 /// # Examples
 /// > :bulb: **Note**  
 /// > the `...` are here to signify that the bar might be truncated and the `||` at the start and
-/// the end of the lines are just to represent the borders of the terminal but will not appear in
-/// the TUI.
+/// >   the end of the lines are just to represent the borders of the terminal but will not appear in
+/// >   the TUI.
+///
 /// - at the beginning
 /// ```text
 /// ||cell path: $.   ...||
@@ -626,9 +627,10 @@ fn render_cell_path(frame: &mut Frame, app: &App) {
 /// # Examples
 /// > :bulb: **Note**  
 /// > - the `...` are here to signify that the bar might be truncated and the `||` at the start and
-/// the end of the lines are just to represent the borders of the terminal but will not appear in
-/// the TUI.
+/// >   the end of the lines are just to represent the borders of the terminal but will not appear in
+/// >   the TUI.
 /// > - these examples use the default bindings
+///
 /// - in NORMAL mode
 /// ```text
 /// ||NORMAL  ...                                     i to INSERT | hjkl to move around | p to peek | q to quit||
