@@ -12,8 +12,10 @@ pub enum Event {
     /// Key press.
     Key(KeyEvent),
     /// Mouse click/scroll.
+    #[allow(dead_code)]
     Mouse(MouseEvent),
     /// Terminal resize.
+    #[allow(dead_code)]
     Resize(u16, u16),
 }
 

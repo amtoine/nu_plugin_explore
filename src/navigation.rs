@@ -22,8 +22,8 @@ impl App {
     ///
     /// depending on the direction (see [`Direction`]), this function will
     /// - early return if the user is already at the bottom => this is to avoid the confusing following
-    /// situation: you are at the bottom of the data, looking at one item in a list, without this early
-    /// return, you'd be able to scroll the list without seeing it as a whole... confusing, right?
+    ///   situation: you are at the bottom of the data, looking at one item in a list, without this early
+    ///   return, you'd be able to scroll the list without seeing it as a whole... confusing, right?
     /// - cycle the list indices or the record column names => the index / column will wrap around
     ///
     /// > :bulb: **Note**  
