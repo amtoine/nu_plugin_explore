@@ -150,6 +150,7 @@ pub struct Config {
     pub number: bool,
     pub relativenumber: bool,
     pub show_hints: bool,
+    pub strict_tables: bool,
 }
 
 impl Default for Config {
@@ -164,6 +165,7 @@ impl Default for Config {
             number: false,
             relativenumber: false,
             show_hints: true,
+            strict_tables: false,
             colors: ColorConfig {
                 normal: TableRowColorConfig {
                     name: BgFgColorConfig {
@@ -302,6 +304,11 @@ impl Config {
                 "show_hints" => {
                     if let Some(val) = try_bool(value, &["show_hints"])? {
                         config.show_hints = val
+                    }
+                }
+                "strict_tables" => {
+                    if let Some(val) = try_bool(value, &["strict_tables"])? {
+                        config.strict_tables = val
                     }
                 }
                 "colors" => {
