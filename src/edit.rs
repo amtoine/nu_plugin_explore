@@ -169,7 +169,6 @@ impl Editor {
         frame.render_widget(block.wrap(Wrap { trim: false }), area);
 
         let (x, y) = self.cursor_position;
-        // frame.set_cursor(area.x + 1 + (x as u16), area.y + 1 + (y as u16))
         frame.set_cursor_position(Position::new(area.x + 1 + (x as u16), area.y + 1 + (y as u16)))
     }
 }
