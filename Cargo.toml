@@ -3,16 +3,13 @@ bench = false
 name = "nu_plugin_explore"
 
 [dependencies]
-anyhow = "1.0.73"
-crossterm = "0.27.0"
-nuon = "0.101.0"
-nu-plugin = "0.101.0"
-nu-protocol = "0.101.0"
-ratatui = "0.26.1"
-url = "2.4.0"
-
-[target.'cfg(target_os = "macos")'.dependencies]
-crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
+anyhow = "1.0.97"
+crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
+nuon = "0.102.0"
+nu-plugin = "0.102.0"
+nu-protocol = "0.102.0"
+ratatui = "0.29.0"
+url = "2.5.4"
 
 [lib]
 bench = false
@@ -20,4 +17,4 @@ bench = false
 [package]
 edition = "2021"
 name = "nu_plugin_explore"
-version = "0.101.0"
+version = "0.102.0"

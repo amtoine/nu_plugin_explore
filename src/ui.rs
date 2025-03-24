@@ -39,7 +39,7 @@ pub(super) fn render_ui(frame: &mut Frame, app: &mut App, error: Option<&str>) {
 }
 
 pub(super) fn render_error(frame: &mut Frame, error: &str) {
-    let bottom_two_lines = Rect::new(0, frame.size().height - 2, frame.size().width, 2);
+    let bottom_two_lines = Rect::new(0, frame.area().height - 2, frame.area().width, 2);
 
     let lines = vec![
         Line::from(Span::styled(
@@ -242,9 +242,9 @@ fn render_data(frame: &mut Frame, app: &mut App) {
     let is_a_table = matches!(table_type, crate::nu::value::Table::IsValid);
 
     let mut data_frame_height = if config.show_cell_path {
-        frame.size().height - 2
+        frame.area().height - 2
     } else {
-        frame.size().height - 1
+        frame.area().height - 1
     };
     if !is_a_table {
         if let Some(msg) = table_type.to_msg() {
@@ -255,7 +255,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
                         .bg(config.colors.warning.background)
                         .fg(config.colors.warning.foreground),
                 ),
-                Rect::new(0, data_frame_height, frame.size().width, 1),
+                Rect::new(0, data_frame_height, frame.area().width, 1),
             );
         }
     }
@@ -297,7 +297,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
     };
 
     let rect_without_bottom_bar =
-        Rect::new(line_numbers_width, 0, frame.size().width, data_frame_height);
+        Rect::new(line_numbers_width, 0, frame.area().width, data_frame_height);
 
     let height = data_frame_height as i32 - 3; // 3: border x 2 + header
     let cursor = selected as i32;
@@ -422,7 +422,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
         let table = Table::new(rows, widths)
             .header(header)
             .block(Block::default().borders(Borders::ALL))
-            .highlight_style(highlight_style)
+            .row_highlight_style(highlight_style)
             .highlight_symbol(config.colors.selected_symbol.clone());
 
         frame.render_stateful_widget(
@@ -561,7 +561,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
                 Table::new(rows, constraints)
             }
             .block(Block::default().borders(Borders::ALL))
-            .highlight_style(highlight_style)
+            .row_highlight_style(highlight_style)
             .highlight_symbol(config.colors.selected_symbol.clone());
 
             frame.render_stateful_widget(
@@ -594,7 +594,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
 /// ||cell path: $.foo.bar.2.baz    ...||
 /// ```
 fn render_cell_path(frame: &mut Frame, app: &App) {
-    let next_to_bottom_bar_rect = Rect::new(0, frame.size().height - 2, frame.size().width, 1);
+    let next_to_bottom_bar_rect = Rect::new(0, frame.area().height - 2, frame.area().width, 1);
     let cell_path = format!(
         "cell path: $.{}",
         app.position
@@ -645,7 +645,7 @@ fn render_cell_path(frame: &mut Frame, app: &App) {
 /// ```
 fn render_status_bar(frame: &mut Frame, app: &App) {
     let config = &app.config;
-    let bottom_bar_rect = Rect::new(0, frame.size().height - 1, frame.size().width, 1);
+    let bottom_bar_rect = Rect::new(0, frame.area().height - 1, frame.area().width, 1);
 
     let bg_style = match app.mode {
         Mode::Normal | Mode::Waiting(_) => {

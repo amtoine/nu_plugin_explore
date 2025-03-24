@@ -1,12 +1,9 @@
 use crossterm::event::KeyCode;
 use ratatui::{
-    prelude::Rect,
-    style::Style,
-    widgets::{Block, Borders, Clear, Paragraph, Wrap},
-    Frame,
+    layout::Position, prelude::Rect, style::Style, widgets::{Block, Borders, Clear, Paragraph, Wrap}, Frame
 };
 
-use nu_protocol::{Span, Value};
+use nu_protocol::{engine::EngineState, Span, Value};
 use nuon::{from_nuon, to_nuon, ToStyle};
 
 use crate::config::Config;
@@ -34,9 +31,10 @@ impl Editor {
     }
 
     pub(super) fn from_value(value: &Value) -> Self {
+        let engine_state = EngineState::new();
         Self {
             // NOTE: `value` should be a valid [`Value`] and thus the conversion should never fail
-            buffer: to_nuon(value, ToStyle::Raw, None).unwrap(),
+            buffer: to_nuon(&engine_state, value, ToStyle::Raw, None, true).unwrap(),
             cursor_position: (0, 0),
             width: 0,
         }
@@ -161,8 +159,8 @@ impl Editor {
             self.buffer.len() / self.width + 1
         } as u16;
         let area = Rect {
-            x: (frame.size().width - (self.width as u16 + 2)) / 2,
-            y: frame.size().height - (height + 2) - 2,
+            x: (frame.area().width - (self.width as u16 + 2)) / 2,
+            y: frame.area().height - (height + 2) - 2,
             width: self.width as u16 + 2,
             height: height + 2,
         };
@@ -171,7 +169,7 @@ impl Editor {
         frame.render_widget(block.wrap(Wrap { trim: false }), area);
 
         let (x, y) = self.cursor_position;
-        frame.set_cursor(area.x + 1 + (x as u16), area.y + 1 + (y as u16))
+        frame.set_cursor_position(Position::new(area.x + 1 + (x as u16), area.y + 1 + (y as u16)))
     }
 }
 
