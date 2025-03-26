@@ -153,7 +153,7 @@ fn repr_value(value: &Value) -> DataRowRepr {
 /// compute the row / item representation of a complete Nushell Value
 ///
 /// > see the tests for detailed examples
-fn repr_data(data: &Value) -> Vec<DataRowRepr> {
+fn repr_data(data: &Value, start: usize, length: usize) -> Vec<DataRowRepr> {
     match data {
         Value::List { vals, .. } => {
             if vals.is_empty() {
@@ -163,7 +163,11 @@ fn repr_data(data: &Value) -> Vec<DataRowRepr> {
                     data: "[]".into(),
                 }]
             } else {
-                vals.iter().map(repr_value).collect::<Vec<DataRowRepr>>()
+                vals.iter()
+                    .skip(start)
+                    .take(length)
+                    .map(repr_value)
+                    .collect::<Vec<DataRowRepr>>()
             }
         }
         Value::Record { val: rec, .. } => {
@@ -175,6 +179,8 @@ fn repr_data(data: &Value) -> Vec<DataRowRepr> {
                 }]
             } else {
                 rec.iter()
+                    .skip(start)
+                    .take(length)
                     .map(|(col, val)| {
                         let mut repr = repr_value(val);
                         repr.name = Some(col.to_string());
@@ -299,7 +305,10 @@ fn render_data(frame: &mut Frame, app: &mut App) {
     let rect_without_bottom_bar =
         Rect::new(line_numbers_width, 0, frame.area().width, data_frame_height);
 
-    let height = data_frame_height as i32 - 3; // 3: border x 2 + header
+    let height = match config.layout {
+        Layout::Compact => data_frame_height as i32,
+        Layout::Table => data_frame_height as i32 - 3, // 3: border x 2 + header
+    };
     let cursor = selected as i32;
     let top = *app.rendering_tops.last().unwrap_or(&0);
     let margin = config.margin as i32;
@@ -438,7 +447,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
 
     match config.layout {
         Layout::Compact => {
-            let items: Vec<ListItem> = repr_data(&value)
+            let items: Vec<ListItem> = repr_data(&value, margin_offset, height as usize)
                 .iter()
                 .cloned()
                 .map(|row| {
@@ -463,15 +472,13 @@ fn render_data(frame: &mut Frame, app: &mut App) {
             let selected = if app.is_at_bottom() {
                 None
             } else {
-                Some(selected)
+                Some(selected - margin_offset)
             };
 
             frame.render_stateful_widget(
                 items,
                 rect_without_bottom_bar,
-                &mut ListState::default()
-                    .with_selected(selected)
-                    .with_offset(margin_offset),
+                &mut ListState::default().with_selected(selected),
             )
         }
         Layout::Table => {
@@ -483,7 +490,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
                         Cell::from("shape")
                             .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
                     ]);
-                    let rows: Vec<Row> = repr_data(&value)
+                    let rows: Vec<Row> = repr_data(&value, margin_offset, height as usize)
                         .iter()
                         .cloned()
                         .map(|row| {
@@ -512,7 +519,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
                             .style(normal_shape_style.add_modifier(Modifier::REVERSED)),
                     ]);
 
-                    let rows: Vec<Row> = repr_data(&value)
+                    let rows: Vec<Row> = repr_data(&value, margin_offset, height as usize)
                         .iter()
                         .cloned()
                         .map(|row| {
@@ -567,9 +574,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
             frame.render_stateful_widget(
                 table,
                 rect_without_bottom_bar,
-                &mut TableState::default()
-                    .with_selected(Some(selected))
-                    .with_offset(margin_offset),
+                &mut TableState::default().with_selected(Some(selected - margin_offset)),
             )
         }
     }
@@ -818,7 +823,7 @@ mod tests {
             "i" => Value::test_int(123),
         });
 
-        let result = repr_data(&data);
+        let result = repr_data(&data, 0, 4);
         let expected: Vec<DataRowRepr> = vec![
             DataRowRepr::named("l", "[3 items]", "list"),
             DataRowRepr::named("r", "{2 fields}", "record"),
