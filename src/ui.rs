@@ -201,12 +201,16 @@ fn repr_table(table: &[Record]) -> (Vec<String>, Vec<String>, Vec<Vec<String>>) 
             let val = row.get(col).unwrap();
 
             let cell_type = val.get_type();
-            if !matches!(cell_type, Type::Nothing) {
-                if shapes[j].is_numeric() && cell_type.is_numeric() && (shapes[j] != cell_type) {
-                    shapes[j] = Type::Number;
-                } else {
-                    shapes[j] = cell_type;
-                }
+
+            if shapes[j].is_numeric() && cell_type.is_numeric() && (shapes[j] != cell_type) {
+                shapes[j] = Type::Number;
+            } else if shapes[j] == Type::Nothing && cell_type != Type::Nothing {
+                shapes[j] = cell_type;
+            } else if shapes[j] != Type::Nothing && cell_type == Type::Nothing {
+            } else if shapes[j] != cell_type {
+                shapes[j] = Type::Any;
+            } else {
+                shapes[j] = cell_type;
             }
 
             rows[i].push(repr_value(val).data);
@@ -238,7 +242,7 @@ fn render_data(frame: &mut Frame, app: &mut App) {
 
     let value = app.value_under_cursor(Some(CellPath { members: data_path }));
 
-    let table_type = is_table(&value);
+    let table_type = is_table(&value, !config.strict_tables);
     let is_a_table = matches!(table_type, crate::nu::value::Table::IsValid);
 
     let mut data_frame_height = if config.show_cell_path {
@@ -936,6 +940,28 @@ mod tests {
                 vec!["x".into(), "1".into()],
                 vec!["y".into(), "2.34".into()],
             ],
+        );
+
+        assert_eq!(repr_table(&table), expected);
+    }
+
+    #[test]
+    fn repr_loose_table_with_mixed_types() {
+        let table = vec![
+            record! {
+                "a" => Value::test_string("x"),
+                "b" => Value::test_int(1),
+            },
+            record! {
+                "a" => Value::test_string("y"),
+                "b" => Value::test_string("z"),
+            },
+        ];
+
+        let expected = (
+            vec!["a".into(), "b".into()],
+            vec!["string".into(), "any".into()],
+            vec![vec!["x".into(), "1".into()], vec!["y".into(), "z".into()]],
         );
 
         assert_eq!(repr_table(&table), expected);
